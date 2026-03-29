@@ -1,0 +1,17 @@
+{
+    "name": "FckCensor",
+    "author": "Hazzz895",
+    "version": "0.0.1",
+    "description": "Позволяет локально подменивать треки",
+    "css": "style.css",
+    "script": "script.js",
+    "type": "script",
+    "tags": [
+        "Script"
+    ],
+    "dependencies": [],
+    "allowedUrls": [
+        "https://github.com/",
+        "https://raw.githubusercontent.com"
+    ]
+}
