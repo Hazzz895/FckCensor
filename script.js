@@ -192,7 +192,6 @@
                 multiple: false 
             })
             .then(async (fileHandles) => {
-                console.log("Selected file handles:", fileHandles);
                 const fileHandle = fileHandles[0];
 
                 const file = await fileHandle.getFile();
@@ -200,7 +199,6 @@
                     alert("Выбранный файл не является аудио-файлом.");
                     return;
                 }
-                console.log("Selected file:", file);
                 const db = await openDB();
 
                 localTracks[trackId] = URL.createObjectURL(file);
