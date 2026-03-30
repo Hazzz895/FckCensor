@@ -1,9 +1,9 @@
 {
     "name": "FckCensor",
     "author": "Hazzz895",
-    "version": "0.5.0",
-    "description": "Позволяет локально подменивать треки",
-    "css": "style.css",
+    "version": "1.0.0",
+    "description": "Позволяет локально подменивать треки через контекстное меню",
+    "image": "image.png",
     "script": "script.js",
     "type": "script",
     "tags": [
