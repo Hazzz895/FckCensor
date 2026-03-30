@@ -56,12 +56,16 @@
     // открытие базы данных
     function openDB() {
         return new Promise((resolve, reject) => {
-            const request = indexedDB.open("FckCensorData", 1);
+            const request = indexedDB.open("FckCensorData", 2);
 
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
                 if (!db.objectStoreNames.contains("tracks")) {
                     db.createObjectStore("tracks", { keyPath: "id" });
+                }
+
+                if (!db.objectStoreNames.contains("remote_exceptions")) {
+                    db.createObjectStore("remote_exceptions", { keyPath: "id" });
                 }
             };
 
@@ -103,12 +107,22 @@
 
     // из репозитория
     let remoteTracks = {};
+    let remoteExceptions = [];
 
     fetch("https://raw.githubusercontent.com/Hazzz895/FckCensorData/refs/heads/main/list.json")
         .then(response => response.json())
         .then(data => {
             remoteTracks = data.tracks;
             console.debug("Tracks from remote repository:", remoteTracks);
+            openDB().then(db => {
+                const tx = db.transaction("remote_exceptions", 'readonly');
+                const store = tx.objectStore("remote_exceptions");
+                const request = store.getAll();
+
+                request.onsuccess = () => {
+                    remoteExceptions = request.result.map(item => item.id);
+                };
+            });
         });
 
     // основной код аддона, выполняется после инициализации DI
@@ -117,7 +131,7 @@
         const originalGetFileInfo = gfir.getLocalFileDownloadInfo;
         gfir.getLocalFileDownloadInfo = async function(trackId) {
             const replacedTrack = getReplaced(trackId);
-            if (replacedTrack) {
+            if (replacedTrack?.url) {
                 console.debug("Replacing track " + trackId + " with url " + replacedTrack.url);
                 return {
                     trackId: trackId,
@@ -149,11 +163,15 @@
             url = assetsTracks[trackId];
             src = "assets";
         }
+        else if (remoteExceptions.includes(trackId)) {
+            url = null;
+            src = "remote_exception";
+        }
         else if (remoteTracks[trackId]) {
             url = remoteTracks[trackId];
             src = "remote";
         }
-        return url ? { url, src } : null;
+        return url || src ? { url, src } : null;
     }
 
     // контекстное меню подмены (сохранение в indexeddb)
@@ -206,11 +224,31 @@
             updateReplaceItem(entity, item);
             console.debug("Removed track " + trackId + " from local tracks");
         }
+        else if (replaced.src == "remote") {
+            remoteExceptions.push(trackId);
+            openDB().then(db => {
+                const tx = db.transaction("remote_exceptions", 'readwrite');
+                const store = tx.objectStore("remote_exceptions");
+                store.add({ id: trackId });
+            });
+            updateReplaceItem(entity, item);
+            console.debug("Added track " + trackId + " to remote exceptions");
+        }
+        else if (replaced.src == "remote_exception") {
+            remoteExceptions = remoteExceptions.filter(id => id != trackId);
+            openDB().then(db => {
+                const tx = db.transaction("remote_exceptions", 'readwrite');
+                const store = tx.objectStore("remote_exceptions");
+                store.delete(trackId);
+            });
+            updateReplaceItem(entity, item);
+            console.debug("Removed track " + trackId + " from remote exceptions");
+        }
     }
 
     function updateReplaceItem(entity, item) {
         const span = item.querySelector('span')
-        const replaced = !!getReplaced(entity?.id);
+        const replaced = !!(getReplaced(entity?.id)?.url);
 
         span.childNodes[0].firstElementChild.setAttribute("xlink:href", "/icons/sprite.svg#" + (replaced ? "close" : "edit") + "_xxs");
         span.childNodes[1].nodeValue = replaced ? "Удалить замену" : "Подменить трек";
@@ -229,7 +267,7 @@
                     if (button.matches("[data-test-id='PLAYERBAR_DESKTOP_CONTEXT_MENU_BUTTON'], [data-test-id='FULLSCREEN_PLAYER_CONTEXT_MENU_BUTTON']")) {
                         const entity = window.pulsesyncApi?.getCurrentTrack();
                         const replaced = getReplaced(entity?.id);
-                        if (!entity || replaced?.src != "local") return;
+                        if (!entity || replaced?.src == "assets") return;
 
                         const downloadItem = trackMenu.querySelector('[data-test-id="CONTEXT_MENU_DOWNLOAD_BUTTON"]')
                         const replaceItem = downloadItem.cloneNode(true)
