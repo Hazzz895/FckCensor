@@ -207,6 +207,7 @@
                 const store = tx.objectStore("tracks");
                 
                 store.add({ id: trackId, data: file });
+                reloadPlayer();
                 updateReplaceItem(entity, item);
                 console.debug("Added track " + trackId + " to local tracks");
             });
@@ -214,6 +215,7 @@
         // если трек есть в базе данных, то удаление
         else if (replaced.src == "local") {
             delete localTracks[trackId];
+            reloadPlayer();
             openDB().then(db => {
                 const tx = db.transaction("tracks", 'readwrite');
                 const store = tx.objectStore("tracks");
@@ -224,6 +226,7 @@
         }
         else if (replaced.src == "remote") {
             remoteExceptions.push(trackId);
+            reloadPlayer();
             openDB().then(db => {
                 const tx = db.transaction("remote_exceptions", 'readwrite');
                 const store = tx.objectStore("remote_exceptions");
@@ -234,6 +237,7 @@
         }
         else if (replaced.src == "remote_exception") {
             remoteExceptions = remoteExceptions.filter(id => id != trackId);
+            reloadPlayer();
             openDB().then(db => {
                 const tx = db.transaction("remote_exceptions", 'readwrite');
                 const store = tx.objectStore("remote_exceptions");
@@ -241,6 +245,18 @@
             });
             updateReplaceItem(entity, item);
             console.debug("Removed track " + trackId + " from remote exceptions");
+        }
+        else {
+            return;
+        }
+
+        function reloadPlayer() { 
+            const e = window.sonataState?.queueState?.currentEntity?.value?.entity;
+            const mediaPlayer = window.sonataState?.currentMediaPlayer?.value?.currentMediaPlayer;
+            if (e && mediaPlayer) {
+                mediaPlayer.reload(e);
+                console.debug("Player reloaded");
+            }
         }
     }
 
