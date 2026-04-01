@@ -4,7 +4,7 @@
         console.debug("[" + ADDON_NAME + "]", ...args);
     }
 
-    // получение метода require из webpack
+    /* == получение метода require из webpack == */
     const webpackGlobal = window.webpackChunk_N_E;
     let appRequire = null;
 
@@ -32,29 +32,51 @@
     const di = diModule.Dt;
     const originalDiGet = di.prototype.get;
 
-    // пытаемся хукнуть получение этого самого DI
-    let diMap = null;
     di.prototype.get = function(_) {
         const result = originalDiGet.apply(this, arguments);
 
         if (!hooked) {
-            diMap = this.shared;
-            const gfir = diMap.get("GetFileInfoResource");
+            const gfir = this.shared.get("GetFileInfoResource");
             
             if (gfir) {
                 hooked = true;
                 
                 di.prototype.get = originalDiGet; 
                 
-                main(gfir);
+                hookMethods(gfir);
             }
         }
         
         return result;
     };
 
-    // хранение подменных треков
-    // из базы данных
+    // основной код аддона, выполняется после инициализации DI
+    function hookMethods(gfir) {
+        // подмена треков
+        const originalGetFileInfo = gfir.getLocalFileDownloadInfo;
+        gfir.getLocalFileDownloadInfo = async function(trackId) {
+            const replacedTrack = getReplaced(trackId);
+            if (replacedTrack?.url) {
+                log("Replacing track " + trackId + " with url " + replacedTrack.url);
+                return {
+                    trackId: trackId,
+                    urls: [replacedTrack.url]
+                };
+            }
+            return originalGetFileInfo.apply(this, arguments);
+        };
+
+        const originalIsDownloaded = gfir.isTrackDownloaded;
+        gfir.isTrackDownloaded = async function(trackId, _) {
+            if (getReplaced(trackId)) {
+                return true;
+            }
+            return originalIsDownloaded.apply(this, arguments);
+        };
+    }
+
+    // === хранение подменных треков ===
+    /* из базы данных */
     let localTracks = {};
 
     // открытие базы данных
@@ -92,7 +114,7 @@
         };
     });
 
-    // из папки assets
+    /* из папки assets */
     let assetsTracks = {};
     function updateAssetsTracks() {
         fetch("http://localhost:2007/assets?name=" + ADDON_NAME)
@@ -109,7 +131,7 @@
 
     updateAssetsTracks();
 
-    // из репозитория
+    /* из репозитория */
     let remoteTracks = {};
     let remoteExceptions = [];
 
@@ -128,31 +150,6 @@
                 };
             });
         });
-
-    // основной код аддона, выполняется после инициализации DI
-    function main(gfir) {
-        // подмена треков
-        const originalGetFileInfo = gfir.getLocalFileDownloadInfo;
-        gfir.getLocalFileDownloadInfo = async function(trackId) {
-            const replacedTrack = getReplaced(trackId);
-            if (replacedTrack?.url) {
-                log("Replacing track " + trackId + " with url " + replacedTrack.url);
-                return {
-                    trackId: trackId,
-                    urls: [replacedTrack.url]
-                };
-            }
-            return originalGetFileInfo.apply(this, arguments);
-        };
-
-        const originalIsDownloaded = gfir.isTrackDownloaded;
-        gfir.isTrackDownloaded = async function(trackId, _) {
-            if (getReplaced(trackId)) {
-                return true;
-            }
-            return originalIsDownloaded.apply(this, arguments);
-        };
-    }
 
     // получение ссылки на трек
     function getReplaced(trackId) {
@@ -178,11 +175,21 @@
         return url || src ? { url, src } : null;
     }
 
-    // контекстное меню подмены (сохранение в indexeddb)
+    /* === контекстное меню подмены (сохранение в indexeddb) === */
     function onContextMenuClick(entity, item) {
         entity = window.pulsesyncApi?.getCurrentTrack() ?? entity;
         const trackId = entity.id;
         const replaced = getReplaced(trackId);
+
+        function reloadPlayer() { 
+            const e = window.sonataState?.queueState?.currentEntity?.value?.entity;
+            const mediaPlayer = window.sonataState?.currentMediaPlayer?.value?.currentMediaPlayer;
+            if (e && mediaPlayer) {
+                mediaPlayer.reload(e);
+                log("Player reloaded");
+            }
+        }
+
         // если трек НЕ подменен, то открывается пикер файлов и затем он сохраняется в бд
         if (!replaced) {
             window.showOpenFilePicker({
@@ -228,6 +235,7 @@
             updateReplaceItem(entity, item);
             log("Removed track " + trackId + " from local tracks");
         }
+        // если трек подменен из репозитория, то добавление в исключения
         else if (replaced.src == "remote") {
             remoteExceptions.push(trackId);
             reloadPlayer();
@@ -239,6 +247,7 @@
             updateReplaceItem(entity, item);
             log("Added track " + trackId + " to remote exceptions");
         }
+        // если трек в исключениях, то удаление оттуда
         else if (replaced.src == "remote_exception") {
             remoteExceptions = remoteExceptions.filter(id => id != trackId);
             reloadPlayer();
@@ -252,15 +261,6 @@
         }
         else {
             return;
-        }
-
-        function reloadPlayer() { 
-            const e = window.sonataState?.queueState?.currentEntity?.value?.entity;
-            const mediaPlayer = window.sonataState?.currentMediaPlayer?.value?.currentMediaPlayer;
-            if (e && mediaPlayer) {
-                mediaPlayer.reload(e);
-                log("Player reloaded");
-            }
         }
     }
 
@@ -287,9 +287,11 @@
                         const replaced = getReplaced(entity?.id);
                         if (!entity || replaced?.src == "assets") return;
 
+                        // создаем кнопку подмены
                         const downloadItem = trackMenu.querySelector('[data-test-id="CONTEXT_MENU_DOWNLOAD_BUTTON"]')
-                        const replaceItem = downloadItem.cloneNode(true)
+                        if (!downloadItem) return;
 
+                        const replaceItem = downloadItem.cloneNode(true)
                         replaceItem.setAttribute('data-test-id', 'CONTEXT_MENU_REPLACE_BUTTON');
 
                         updateReplaceItem(entity, replaceItem);
