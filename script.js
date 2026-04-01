@@ -1,9 +1,14 @@
 (function() {
+    const ADDON_NAME = "FckCensor";
+    function log(...args) {
+        console.debug("[" + ADDON_NAME + "]", ...args);
+    }
+
     // получение метода require из webpack
     const webpackGlobal = window.webpackChunk_N_E;
     let appRequire = null;
 
-    webpackGlobal.push([[Symbol("requireGetter__FckCensor")],
+    webpackGlobal.push([[Symbol("requireGetter__" + ADDON_NAME)],
         {},
         (internalRequire) => {
             appRequire = internalRequire;
@@ -34,15 +39,14 @@
 
         if (!hooked) {
             diMap = this.shared;
-            const slam = diMap.get("Slam");
             const gfir = diMap.get("GetFileInfoResource");
             
-            if (slam && gfir) {
+            if (gfir) {
                 hooked = true;
                 
                 di.prototype.get = originalDiGet; 
                 
-                main(slam, gfir);
+                main(gfir);
             }
         }
         
@@ -56,7 +60,7 @@
     // открытие базы данных
     function openDB() {
         return new Promise((resolve, reject) => {
-            const request = indexedDB.open("FckCensorData", 2);
+            const request = indexedDB.open(ADDON_NAME + "Data", 2);
 
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
@@ -84,22 +88,22 @@
             request.result.forEach(({ id, data }) => {
                 localTracks[id] = URL.createObjectURL(data);
             });
-            console.debug("Tracks from local database:", localTracks);
+            log("Tracks from local database:", localTracks);
         };
     });
 
     // из папки assets
     let assetsTracks = {};
     function updateAssetsTracks() {
-        fetch("http://localhost:2007/assets?name=FckCensor")
+        fetch("http://localhost:2007/assets?name=" + ADDON_NAME)
             .then(response => response.json())
             .then(data => {
                 Object.keys(data.files).forEach(file => {
                     id = file.split(".")[0]
-                    url = "http://localhost:2007/assets/" + file + "?name=FckCensor&"
+                    url = "http://localhost:2007/assets/" + file + "?name=" + ADDON_NAME + "&"
                     assetsTracks[id] = url;
                 });
-                console.debug("Tracks from assets:", assetsTracks);
+                log("Tracks from assets:", assetsTracks);
             });
     }
 
@@ -113,7 +117,7 @@
         .then(response => response.json())
         .then(data => {
             remoteTracks = data.tracks;
-            console.debug("Tracks from remote repository:", remoteTracks);
+            log("Tracks from remote repository:", remoteTracks);
             openDB().then(db => {
                 const tx = db.transaction("remote_exceptions", 'readonly');
                 const store = tx.objectStore("remote_exceptions");
@@ -126,13 +130,13 @@
         });
 
     // основной код аддона, выполняется после инициализации DI
-    function main(slam, gfir) {
+    function main(gfir) {
         // подмена треков
         const originalGetFileInfo = gfir.getLocalFileDownloadInfo;
         gfir.getLocalFileDownloadInfo = async function(trackId) {
             const replacedTrack = getReplaced(trackId);
             if (replacedTrack?.url) {
-                console.debug("Replacing track " + trackId + " with url " + replacedTrack.url);
+                log("Replacing track " + trackId + " with url " + replacedTrack.url);
                 return {
                     trackId: trackId,
                     urls: [replacedTrack.url]
@@ -142,7 +146,7 @@
         };
 
         const originalIsDownloaded = gfir.isTrackDownloaded;
-        gfir.isTrackDownloaded = async function(trackId, quality) {
+        gfir.isTrackDownloaded = async function(trackId, _) {
             if (getReplaced(trackId)) {
                 return true;
             }
@@ -209,7 +213,7 @@
                 store.add({ id: trackId, data: file });
                 reloadPlayer();
                 updateReplaceItem(entity, item);
-                console.debug("Added track " + trackId + " to local tracks");
+                log("Added track " + trackId + " to local tracks");
             });
         }
         // если трек есть в базе данных, то удаление
@@ -222,7 +226,7 @@
                 store.delete(trackId);
             });
             updateReplaceItem(entity, item);
-            console.debug("Removed track " + trackId + " from local tracks");
+            log("Removed track " + trackId + " from local tracks");
         }
         else if (replaced.src == "remote") {
             remoteExceptions.push(trackId);
@@ -233,7 +237,7 @@
                 store.add({ id: trackId });
             });
             updateReplaceItem(entity, item);
-            console.debug("Added track " + trackId + " to remote exceptions");
+            log("Added track " + trackId + " to remote exceptions");
         }
         else if (replaced.src == "remote_exception") {
             remoteExceptions = remoteExceptions.filter(id => id != trackId);
@@ -244,7 +248,7 @@
                 store.delete(trackId);
             });
             updateReplaceItem(entity, item);
-            console.debug("Removed track " + trackId + " from remote exceptions");
+            log("Removed track " + trackId + " from remote exceptions");
         }
         else {
             return;
@@ -255,7 +259,7 @@
             const mediaPlayer = window.sonataState?.currentMediaPlayer?.value?.currentMediaPlayer;
             if (e && mediaPlayer) {
                 mediaPlayer.reload(e);
-                console.debug("Player reloaded");
+                log("Player reloaded");
             }
         }
     }
