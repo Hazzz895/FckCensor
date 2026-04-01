@@ -82,7 +82,7 @@
     // открытие базы данных
     function openDB() {
         return new Promise((resolve, reject) => {
-            const request = indexedDB.open(ADDON_NAME + "Data", 2);
+            const request = indexedDB.open(ADDON_NAME + "Data", 3);
 
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
@@ -92,6 +92,10 @@
 
                 if (!db.objectStoreNames.contains("remote_exceptions")) {
                     db.createObjectStore("remote_exceptions", { keyPath: "id" });
+                }
+
+                if (!db.objectStoreNames.contains("reported_tracks")) {
+                    db.createObjectStore("reported_tracks", { keyPath: "id" });
                 }
             };
 
@@ -179,9 +183,13 @@
         API_URL: "https://pzomqvgckpgkshxhpite.supabase.co/rest/v1/",
         KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6b21xdmdja3Bna3NoeGhwaXRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDEsImV4cCI6MjA5MDYzNDM0MX0.ggCxM-ver3gDWUBWyhSBfy3n7rpdW8jtlxRQVCXkhNg",
         report(trackId, replaced) {
+            if (!trackId) return;
+            trackId = Number(trackId);
+            if (isNaN(trackId) || this.reportedTracks.includes(trackId)) return;
+            
             const targetTable = "reported_tracks";
             const body = {
-                track_id: Number(trackId),
+                track_id: trackId,
                 replaced
             }
 
@@ -198,10 +206,28 @@
                 if (!response.ok) {
                     throw new Error(`Failed to report track. Status: ${response.status}`);
                 }
+                this.reportedTracks.push(trackId);
+                openDB().then(db => {
+                    const tx = db.transaction(targetTable, 'readwrite');
+                    const store = tx.objectStore(targetTable);
+                    store.add({ id: trackId });
+                });
                 log("Reported track " + trackId);
             })
             .catch(err => {
                 console.error(`[${ADDON_NAME}] Failed to report track`, err);
+            });
+        },
+        reportedTracks: [],
+        loadReportedTracks() {
+            openDB().then(db => {
+                const tx = db.transaction("reported_tracks", 'readonly');
+                const store = tx.objectStore("reported_tracks");
+                const request = store.getAll();
+
+                request.onsuccess = () => {
+                    this.reportedTracks = request.result.map(item => item.id);
+                };
             });
         }
     }
