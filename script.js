@@ -186,7 +186,7 @@
             if (!trackId) return;
             trackId = Number(trackId);
             if (isNaN(trackId) || this.reportedTracks.includes(trackId)) return;
-            
+
             const targetTable = "reported_tracks";
             const body = {
                 track_id: trackId,
@@ -231,6 +231,8 @@
             });
         }
     }
+
+    api.loadReportedTracks();
 
     /* === контекстное меню подмены (сохранение в indexeddb) === */
     function onContextMenuClick(entity, item) {
