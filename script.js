@@ -175,6 +175,37 @@
         return url || src ? { url, src } : null;
     }
 
+    const api = {
+        API_URL: "https://pzomqvgckpgkshxhpite.supabase.co/rest/v1/",
+        KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6b21xdmdja3Bna3NoeGhwaXRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDEsImV4cCI6MjA5MDYzNDM0MX0.ggCxM-ver3gDWUBWyhSBfy3n7rpdW8jtlxRQVCXkhNg",
+        report(trackId, replaced) {
+            const targetTable = "reported_tracks";
+            const body = {
+                track_id: Number(trackId),
+                replaced
+            }
+
+            fetch(`${this.API_URL}${targetTable}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "apikey": this.KEY,
+                    "Authorization": `Bearer ${this.KEY}`,
+                },
+                body: JSON.stringify(body)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Failed to report track. Status: ${response.status}`);
+                }
+                log("Reported track " + trackId);
+            })
+            .catch(err => {
+                console.error(`[${ADDON_NAME}] Failed to report track`, err);
+            });
+        }
+    }
+
     /* === контекстное меню подмены (сохранение в indexeddb) === */
     function onContextMenuClick(entity, item) {
         entity = window.pulsesyncApi?.getCurrentTrack() ?? entity;
@@ -218,6 +249,7 @@
                 const store = tx.objectStore("tracks");
                 
                 store.add({ id: trackId, data: file });
+                api.report(trackId, true);
                 reloadPlayer();
                 updateReplaceItem(entity, item);
                 log("Added track " + trackId + " to local tracks");
