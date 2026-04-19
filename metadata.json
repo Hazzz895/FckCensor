@@ -1,8 +1,8 @@
 {
     "name": "FckCensor",
     "author": "Hazzz895",
-    "version": "1.2.0",
-    "description": "Позволяет локально подменивать треки через контекстное меню",
+    "description": "Подменивает заблюренные треки автоматически и позволяет это делать вручную через контекстное меню",
+    "version": "1.3.0",
     "image": "image.png",
     "script": "script.js",
     "type": "script",
