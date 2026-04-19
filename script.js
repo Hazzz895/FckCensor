@@ -333,6 +333,11 @@
 
         span.childNodes[0].firstElementChild.setAttribute("xlink:href", "/icons/sprite.svg#" + (replaced ? "close" : "edit") + "_xxs");
         span.childNodes[1].nodeValue = replaced ? "Удалить замену" : "Подменить трек";
+
+        const ymTrackDownloadItem = item.parentElement?.querySelector('[data-test-id="CONTEXT_MENU_DOWNLOAD_BUTTON"]');
+        if (ymTrackDownloadItem) {
+        ymTrackDownloadItem.style.display = replaced ? "none" : "";
+        }
     }
 
     // следим за dom-изменениями
@@ -356,11 +361,10 @@
 
                         const replaceItem = downloadItem.cloneNode(true)
                         replaceItem.setAttribute('data-test-id', 'CONTEXT_MENU_REPLACE_BUTTON');
-
-                        updateReplaceItem(entity, replaceItem);
                         replaceItem.addEventListener('click', () => onContextMenuClick(entity, replaceItem));
 
                         downloadItem.parentElement.insertBefore(replaceItem, downloadItem.nextSibling);
+                        updateReplaceItem(entity, replaceItem);
                     }
                 }
             })
