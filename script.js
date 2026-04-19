@@ -28,10 +28,12 @@
         return;
     }
 
-    let hooked = false;
+    
     const di = diModule.Dt;
     const originalDiGet = di.prototype.get;
 
+    // хук получения DI
+    let hooked = false;
     di.prototype.get = function(_) {
         const result = originalDiGet.apply(this, arguments);
 
@@ -179,6 +181,7 @@
         return url || src ? { url, src } : null;
     }
 
+    // апи для отправки заблюренных треков
     const api = {
         API_URL: "https://pzomqvgckpgkshxhpite.supabase.co/rest/v1/",
         KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6b21xdmdja3Bna3NoeGhwaXRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDEsImV4cCI6MjA5MDYzNDM0MX0.ggCxM-ver3gDWUBWyhSBfy3n7rpdW8jtlxRQVCXkhNg",
