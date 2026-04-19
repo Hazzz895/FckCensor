@@ -13,5 +13,7 @@
         "https://github.com/",
         "https://raw.githubusercontent.com",
         "https://pzomqvgckpgkshxhpite.supabase.co/"
-    ]
+    ],
+    "installSource": "local",
+    "id": "dbcc49253774bd2d29f760e1"
 }
