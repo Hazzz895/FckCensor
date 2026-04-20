@@ -100,7 +100,6 @@
     // открытие базы данных
     function openDB() {
         return new Promise((resolve, reject) => {
-            if (database) return database;
             const request = indexedDB.open(ADDON_NAME + "Data", 3);
 
             request.onupgradeneeded = (event) => {
@@ -118,7 +117,10 @@
                 }
             };
 
-            request.onsuccess = () => resolve(request.result);
+            request.onsuccess = () => {
+                database = request.result;
+                return resolve(request.result);
+            };
             request.onerror = () => reject(request.error);
         });
     }
@@ -127,7 +129,6 @@
 
     // первоначальная загрузка треков из базы данных
     openDB().then(db => {
-        database = db;
         const tx = db.transaction("tracks", 'readonly');
         const store = tx.objectStore("tracks");
         const request = store.getAll();
