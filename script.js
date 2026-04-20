@@ -98,34 +98,33 @@
     let localTracks = {};
 
     // открытие базы данных
+    let dbPromise = null;
     function openDB() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(ADDON_NAME + "Data", 3);
+        if (!dbPromise) {
+            dbPromise = new Promise((resolve, reject) => {
+                const request = indexedDB.open(ADDON_NAME + "Data", 3);
 
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-                if (!db.objectStoreNames.contains("tracks")) {
-                    db.createObjectStore("tracks", { keyPath: "id" });
-                }
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains("tracks")) {
+                        db.createObjectStore("tracks", { keyPath: "id" });
+                    }
 
-                if (!db.objectStoreNames.contains("remote_exceptions")) {
-                    db.createObjectStore("remote_exceptions", { keyPath: "id" });
-                }
+                    if (!db.objectStoreNames.contains("remote_exceptions")) {
+                        db.createObjectStore("remote_exceptions", { keyPath: "id" });
+                    }
 
-                if (!db.objectStoreNames.contains("reported_tracks")) {
-                    db.createObjectStore("reported_tracks", { keyPath: "id" });
-                }
-            };
+                    if (!db.objectStoreNames.contains("reported_tracks")) {
+                        db.createObjectStore("reported_tracks", { keyPath: "id" });
+                    }
+                };
 
-            request.onsuccess = () => {
-                database = request.result;
-                return resolve(request.result);
-            };
-            request.onerror = () => reject(request.error);
-        });
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+        return dbPromise;
     }
-
-    let database = null;
 
     // первоначальная загрузка треков из базы данных
     openDB().then(db => {
