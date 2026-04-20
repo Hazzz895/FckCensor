@@ -288,6 +288,12 @@
                 reloadPlayer();
                 updateReplaceItem(trackId, item);
                 log("Added track " + trackId + " to local tracks");
+            })
+            .catch(err => {
+                if (err.name !== 'AbortError') {
+                    alert("Ошибка во время выбора файла, посмотрите консоль для подробной информации.")
+                    console.error("Ошибка выбора файла:", err);
+                }
             });
         }
         // если трек есть в базе данных, то удаление
