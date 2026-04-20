@@ -23,7 +23,23 @@
     }
 
     // получение DI модуля (оно хранит все синглтоны необходимые для работы аддона)
-    const diModule = appRequire(58900);
+    function findModule(requiredMethods) {
+        for (const id in appRequire.m) {
+            try {
+                const mod = appRequire(id);
+                if (!mod) continue;
+                for (const key of Object.keys(mod)) {
+                    const proto = mod[key]?.prototype;
+                    if (requiredMethods.every(m => proto[m])) {
+                        return mod;
+                    }
+                }
+            } catch(e) {}
+        }
+        return null;
+    }
+
+    const diModule = findModule("isTrackDownloaded", "getLocalFileDownloadInfo", "getFileInfo", "getFileInfoBatch");
     if (!diModule || !diModule.Dt) {
         console.error("Failed to find DI module. Wait for addon update!");
         return;
