@@ -214,7 +214,7 @@
                 openDB().then(db => {
                     const tx = db.transaction(targetTable, 'readwrite');
                     const store = tx.objectStore(targetTable);
-                    store.add({ id: trackId });
+                    store.put({ id: trackId });
                 });
                 log("Reported track " + trackId);
             })
@@ -292,6 +292,9 @@
         }
         // если трек есть в базе данных, то удаление
         else if (replaced.src == "local") {
+            if (localTracks[trackId]) {
+                URL.revokeObjectURL(localTracks[trackId]);
+            }
             delete localTracks[trackId];
             reloadPlayer();
             openDB().then(db => {
