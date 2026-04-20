@@ -1,4 +1,5 @@
 (function() {
+    "use strict"
     const ADDON_NAME = "FckCensor";
     function log(...args) {
         console.debug("[" + ADDON_NAME + "]", ...args);
@@ -127,8 +128,8 @@
             .then(response => response.json())
             .then(data => {
                 Object.keys(data.files).forEach(file => {
-                    id = file.split(".")[0]
-                    url = "http://localhost:2007/assets/" + file + "?name=" + ADDON_NAME + "&"
+                    const id = file.split(".")[0]
+                    const url = "http://localhost:2007/assets/" + file + "?name=" + ADDON_NAME + "&"
                     assetsTracks[id] = url;
                 });
                 log("Tracks from assets:", assetsTracks);
