@@ -156,6 +156,9 @@
                     remoteExceptions = request.result.map(item => item.id);
                 };
             });
+        })
+        .catch(err => {
+            console.error(`[${ADDON_NAME}] Ошибка при попытке получить список треков с удалённого репозитория: `, err)
         });
 
     // получение ссылки на трек
