@@ -339,8 +339,15 @@
 
         const ymTrackDownloadItem = item.parentElement?.querySelector('[data-test-id="CONTEXT_MENU_DOWNLOAD_BUTTON"]');
         if (ymTrackDownloadItem) {
-        ymTrackDownloadItem.style.display = replaced ? "none" : "";
+            ymTrackDownloadItem.style.display = replaced ? "none" : "";
         }
+
+        updateReportItem(trackId, item.parentElement?.querySelector('[data-test-id="CONTEXT_MENU_REPORT_BUTTON"]'))
+    }
+
+    function updateReportItem(trackId, item, forcedValue = undefined) {
+        if (!item || !trackId) return;
+        item.style.display = (forcedValue !== undefined && forcedValue !== null ? forcedValue : (api.isReported(trackId) || getReplaced(trackId))) ? "none" : "";
     }
 
     // следим за dom-изменениями
@@ -358,7 +365,6 @@
                         const replaced = getReplaced(trackId);
                         if (!trackId || replaced?.src == "assets") return;
 
-                        // создаем кнопку подмены
                         const downloadItem = trackMenu.querySelector('[data-test-id="CONTEXT_MENU_DOWNLOAD_BUTTON"]')
                         if (!downloadItem) return;
 
@@ -369,6 +375,23 @@
 
                         downloadItem.parentElement.insertBefore(replaceItem, downloadItem.nextSibling);
                         updateReplaceItem(trackId, replaceItem);
+
+                        // создаем кнопку репорта блюра
+                        const reportItem = downloadItem.cloneNode(true)
+                        reportItem.setAttribute('data-test-id', 'CONTEXT_MENU_REPORT_BUTTON');
+
+                        const span = reportItem.querySelector("span");
+                        span.childNodes[0].firstElementChild.setAttribute("xlink:href", "/icons/sprite.svg#" + "attention_xxxl");
+                        span.childNodes[1].nodeValue = "Сообщить о цензуре";
+
+                        reportItem.addEventListener('click', () => {
+                            api.report(trackId, false);
+                            updateReportItem(trackId, reportItem, true)
+                            alert("[FckCensor}\nТрек скоро будет добавлен в список автоматически заменяемых треков. Спасибо, что помогаете сделать аддон лучше!")
+                        });
+
+                        downloadItem.parentElement.insertBefore(reportItem, replaceItem.nextSibling);
+                        updateReportItem(trackId, reportItem)
                     }
                 }
             })
