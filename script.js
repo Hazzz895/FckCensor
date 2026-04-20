@@ -86,7 +86,7 @@
 
         const originalIsDownloaded = gfir.isTrackDownloaded;
         gfir.isTrackDownloaded = async function(trackId, _) {
-            if (getReplaced(trackId)) {
+            if (getReplaced(trackId)?.url) {
                 return true;
             }
             return originalIsDownloaded.apply(this, arguments);
