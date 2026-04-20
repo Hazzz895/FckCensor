@@ -232,6 +232,11 @@
                     this.reportedTracks = request.result.map(item => item.id);
                 };
             });
+        },
+        isReported(trackId) {
+            if (!trackId) return;
+            trackId = Number(trackId);
+            return !isNaN(trackId) && this.reportedTracks.includes(trackId);
         }
     }
 
