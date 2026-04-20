@@ -161,8 +161,8 @@
     // получение ссылки на трек
     function getReplaced(trackId) {
         if (!trackId) return null;
-        url = null;
-        src = null;
+        let url = null;
+        let src = null;
         if  (localTracks[trackId]) {
             url = localTracks[trackId];
             src = "local";
