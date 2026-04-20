@@ -359,9 +359,9 @@
                 const trackMenu = node?.querySelector("[data-test-id='TRACK_CONTEXT_MENU']:not(:has([data-test-id='CONTEXT_MENU_REPLACE_BUTTON']))");
                 if (trackMenu) {
                     const button = trackMenu.ariaLabelledByElements[0];
-                    // а относится ли контекстное меню к плееру?
-                    if (button.matches("[data-test-id='PLAYERBAR_DESKTOP_CONTEXT_MENU_BUTTON'], [data-test-id='FULLSCREEN_PLAYER_CONTEXT_MENU_BUTTON']")) {
-                        const entity = window.pulsesyncApi?.getCurrentTrack();
+                    if (!button) return;
+
+                    function createItems(trackId) {
                         const replaced = getReplaced(trackId);
                         if (!trackId || replaced?.src == "assets") return;
 
@@ -392,6 +392,20 @@
 
                         downloadItem.parentElement.insertBefore(reportItem, replaceItem.nextSibling);
                         updateReportItem(trackId, reportItem)
+                    }
+                    // а относится ли контекстное меню к плееру?
+                    if (button.matches("[data-test-id='PLAYERBAR_DESKTOP_CONTEXT_MENU_BUTTON'], [data-test-id='FULLSCREEN_PLAYER_CONTEXT_MENU_BUTTON']")) {
+                        const entity = window.pulsesyncApi?.getCurrentTrack();
+                        createItems(entity?.id)
+                    }
+                    else {
+                        const source = button.closest('[data-intersection-property-id*="track_"]');
+                        if (!source) return;
+                        const intersection = source.getAttribute("data-intersection-property-id");
+                        const trackId = intersection.match(/track_(\d+)/);
+                        if (trackId) {
+                            createItems(trackId[1])
+                        }
                     }
                 }
             })
