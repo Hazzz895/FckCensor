@@ -283,7 +283,7 @@
                 const tx = db.transaction("tracks", 'readwrite');
                 const store = tx.objectStore("tracks");
                 
-                store.add({ id: trackId, data: file });
+                store.put({ id: trackId, data: file });
                 api.report(trackId, true);
                 reloadPlayer();
                 updateReplaceItem(trackId, item);
