@@ -85,6 +85,7 @@
     // открытие базы данных
     function openDB() {
         return new Promise((resolve, reject) => {
+            if (database) return database;
             const request = indexedDB.open(ADDON_NAME + "Data", 3);
 
             request.onupgradeneeded = (event) => {
@@ -107,8 +108,11 @@
         });
     }
 
+    let database = null;
+
     // первоначальная загрузка треков из базы данных
     openDB().then(db => {
+        database = db;
         const tx = db.transaction("tracks", 'readonly');
         const store = tx.objectStore("tracks");
         const request = store.getAll();
@@ -400,7 +404,7 @@
                         reportItem.addEventListener('click', () => {
                             api.report(trackId, false);
                             updateReportItem(trackId, reportItem, true)
-                            alert("[FckCensor}\nТрек скоро будет добавлен в список автоматически заменяемых треков. Спасибо, что помогаете сделать аддон лучше!")
+                            alert("[FckCensor]\nТрек скоро будет добавлен в список автоматически заменяемых треков. Спасибо, что помогаете сделать аддон лучше!")
                         });
 
                         downloadItem.parentElement.insertBefore(reportItem, replaceItem.nextSibling);
