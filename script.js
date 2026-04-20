@@ -70,23 +70,32 @@
 
     // основной код аддона, выполняется после инициализации DI
     function hookMethods(gfir) {
-        // подмена треков
         const originalGetFileInfo = gfir.getLocalFileDownloadInfo;
         gfir.getLocalFileDownloadInfo = async function(trackId) {
             const replacedTrack = getReplaced(trackId);
-            if (replacedTrack?.url) {
-                log("Replacing track " + trackId + " with url " + replacedTrack.url);
-                return {
-                    trackId: trackId,
-                    urls: [replacedTrack.url]
-                };
+            
+            if (replacedTrack && replacedTrack.src !== "remote_exception") {
+                let url = replacedTrack.url;
+                
+                if (replacedTrack.src === "local" && !replacedTrack.url) {
+                    url = await getLocalTrackUrl(trackId);
+                }
+
+                if (url) {
+                    log("Replacing track " + trackId + " with url " + url);
+                    return {
+                        trackId: trackId,
+                        urls: [url]
+                    };
+                }
             }
             return originalGetFileInfo.apply(this, arguments);
         };
 
         const originalIsDownloaded = gfir.isTrackDownloaded;
         gfir.isTrackDownloaded = async function(trackId, _) {
-            if (getReplaced(trackId)?.url) {
+            const replacedTrack = getReplaced(trackId);
+            if (replacedTrack && replacedTrack.src !== "remote_exception") {
                 return true;
             }
             return originalIsDownloaded.apply(this, arguments);
@@ -95,7 +104,30 @@
 
     // === хранение подменных треков ===
     /* из базы данных */
-    let localTracks = {};
+    let localTracksUrlCache = {};
+    let localTrackIds = [];
+
+    async function getLocalTrackUrl(trackId) {
+        if (localTracksUrlCache[trackId]) return localTracksUrlCache[trackId];
+
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction("tracks", 'readonly');
+            const store = tx.objectStore("tracks");
+            const request = store.get(trackId); 
+
+            request.onsuccess = () => {
+                if (request.result && request.result.data) {
+                    const url = URL.createObjectURL(request.result.data);
+                    localTracksUrlCache[trackId] = url;
+                    resolve(url);
+                } else {
+                    resolve(null);
+                }
+            };
+            request.onerror = () => reject(request.error);
+        });
+    }
 
     // открытие базы данных
     let dbPromise = null;
@@ -130,13 +162,11 @@
     openDB().then(db => {
         const tx = db.transaction("tracks", 'readonly');
         const store = tx.objectStore("tracks");
-        const request = store.getAll();
+        const request = store.getAllKeys(); 
 
         request.onsuccess = () => {
-            request.result.forEach(({ id, data }) => {
-                localTracks[id] = URL.createObjectURL(data);
-            });
-            log("Tracks from local database:", localTracks);
+            localTrackIds = request.result;
+            log("Loaded ", Object.keys(localTrackIds).length, "local tracks");
         };
     });
 
@@ -183,10 +213,11 @@
     // получение ссылки на трек
     function getReplaced(trackId) {
         if (!trackId) return null;
+        trackId = String(trackId);
         let url = null;
         let src = null;
-        if  (localTracks[trackId]) {
-            url = localTracks[trackId];
+        if  (localTrackIds.includes(trackId)) {
+            url = localTracksUrlCache[trackId];
             src = "local";
         }
         else if (assetsTracks[trackId]) {
@@ -300,7 +331,8 @@
                 }
                 const db = await openDB();
 
-                localTracks[trackId] = URL.createObjectURL(file);
+                localTrackIds.push(trackId)
+                localTracksUrlCache[trackId] = URL.createObjectURL(file);
 
                 const tx = db.transaction("tracks", 'readwrite');
                 const store = tx.objectStore("tracks");
@@ -320,10 +352,13 @@
         }
         // если трек есть в базе данных, то удаление
         else if (replaced.src == "local") {
-            if (localTracks[trackId]) {
-                URL.revokeObjectURL(localTracks[trackId]);
+            localTrackIds = localTrackIds.filter(id => id != trackId);
+            
+            if (localTracksUrlCache[trackId]) {
+                URL.revokeObjectURL(localTracksUrlCache[trackId]);
+                delete localTracksUrlCache[trackId];
             }
-            delete localTracks[trackId];
+            
             reloadPlayer();
             openDB().then(db => {
                 const tx = db.transaction("tracks", 'readwrite');
@@ -364,7 +399,8 @@
 
     function updateReplaceItem(trackId, item) {
         const span = item.querySelector('span')
-        const replaced = !!(getReplaced(trackId)?.url);
+        const replacedData = getReplaced(trackId);
+        const replaced = !!(replacedData && replacedData.src !== "remote_exception");
 
         span.childNodes[0].firstElementChild.setAttribute("xlink:href", "/icons/sprite.svg#" + (replaced ? "close" : "edit") + "_xxs");
         span.childNodes[1].nodeValue = replaced ? "Удалить замену" : "Подменить трек";
