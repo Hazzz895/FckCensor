@@ -243,9 +243,7 @@
     api.loadReportedTracks();
 
     /* === контекстное меню подмены (сохранение в indexeddb) === */
-    function onContextMenuClick(entity, item) {
-        entity = window.pulsesyncApi?.getCurrentTrack() ?? entity;
-        const trackId = entity.id;
+    function onContextMenuReplaceClick(trackId, item) {
         const replaced = getReplaced(trackId);
 
         function reloadPlayer() { 
@@ -287,7 +285,7 @@
                 store.add({ id: trackId, data: file });
                 api.report(trackId, true);
                 reloadPlayer();
-                updateReplaceItem(entity, item);
+                updateReplaceItem(trackId, item);
                 log("Added track " + trackId + " to local tracks");
             });
         }
@@ -300,7 +298,7 @@
                 const store = tx.objectStore("tracks");
                 store.delete(trackId);
             });
-            updateReplaceItem(entity, item);
+            updateReplaceItem(trackId, item);
             log("Removed track " + trackId + " from local tracks");
         }
         // если трек подменен из репозитория, то добавление в исключения
@@ -312,7 +310,7 @@
                 const store = tx.objectStore("remote_exceptions");
                 store.add({ id: trackId });
             });
-            updateReplaceItem(entity, item);
+            updateReplaceItem(trackId, item);
             log("Added track " + trackId + " to remote exceptions");
         }
         // если трек в исключениях, то удаление оттуда
@@ -324,7 +322,7 @@
                 const store = tx.objectStore("remote_exceptions");
                 store.delete(trackId);
             });
-            updateReplaceItem(entity, item);
+            updateReplaceItem(trackId, item);
             log("Removed track " + trackId + " from remote exceptions");
         }
         else {
@@ -332,9 +330,9 @@
         }
     }
 
-    function updateReplaceItem(entity, item) {
+    function updateReplaceItem(trackId, item) {
         const span = item.querySelector('span')
-        const replaced = !!(getReplaced(entity?.id)?.url);
+        const replaced = !!(getReplaced(trackId)?.url);
 
         span.childNodes[0].firstElementChild.setAttribute("xlink:href", "/icons/sprite.svg#" + (replaced ? "close" : "edit") + "_xxs");
         span.childNodes[1].nodeValue = replaced ? "Удалить замену" : "Подменить трек";
@@ -357,19 +355,20 @@
                     // а относится ли контекстное меню к плееру?
                     if (button.matches("[data-test-id='PLAYERBAR_DESKTOP_CONTEXT_MENU_BUTTON'], [data-test-id='FULLSCREEN_PLAYER_CONTEXT_MENU_BUTTON']")) {
                         const entity = window.pulsesyncApi?.getCurrentTrack();
-                        const replaced = getReplaced(entity?.id);
-                        if (!entity || replaced?.src == "assets") return;
+                        const replaced = getReplaced(trackId);
+                        if (!trackId || replaced?.src == "assets") return;
 
                         // создаем кнопку подмены
                         const downloadItem = trackMenu.querySelector('[data-test-id="CONTEXT_MENU_DOWNLOAD_BUTTON"]')
                         if (!downloadItem) return;
 
+                        // создаем кнопку подмены
                         const replaceItem = downloadItem.cloneNode(true)
                         replaceItem.setAttribute('data-test-id', 'CONTEXT_MENU_REPLACE_BUTTON');
-                        replaceItem.addEventListener('click', () => onContextMenuClick(entity, replaceItem));
+                        replaceItem.addEventListener('click', () => onContextMenuReplaceClick(trackId, replaceItem));
 
                         downloadItem.parentElement.insertBefore(replaceItem, downloadItem.nextSibling);
-                        updateReplaceItem(entity, replaceItem);
+                        updateReplaceItem(trackId, replaceItem);
                     }
                 }
             })
