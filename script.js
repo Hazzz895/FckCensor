@@ -341,6 +341,7 @@
                 api.report(trackId, true);
                 reloadPlayer();
                 updateReplaceItem(trackId, item);
+                addReplacedMarks();
                 log("Added track " + trackId + " to local tracks");
             })
             .catch(err => {
@@ -366,6 +367,7 @@
                 store.delete(trackId);
             });
             updateReplaceItem(trackId, item);
+            addReplacedMarks();
             log("Removed track " + trackId + " from local tracks");
         }
         // если трек подменен из репозитория, то добавление в исключения
@@ -378,6 +380,7 @@
                 store.add({ id: trackId });
             });
             updateReplaceItem(trackId, item);
+            addReplacedMarks();
             log("Added track " + trackId + " to remote exceptions");
         }
         // если трек в исключениях, то удаление оттуда
@@ -390,6 +393,7 @@
                 store.delete(trackId);
             });
             updateReplaceItem(trackId, item);
+            addReplacedMarks();
             log("Removed track " + trackId + " from remote exceptions");
         }
         else {
@@ -427,57 +431,159 @@
                 const trackMenu = node?.querySelector("[data-test-id='TRACK_CONTEXT_MENU']:not(:has([data-test-id='CONTEXT_MENU_REPLACE_BUTTON']))");
                 if (trackMenu) {
                     const button = trackMenu.ariaLabelledByElements[0];
-                    if (!button) return;
+                    if (button) {
+                        function createItems(trackId) {
+                            const replaced = getReplaced(trackId);
+                            if (trackId && replaced?.src != "assets") {
+                                const downloadItem = trackMenu.querySelector('[data-test-id="CONTEXT_MENU_DOWNLOAD_BUTTON"]')
+                                if (downloadItem) {
+                                    // создаем кнопку подмены
+                                    const replaceItem = downloadItem.cloneNode(true)
+                                    replaceItem.setAttribute('data-test-id', 'CONTEXT_MENU_REPLACE_BUTTON');
+                                    replaceItem.addEventListener('click', () => onContextMenuReplaceClick(trackId, replaceItem));
 
-                    function createItems(trackId) {
-                        const replaced = getReplaced(trackId);
-                        if (!trackId || replaced?.src == "assets") return;
+                                    downloadItem.parentElement.insertBefore(replaceItem, downloadItem.nextSibling);
+                                    updateReplaceItem(trackId, replaceItem);
 
-                        const downloadItem = trackMenu.querySelector('[data-test-id="CONTEXT_MENU_DOWNLOAD_BUTTON"]')
-                        if (!downloadItem) return;
+                                    // создаем кнопку репорта блюра
+                                    const reportItem = downloadItem.cloneNode(true)
+                                    reportItem.setAttribute('data-test-id', 'CONTEXT_MENU_REPORT_BUTTON');
 
-                        // создаем кнопку подмены
-                        const replaceItem = downloadItem.cloneNode(true)
-                        replaceItem.setAttribute('data-test-id', 'CONTEXT_MENU_REPLACE_BUTTON');
-                        replaceItem.addEventListener('click', () => onContextMenuReplaceClick(trackId, replaceItem));
+                                    const span = reportItem.querySelector("span");
+                                    span.childNodes[0].firstElementChild.setAttribute("xlink:href", "/icons/sprite.svg#" + "attention_xxxl");
+                                    span.childNodes[1].nodeValue = "Сообщить о цензуре";
 
-                        downloadItem.parentElement.insertBefore(replaceItem, downloadItem.nextSibling);
-                        updateReplaceItem(trackId, replaceItem);
+                                    reportItem.addEventListener('click', () => {
+                                        api.report(trackId, false);
+                                        updateReportItem(trackId, reportItem, true)
+                                        alert("[FckCensor]\nТрек скоро будет добавлен в список автоматически заменяемых треков. Спасибо, что помогаете сделать аддон лучше!")
+                                    });
 
-                        // создаем кнопку репорта блюра
-                        const reportItem = downloadItem.cloneNode(true)
-                        reportItem.setAttribute('data-test-id', 'CONTEXT_MENU_REPORT_BUTTON');
-
-                        const span = reportItem.querySelector("span");
-                        span.childNodes[0].firstElementChild.setAttribute("xlink:href", "/icons/sprite.svg#" + "attention_xxxl");
-                        span.childNodes[1].nodeValue = "Сообщить о цензуре";
-
-                        reportItem.addEventListener('click', () => {
-                            api.report(trackId, false);
-                            updateReportItem(trackId, reportItem, true)
-                            alert("[FckCensor]\nТрек скоро будет добавлен в список автоматически заменяемых треков. Спасибо, что помогаете сделать аддон лучше!")
-                        });
-
-                        downloadItem.parentElement.insertBefore(reportItem, replaceItem.nextSibling);
-                        updateReportItem(trackId, reportItem)
-                    }
-                    // а относится ли контекстное меню к плееру?
-                    if (button.matches("[data-test-id='PLAYERBAR_DESKTOP_CONTEXT_MENU_BUTTON'], [data-test-id='FULLSCREEN_PLAYER_CONTEXT_MENU_BUTTON']")) {
-                        const entity = window.pulsesyncApi?.getCurrentTrack();
-                        createItems(entity?.id)
-                    }
-                    else {
-                        const source = button.closest('[data-intersection-property-id*="track_"]');
-                        if (!source) return;
-                        const intersection = source.getAttribute("data-intersection-property-id");
-                        const trackId = intersection.match(/track_(\d+)/);
-                        if (trackId) {
-                            createItems(trackId[1])
+                                    downloadItem.parentElement.insertBefore(reportItem, replaceItem.nextSibling);
+                                    updateReportItem(trackId, reportItem)
+                                }
+                            }
+                        }
+                        // а относится ли контекстное меню к плееру?
+                        if (button.matches("[data-test-id='PLAYERBAR_DESKTOP_CONTEXT_MENU_BUTTON'], [data-test-id='FULLSCREEN_PLAYER_CONTEXT_MENU_BUTTON']")) {
+                            const entity = window.pulsesyncApi?.getCurrentTrack();
+                            createItems(entity?.id)
+                        }
+                        else {
+                            const source = button.closest('[data-intersection-property-id*="track_"]');
+                            if (source) {
+                                const intersection = source.getAttribute("data-intersection-property-id");
+                                const trackId = intersection.match(/track_(\d+)/);
+                                if (trackId) {
+                                    createItems(trackId[1])
+                                }
+                            }
                         }
                     }
                 }
             })
+            
+            addReplacedMarks(mutation.target);
         });
     });
     observer.observe(document.body, { childList: true, subtree: true });
+
+    function createMark(node) {
+        const metaCtr = node.querySelector(".Meta_titleContainer__gDuXr:not(:has(.Meta_replacedMarkContainer))")
+        if (!metaCtr) return;
+        const span = document.createElement("span");
+        span.classList.add("Meta_replacedMarkContainer")
+        span.innerHTML = 
+        `<svg 
+            class="ExplicitMarkIcon_explicitMark__0BPeQ Meta_explicitMark__ocnCV Rkdd2vKC_3xa1eUdRdHP" 
+            focusable="false" 
+            aria-label="Трек подменен аддоном ${ADDON_NAME}" 
+            data-test-id="REPLACED_MARK_ICON">
+                <use xlink:href="/icons/sprite.svg#edit_xxs">
+                </use>
+        </svg>`
+
+        const trackOptionsButton = metaCtr.querySelector(`div:has([data-test-id="PLAYERBAR_DESKTOP_CONTEXT_MENU_BUTTON"])`);
+        if (trackOptionsButton) {
+            metaCtr.insertBefore(span, trackOptionsButton);
+        }
+        else {
+            metaCtr.appendChild(span)
+        }
+        span.addEventListener("mouseenter", (ev) => {
+            const ctr = document.createElement("div");
+            ctr.id = "FckCensorTooltip"
+            const bounding = ev.target.getBoundingClientRect();
+            ctr.innerHTML = 
+            `<div 
+                class="QhR4J536RmNHBB5bZYwF TooltipWithTitle_root__7jLY3" 
+                data-test-id="TOOLTIP_WITH_TITLE" 
+                tabindex="-1"
+                role="tooltip" 
+                style="position: absolute; left: 0px; top: 0px; visibility: visible; transform: translate(${bounding.left}px, ${bounding.top + bounding.height}px);">
+                <div 
+                    class="_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 _3_Mxw7Si7j2g4kWjlpR Fqg1VWCJUfasVVxqICeO">
+                    <div 
+                        class="TooltipWithTitle_text__ElBtq">
+                        <span 
+                            class="_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 ZYV27jeWd30QDXu4GhaH TooltipWithTitle_description__HsGcR"
+                            >${ev.target.firstElementChild.ariaLabel}</span>
+                    </div>
+                </div>
+                </div>`
+            document.body.appendChild(ctr);
+        });
+        span.addEventListener("mouseleave", (_) => {
+            document.getElementById("FckCensorTooltip")?.remove();
+        })
+    }
+
+    function addReplacedMarks(node = document.body) {
+        const trackContainers = node.querySelectorAll('.CommonTrack_root__i6shE[data-intersection-property-id*="track_"]')
+        trackContainers.forEach(ctr => {
+            const intersection = ctr.getAttribute("data-intersection-property-id");
+            const trackId = intersection?.match(/track_(\d+)/);
+            if (trackId) {
+                const replacedData = getReplaced(trackId[1]);
+                const replaced = !!(replacedData && replacedData.src !== "remote_exception");
+                if (replaced) {
+                    createMark(ctr);
+                }
+                else {
+                    ctr.querySelector(".Meta_replacedMarkContainer")?.remove()
+                }
+            }
+        })
+        updatePlayerbarReplacedMark(node);
+    }
+
+    function updatePlayerbarReplacedMark(node = document.body) {
+        try {
+            const playerContainers = node.querySelectorAll(':is([data-test-id="PLAYERBAR_DESKTOP"], [data-test-id="FULLSCREEN_PLAYER_FULLSCREEN_CONTENT"])');
+            if (playerContainers.length == 0) return;
+            const entity = pulsesyncApi.getCurrentTrack();
+            const replacedData = getReplaced(entity?.id);
+            const replaced = !!(replacedData && replacedData.src !== "remote_exception");
+            playerContainers.forEach(ctr => {
+                if (replaced) {
+                    createMark(ctr);
+                }
+                else {
+                    ctr.querySelectorAll(".Meta_replacedMarkContainer").forEach(rpctr => {
+                        rpctr.remove();
+                    })
+                }
+            })
+        }
+        catch (e) {
+            console.error(e)
+        }
+    }
+
+    window.pulsesyncApi._waitForPlayer(player => {
+        updatePlayerbarReplacedMark()
+        player.state?.queueState?.currentEntity?.onChange(() => updatePlayerbarReplacedMark())
+    })
+
+    addReplacedMarks();
 })();
