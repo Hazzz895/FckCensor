@@ -303,7 +303,7 @@
         function reloadPlayer() { 
             const e = window.sonataState?.queueState?.currentEntity?.value?.entity;
             const mediaPlayer = window.sonataState?.currentMediaPlayer?.value?.currentMediaPlayer;
-            if (e && mediaPlayer) {
+            if (e && mediaPlayer && e.entityData?.meta?.id == trackId) {
                 mediaPlayer.reload(e);
                 log("Player reloaded");
             }
