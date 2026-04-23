@@ -512,7 +512,9 @@
         else {
             metaCtr.appendChild(span)
         }
+
         span.addEventListener("mouseenter", (ev) => {
+            removeTooltip();
             const ctr = document.createElement("div");
             ctr.id = "FckCensorTooltip"
             const bounding = ev.target.getBoundingClientRect();
@@ -534,10 +536,13 @@
                 </div>
                 </div>`
             document.body.appendChild(ctr);
+            ctr.addEventListener("mouseenter", (_) => removeTooltip());
         });
-        span.addEventListener("mouseleave", (_) => {
-            document.getElementById("FckCensorTooltip")?.remove();
-        })
+        span.addEventListener("mouseleave", (_) => removeTooltip());
+    }
+
+    function removeTooltip() {
+        document.getElementById("FckCensorTooltip")?.remove();
     }
 
     function addReplacedMarks(node = document.body) {
