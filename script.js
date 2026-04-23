@@ -235,6 +235,11 @@
         return url || src ? { url, src } : null;
     }
 
+    function isReplaced(trackId) {
+        const replacedData = getReplaced(trackId);
+        return !!(replacedData && replacedData.src !== "remote_exception");
+    }
+
     // апи для отправки заблюренных треков
     const api = {
         API_URL: "https://pzomqvgckpgkshxhpite.supabase.co/rest/v1/",
@@ -401,8 +406,7 @@
 
     function updateReplaceItem(trackId, item) {
         const span = item.querySelector('span')
-        const replacedData = getReplaced(trackId);
-        const replaced = !!(replacedData && replacedData.src !== "remote_exception");
+        const replaced = isReplaced(trackId);
 
         span.childNodes[0].firstElementChild.setAttribute("xlink:href", "/icons/sprite.svg#" + (replaced ? "close" : "edit") + "_xxs");
         span.childNodes[1].nodeValue = replaced ? "Удалить замену" : "Подменить трек";
@@ -542,8 +546,7 @@
             const intersection = ctr.getAttribute("data-intersection-property-id");
             const trackId = intersection?.match(/track_(\d+)/);
             if (trackId) {
-                const replacedData = getReplaced(trackId[1]);
-                const replaced = !!(replacedData && replacedData.src !== "remote_exception");
+                const replaced = isReplaced(trackId[1]);
                 if (replaced) {
                     createMark(ctr);
                 }
@@ -560,8 +563,7 @@
             const playerContainers = node.querySelectorAll(':is([data-test-id="PLAYERBAR_DESKTOP"], [data-test-id="FULLSCREEN_PLAYER_FULLSCREEN_CONTENT"])');
             if (playerContainers.length == 0) return;
             const entity = pulsesyncApi.getCurrentTrack();
-            const replacedData = getReplaced(entity?.id);
-            const replaced = !!(replacedData && replacedData.src !== "remote_exception");
+            const replaced = isReplaced(entity?.id);
             playerContainers.forEach(ctr => {
                 if (replaced) {
                     createMark(ctr);
