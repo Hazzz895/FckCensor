@@ -309,6 +309,12 @@
             }
         }
 
+        function onSuccess() {
+            reloadPlayer();
+            updateReplaceItem(trackId, item);
+            addReplacedMarks();
+        }
+
         // если трек НЕ подменен, то открывается пикер файлов и затем он сохраняется в бд
         if (!replaced) {
             window.showOpenFilePicker({
@@ -339,9 +345,7 @@
                 
                 store.put({ id: trackId, data: file });
                 api.report(trackId, true);
-                reloadPlayer();
-                updateReplaceItem(trackId, item);
-                addReplacedMarks();
+                onSuccess();
                 log("Added track " + trackId + " to local tracks");
             })
             .catch(err => {
@@ -360,41 +364,35 @@
                 delete localTracksUrlCache[trackId];
             }
             
-            reloadPlayer();
             openDB().then(db => {
                 const tx = db.transaction("tracks", 'readwrite');
                 const store = tx.objectStore("tracks");
                 store.delete(trackId);
+                onSuccess();
+                log("Removed track " + trackId + " from local tracks");
             });
-            updateReplaceItem(trackId, item);
-            addReplacedMarks();
-            log("Removed track " + trackId + " from local tracks");
         }
         // если трек подменен из репозитория, то добавление в исключения
         else if (replaced.src == "remote") {
             remoteExceptions.push(trackId);
-            reloadPlayer();
             openDB().then(db => {
                 const tx = db.transaction("remote_exceptions", 'readwrite');
                 const store = tx.objectStore("remote_exceptions");
                 store.add({ id: trackId });
+                onSuccess();
+                log("Added track " + trackId + " to remote exceptions");
             });
-            updateReplaceItem(trackId, item);
-            addReplacedMarks();
-            log("Added track " + trackId + " to remote exceptions");
         }
         // если трек в исключениях, то удаление оттуда
         else if (replaced.src == "remote_exception") {
             remoteExceptions = remoteExceptions.filter(id => id != trackId);
-            reloadPlayer();
             openDB().then(db => {
                 const tx = db.transaction("remote_exceptions", 'readwrite');
                 const store = tx.objectStore("remote_exceptions");
                 store.delete(trackId);
+                onSuccess();
+                log("Removed track " + trackId + " from remote exceptions");
             });
-            updateReplaceItem(trackId, item);
-            addReplacedMarks();
-            log("Removed track " + trackId + " from remote exceptions");
         }
         else {
             return;
