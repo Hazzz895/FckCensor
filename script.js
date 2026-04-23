@@ -494,7 +494,7 @@
         const metaCtr = node.querySelector(".Meta_titleContainer__gDuXr:not(:has(.Meta_replacedMarkContainer))")
         if (!metaCtr) return;
         const span = document.createElement("span");
-        span.classList.add("Meta_replacedMarkContainer")
+        span.classList.add("Meta_replacedMarkContainer", "Meta_explicitMarkContainer__BxMQg")
         span.innerHTML = 
         `<svg 
             class="ExplicitMarkIcon_explicitMark__0BPeQ Meta_explicitMark__ocnCV Rkdd2vKC_3xa1eUdRdHP" 
