@@ -494,6 +494,7 @@
         const metaCtr = node.querySelector(".Meta_titleContainer__gDuXr:not(:has(.Meta_replacedMarkContainer))")
         if (!metaCtr) return;
         const span = document.createElement("span");
+
         span.classList.add("Meta_replacedMarkContainer", "Meta_explicitMarkContainer__BxMQg")
         span.innerHTML = 
         `<svg 
@@ -515,10 +516,10 @@
 
         span.addEventListener("mouseenter", (ev) => {
             removeTooltip();
-            const ctr = document.createElement("div");
-            ctr.id = "FckCensorTooltip"
+            const tooltip = document.createElement("div");
+            tooltip.id = "FckCensorTooltip";
             const bounding = ev.target.getBoundingClientRect();
-            ctr.innerHTML = 
+            tooltip.innerHTML = 
             `<div 
                 class="QhR4J536RmNHBB5bZYwF TooltipWithTitle_root__7jLY3" 
                 data-test-id="TOOLTIP_WITH_TITLE" 
@@ -535,8 +536,8 @@
                     </div>
                 </div>
                 </div>`
-            document.body.appendChild(ctr);
-            ctr.addEventListener("mouseenter", (_) => removeTooltip());
+            document.body.appendChild(tooltip);
+            tooltip.addEventListener("mouseenter", (ev) => ev.target.remove());
         });
         span.addEventListener("mouseleave", (_) => removeTooltip());
     }
@@ -565,7 +566,7 @@
 
     function updatePlayerbarReplacedMark(node = document.body) {
         try {
-            const playerContainers = node.querySelectorAll(':is([data-test-id="PLAYERBAR_DESKTOP"], [data-test-id="FULLSCREEN_PLAYER_FULLSCREEN_CONTENT"])');
+            const playerContainers = node.querySelectorAll('[data-test-id="PLAYERBAR_DESKTOP"], [data-test-id="FULLSCREEN_PLAYER_FULLSCREEN_CONTENT"]');
             if (playerContainers.length == 0) return;
             const entity = pulsesyncApi.getCurrentTrack();
             const replaced = isReplaced(entity?.id);
