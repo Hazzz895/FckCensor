@@ -489,6 +489,7 @@
     });
     observer.observe(document.body, { childList: true, subtree: true });
 
+    /* === иконка подмены === */
     function createMark(node) {
         const metaCtr = node.querySelector(".Meta_titleContainer__gDuXr:not(:has(.Meta_replacedMarkContainer))")
         if (!metaCtr) return;
