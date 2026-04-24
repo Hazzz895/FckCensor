@@ -472,12 +472,11 @@
                             createItems(entity?.id)
                         }
                         else {
-                            const source = button.closest('[data-intersection-property-id*="track_"]');
+                            const source = button.closest('.CommonTrack_root__i6shE');
                             if (source) {
-                                const intersection = source.getAttribute("data-intersection-property-id");
-                                const trackId = intersection.match(/track_(\d+)/);
+                                const trackId = getTrackIdFromNode(source);
                                 if (trackId) {
-                                    createItems(trackId[1])
+                                    createItems(trackId)
                                 }
                             }
                         }
@@ -546,13 +545,33 @@
         document.getElementById("FckCensorTooltip")?.remove();
     }
 
+    function getTrackIdFromNode(node) {
+        let trackId = null;
+        const reactFiberProp = Object.keys(node).find(key => key.startsWith("__reactFiber"));
+        if (reactFiberProp) {
+            const fiber = node[reactFiberProp];
+            const children = fiber.memoizedProps.children
+            if (children) {
+                for (const child of children) {
+                    trackId = child?.props?.track?.id;
+                    if (trackId) break;
+                }
+            }
+        }
+
+        if (!trackId) {
+            const intersection = node.dataset.intersectionPropertyId;
+            trackId = intersection?.match(/track_(\d+)/)?.[1];
+        }
+        return trackId;
+    }
+
     function addReplacedMarks(node = document.body) {
-        const trackContainers = node.querySelectorAll('.CommonTrack_root__i6shE[data-intersection-property-id*="track_"]')
+        const trackContainers = node.querySelectorAll('.CommonTrack_root__i6shE')
         trackContainers.forEach(ctr => {
-            const intersection = ctr.getAttribute("data-intersection-property-id");
-            const trackId = intersection?.match(/track_(\d+)/);
+            const trackId = getTrackIdFromNode(ctr);
             if (trackId) {
-                const replaced = isReplaced(trackId[1]);
+                const replaced = isReplaced(trackId);
                 if (replaced) {
                     createMark(ctr);
                 }
