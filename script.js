@@ -432,7 +432,7 @@
                 // появилось ли контекстное меню трека?
                 const trackMenu = node?.querySelector("[data-test-id='TRACK_CONTEXT_MENU']:not(:has([data-test-id='CONTEXT_MENU_REPLACE_BUTTON']))");
                 if (trackMenu) {
-                    const button = trackMenu.ariaLabelledByElements[0];
+                    const button = (trackMenu.parentElement?.ariaLabelledByElements || trackMenu.ariaLabelledByElements)?.[0];
                     if (button) {
                         function createItems(trackId) {
                             const replaced = getReplaced(trackId);
