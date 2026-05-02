@@ -22,6 +22,7 @@
         return;
     }
 
+
     // получение DI модуля (оно хранит все синглтоны необходимые для работы аддона)
     function findModule(...requiredStrings) {
         for (const id in appRequire.m) {
@@ -67,6 +68,81 @@
         
         return result;
     };
+
+    let _notificationComponentsCache = null;
+    function getNotificationComponents() {
+        if (_notificationComponentsCache) return _notificationComponentsCache;
+
+        const notificationManager = findModule("Notification", "notification", "dismiss")
+        const React = findModule("createElement", "cacheSignal", "createContext", "createRef", "forwardRef")
+        const NotificationComponent = findModule("$W", "NX", "fJ", "cp", "hT", "OM", "DZ")
+        const Typography = findModule("Caption", "Heading")
+        const PaperComponent = findModule("Paper").Paper
+        const styles = findModule("message", "cover", "image", "text")
+
+        _notificationComponentsCache = {
+            notificationManager: notificationManager,
+            React: React,
+            NotificationComponent: NotificationComponent,
+            Typography: Typography,
+            PaperComponent: PaperComponent,
+            styles: styles
+        }
+        console.log(_notificationComponentsCache)
+        return _notificationComponentsCache;
+    }
+
+    function postNotification(caption, image = null) {
+        const { notificationManager, React, NotificationComponent, Typography, PaperComponent, styles } = getNotificationComponents();
+        const children = [];
+
+        if (image) {
+          const img = React.createElement(NotificationComponent.BW, {
+            className: styles.image,
+            src: image,
+            alt: "cover",
+            size: 100,
+            fit: "cover",
+            withAvatarReplace: true
+          });
+
+          const paper = React.createElement(PaperComponent, {
+            className: styles.cover,
+            radius: "s",
+          }, img);
+
+          children.push(paper);
+        }
+
+        const text = React.createElement(Typography.Caption, {
+          className: styles.text,
+          variant: "div",
+          type: "controls",
+          size: "m",
+          "aria-hidden": true
+        }, caption);
+
+        children.push(text);
+
+        const content = React.createElement("div", {
+          className: styles.message
+        }, ...children);
+
+        const ctr = React.createElement(NotificationComponent.$W, { 
+          message: content 
+        });
+
+        notificationManager.notification({
+          message: ctr,
+          options: { autoClose: 2e3, closeOnClick: true, pauseOnHover: true, draggable: false, single: true, containerId: "INFO"},
+        });
+    }
+
+    function postNotificationWithCover(caption, trackId) {
+        const currentTrack = pulsesyncApi.getCurrentTrack();
+        const coverUri = currentTrack && currentTrack.id == trackId ? currentTrack.coverUri : null;
+        postNotification(caption, coverUri);
+    }
 
     // основной код аддона, выполняется после инициализации DI
     function hookMethods(gfir) {
@@ -320,6 +396,11 @@
             addReplacedMarks();
         }
 
+        function notificate(replaced) {
+            const text = !replaced ? "Трек успешно подменён" : "Трек восстановлен к оригиналу"
+            postNotificationWithCover(text, trackId);
+        }
+
         // если трек НЕ подменен, то открывается пикер файлов и затем он сохраняется в бд
         if (!replaced) {
             window.showOpenFilePicker({
@@ -337,7 +418,7 @@
 
                 const file = await fileHandle.getFile();
                 if (!file.type.startsWith("audio/")) {
-                    alert("Выбранный файл не является аудио-файлом.");
+                    postNotification("Выбранный файл не является аудио-файлом.");
                     return;
                 }
                 const db = await openDB();
@@ -351,11 +432,12 @@
                 store.put({ id: trackId, data: file });
                 api.report(trackId, true);
                 onSuccess();
+                notificate(true);
                 log("Added track " + trackId + " to local tracks");
             })
             .catch(err => {
                 if (err.name !== 'AbortError') {
-                    alert("Ошибка во время выбора файла, посмотрите консоль для подробной информации.")
+                    postNotification("Ошибка во время выбора файла, посмотрите консоль для подробной информации.")
                     console.error(`[${ADDON_NAME}] Ошибка при выборе файла:`, err);
                 }
             });
@@ -374,6 +456,7 @@
                 const store = tx.objectStore("tracks");
                 store.delete(trackId);
                 onSuccess();
+                notificate(false);
                 log("Removed track " + trackId + " from local tracks");
             });
         }
@@ -385,6 +468,7 @@
                 const store = tx.objectStore("remote_exceptions");
                 store.add({ id: trackId });
                 onSuccess();
+                notificate(true);
                 log("Added track " + trackId + " to remote exceptions");
             });
         }
@@ -396,6 +480,7 @@
                 const store = tx.objectStore("remote_exceptions");
                 store.delete(trackId);
                 onSuccess();
+                notificate(false);
                 log("Removed track " + trackId + " from remote exceptions");
             });
         }
@@ -458,7 +543,7 @@
                                     reportItem.addEventListener('click', () => {
                                         api.report(trackId, false);
                                         updateReportItem(trackId, reportItem, true)
-                                        alert("[FckCensor]\nТрек скоро будет добавлен в список автоматически заменяемых треков. Спасибо, что помогаете сделать аддон лучше!")
+                                        postNotificationWithCover("Спасибо! Трек скоро будет добавлен в список автоматически заменяемых", trackId)
                                     });
 
                                     downloadItem.parentElement.insertBefore(reportItem, replaceItem.nextSibling);
