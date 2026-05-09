@@ -2,7 +2,7 @@
     "name": "FckCensor",
     "author": "Hazzz895",
     "description": "Подменивает заблюренные треки автоматически и позволяет это делать вручную через контекстное меню",
-    "version": "1.4.1",
+    "version": "1.5.0",
     "image": "image.png",
     "script": "script.js",
     "type": "script",
