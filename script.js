@@ -88,7 +88,6 @@
             PaperComponent: PaperComponent,
             styles: styles
         }
-        console.log(_notificationComponentsCache)
         return _notificationComponentsCache;
     }
 
