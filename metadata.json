@@ -4,6 +4,7 @@
     "description": "Подменивает заблюренные треки автоматически и позволяет это делать вручную через контекстное меню",
     "version": "1.5.0",
     "image": "image.png",
+    "banner": "banner.png",
     "script": "script.js",
     "type": "script",
     "tags": [
