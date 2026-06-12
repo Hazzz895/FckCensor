@@ -315,6 +315,115 @@
         return !!(replacedData && replacedData.src !== "remote_exception");
     }
 
+    function normalizeTrackId(trackId) {
+        return trackId ? String(trackId) : null;
+    }
+
+    function hasLocalReplacement(trackId) {
+        trackId = normalizeTrackId(trackId);
+        return !!trackId && localTrackIds.includes(trackId);
+    }
+
+    function hasRemoteReplacement(trackId) {
+        trackId = normalizeTrackId(trackId);
+        return !!trackId && !!remoteTracks[trackId];
+    }
+
+    function hasRemoteException(trackId) {
+        trackId = normalizeTrackId(trackId);
+        return !!trackId && remoteExceptions.includes(trackId);
+    }
+
+    function addRemoteException(trackId) {
+        trackId = normalizeTrackId(trackId);
+        if (!trackId || hasRemoteException(trackId)) return Promise.resolve();
+
+        remoteExceptions.push(trackId);
+        return openDB().then(db => {
+            const tx = db.transaction("remote_exceptions", 'readwrite');
+            const store = tx.objectStore("remote_exceptions");
+            store.put({ id: trackId });
+        });
+    }
+
+    function removeRemoteException(trackId) {
+        trackId = normalizeTrackId(trackId);
+        if (!trackId) return Promise.resolve();
+
+        remoteExceptions = remoteExceptions.filter(id => id != trackId);
+        return openDB().then(db => {
+            const tx = db.transaction("remote_exceptions", 'readwrite');
+            const store = tx.objectStore("remote_exceptions");
+            store.delete(trackId);
+        });
+    }
+
+    function removeLocalReplacement(trackId) {
+        trackId = normalizeTrackId(trackId);
+        if (!trackId) return Promise.resolve();
+
+        localTrackIds = localTrackIds.filter(id => id != trackId);
+        if (localTracksUrlCache[trackId]) {
+            URL.revokeObjectURL(localTracksUrlCache[trackId]);
+            delete localTracksUrlCache[trackId];
+        }
+
+        return openDB().then(db => {
+            const tx = db.transaction("tracks", 'readwrite');
+            const store = tx.objectStore("tracks");
+            store.delete(trackId);
+        });
+    }
+
+    function pickAndSaveLocalReplacement(trackId, { addGithubException = false } = {}) {
+        trackId = normalizeTrackId(trackId);
+        if (!trackId) return Promise.resolve(false);
+
+        return window.showOpenFilePicker({
+            types:
+            [
+                {
+                    description: 'Аудио-файлы',
+                    accept: { 'audio/*': ['.mp3', '.wav', '.ogg', '.flac'] }
+                }
+            ],
+            multiple: false 
+        })
+        .then(async (fileHandles) => {
+            const fileHandle = fileHandles[0];
+
+            const file = await fileHandle.getFile();
+            if (!file.type.startsWith("audio/")) {
+                postNotification("Выбранный файл не является аудио-файлом.");
+                return false;
+            }
+            const db = await openDB();
+
+            if (!localTrackIds.includes(trackId)) {
+                localTrackIds.push(trackId)
+            }
+            localTracksUrlCache[trackId] = URL.createObjectURL(file);
+
+            const tx = db.transaction("tracks", 'readwrite');
+            const store = tx.objectStore("tracks");
+            
+            store.put({ id: trackId, data: file });
+            if (addGithubException) {
+                await addRemoteException(trackId);
+            }
+            api.report(trackId, true);
+            log("Added track " + trackId + " to local tracks");
+            return true;
+        })
+        .catch(err => {
+            if (err.name !== 'AbortError') {
+                postNotification("Ошибка во время выбора файла, посмотрите консоль для подробной информации.")
+                console.error(`[${ADDON_NAME}] Ошибка при выборе файла:`, err);
+            }
+            return false;
+        });
+    }
+
     // апи для отправки заблюренных треков
     const api = {
         API_URL: "https://pzomqvgckpgkshxhpite.supabase.co/rest/v1/",
@@ -402,58 +511,16 @@
 
         // если трек НЕ подменен, то открывается пикер файлов и затем он сохраняется в бд
         if (!replaced) {
-            window.showOpenFilePicker({
-                types:
-                [
-                    {
-                        description: 'Аудио-файлы',
-                        accept: { 'audio/*': ['.mp3', '.wav', '.ogg', '.flac'] }
-                    }
-                ],
-                multiple: false 
-            })
-            .then(async (fileHandles) => {
-                const fileHandle = fileHandles[0];
-
-                const file = await fileHandle.getFile();
-                if (!file.type.startsWith("audio/")) {
-                    postNotification("Выбранный файл не является аудио-файлом.");
-                    return;
-                }
-                const db = await openDB();
-
-                localTrackIds.push(trackId)
-                localTracksUrlCache[trackId] = URL.createObjectURL(file);
-
-                const tx = db.transaction("tracks", 'readwrite');
-                const store = tx.objectStore("tracks");
-                
-                store.put({ id: trackId, data: file });
-                api.report(trackId, true);
-                onSuccess();
-                notificate(true);
-                log("Added track " + trackId + " to local tracks");
-            })
-            .catch(err => {
-                if (err.name !== 'AbortError') {
-                    postNotification("Ошибка во время выбора файла, посмотрите консоль для подробной информации.")
-                    console.error(`[${ADDON_NAME}] Ошибка при выборе файла:`, err);
+            pickAndSaveLocalReplacement(trackId).then(saved => {
+                if (saved) {
+                    onSuccess();
+                    notificate(true);
                 }
             });
         }
         // если трек есть в базе данных, то удаление
         else if (replaced.src == "local") {
-            localTrackIds = localTrackIds.filter(id => id != trackId);
-            
-            if (localTracksUrlCache[trackId]) {
-                URL.revokeObjectURL(localTracksUrlCache[trackId]);
-                delete localTracksUrlCache[trackId];
-            }
-            
-            openDB().then(db => {
-                const tx = db.transaction("tracks", 'readwrite');
-                const store = tx.objectStore("tracks");
-                store.delete(trackId);
+            removeLocalReplacement(trackId).then(() => {
                 onSuccess();
                 notificate(false);
                 log("Removed track " + trackId + " from local tracks");
@@ -461,11 +528,7 @@
         }
         // если трек подменен из репозитория, то добавление в исключения
         else if (replaced.src == "remote") {
-            remoteExceptions.push(trackId);
-            openDB().then(db => {
-                const tx = db.transaction("remote_exceptions", 'readwrite');
-                const store = tx.objectStore("remote_exceptions");
-                store.add({ id: trackId });
+            addRemoteException(trackId).then(() => {
                 onSuccess();
                 notificate(true);
                 log("Added track " + trackId + " to remote exceptions");
@@ -473,11 +536,7 @@
         }
         // если трек в исключениях, то удаление оттуда
         else if (replaced.src == "remote_exception") {
-            remoteExceptions = remoteExceptions.filter(id => id != trackId);
-            openDB().then(db => {
-                const tx = db.transaction("remote_exceptions", 'readwrite');
-                const store = tx.objectStore("remote_exceptions");
-                store.delete(trackId);
+            removeRemoteException(trackId).then(() => {
                 onSuccess();
                 notificate(false);
                 log("Removed track " + trackId + " from remote exceptions");
@@ -489,11 +548,20 @@
     }
 
     function updateReplaceItem(trackId, item) {
+        if (!item || !trackId) return;
+
         const span = item.querySelector('span')
         const replaced = isReplaced(trackId);
+        const source = getReplaced(trackId)?.src;
 
         span.childNodes[0].firstElementChild.setAttribute("xlink:href", "/icons/sprite.svg#" + (replaced ? "close" : "edit") + "_xxs");
-        span.childNodes[1].nodeValue = replaced ? "Удалить замену" : "Подменить трек";
+        span.childNodes[1].nodeValue = source == "remote"
+            ? "Отключить замену из GitHub"
+            : source == "local"
+                ? "Удалить локальную замену"
+                : source == "remote_exception"
+                    ? "Включить замену из GitHub"
+                    : "Подменить своим файлом";
 
         const ymTrackDownloadItem = item.parentElement?.querySelector('[data-test-id="CONTEXT_MENU_DOWNLOAD_BUTTON"]');
         if (ymTrackDownloadItem) {
@@ -501,6 +569,65 @@
         }
 
         updateReportItem(trackId, item.parentElement?.querySelector('[data-test-id="CONTEXT_MENU_REPORT_BUTTON"]'))
+    }
+
+    function updateLocalReplaceItem(trackId, item) {
+        if (!item || !trackId) return;
+
+        const span = item.querySelector('span')
+        if (hasLocalReplacement(trackId)) {
+            span.childNodes[0].firstElementChild.setAttribute("xlink:href", "/icons/sprite.svg#edit_xxs");
+            span.childNodes[1].nodeValue = "Вернуть замену из GitHub";
+        }
+        else {
+            span.childNodes[0].firstElementChild.setAttribute("xlink:href", "/icons/sprite.svg#edit_xxs");
+            span.childNodes[1].nodeValue = "Заменить своим файлом";
+        }
+    }
+
+    function onContextMenuLocalReplaceClick(trackId, item) {
+        function reloadPlayer() { 
+            const e = window.sonataState?.queueState?.currentEntity?.value?.entity;
+            const mediaPlayer = window.sonataState?.currentMediaPlayer?.value?.currentMediaPlayer;
+            if (e && mediaPlayer && e.entityData?.meta?.id == trackId) {
+                mediaPlayer.reload(e);
+                log("Player reloaded");
+            }
+        }
+
+        function onSuccess() {
+            reloadPlayer();
+            updateReplaceItem(trackId, item.parentElement?.querySelector('[data-test-id="CONTEXT_MENU_REPLACE_BUTTON"]'));
+            updateLocalReplaceItem(trackId, item);
+            addReplacedMarks();
+        }
+
+        if (hasLocalReplacement(trackId)) {
+            Promise.all([
+                removeLocalReplacement(trackId),
+                removeRemoteException(trackId)
+            ]).then(() => {
+                onSuccess();
+                postNotificationWithCover("Включена замена из GitHub", trackId);
+                log("Restored remote replacement for track " + trackId);
+            });
+            return;
+        }
+
+        let exceptionAdded = false;
+        addRemoteException(trackId)
+            .then(() => {
+                exceptionAdded = true;
+                return pickAndSaveLocalReplacement(trackId, { addGithubException: true });
+            })
+            .then(saved => {
+                if (saved) {
+                    onSuccess();
+                    postNotificationWithCover("Трек заменён вашим файлом", trackId);
+                } else if (exceptionAdded) {
+                    onSuccess();
+                }
+            });
     }
 
     function updateReportItem(trackId, item, forcedValue = undefined) {
@@ -531,6 +658,15 @@
                                     downloadItem.parentElement.insertBefore(replaceItem, downloadItem.nextSibling);
                                     updateReplaceItem(trackId, replaceItem);
 
+                                    if (hasRemoteReplacement(trackId)) {
+                                        const localReplaceItem = downloadItem.cloneNode(true)
+                                        localReplaceItem.setAttribute('data-test-id', 'CONTEXT_MENU_LOCAL_REPLACE_BUTTON');
+                                        localReplaceItem.addEventListener('click', () => onContextMenuLocalReplaceClick(trackId, localReplaceItem));
+
+                                        downloadItem.parentElement.insertBefore(localReplaceItem, replaceItem.nextSibling);
+                                        updateLocalReplaceItem(trackId, localReplaceItem);
+                                    }
+
                                     // создаем кнопку репорта блюра
                                     const reportItem = downloadItem.cloneNode(true)
                                     reportItem.setAttribute('data-test-id', 'CONTEXT_MENU_REPORT_BUTTON');
@@ -545,7 +681,8 @@
                                         postNotificationWithCover("Спасибо! Трек скоро будет добавлен в список автоматически заменяемых", trackId)
                                     });
 
-                                    downloadItem.parentElement.insertBefore(reportItem, replaceItem.nextSibling);
+                                    const afterReplaceItems = trackMenu.querySelector('[data-test-id="CONTEXT_MENU_LOCAL_REPLACE_BUTTON"]') || replaceItem;
+                                    downloadItem.parentElement.insertBefore(reportItem, afterReplaceItems.nextSibling);
                                     updateReportItem(trackId, reportItem)
                                 }
                             }
