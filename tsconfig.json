@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "allowArbitraryExtensions": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/jsx-runtime": ["./src/ui/dom-factory.ts"],
+    },
+    "jsx": "react-jsx",
+    "jsxImportSource": "@" 
+  },
+  "include": ["src", "vite.config.ts", "addon.config.d.mts"]
+}

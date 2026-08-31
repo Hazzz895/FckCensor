@@ -1,0 +1,224 @@
+.Popup {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: var(--ym-z-index-overlay);
+}
+
+#FckCensorTooltip {
+    @extend .Popup;
+}
+
+.FckCensorBadge {
+    visibility: visible;
+}
+
+.TutorialTooltip {
+    @extend .Popup;
+    z-index: calc(var(--ym-z-index-popover) - 1);
+    position-visibility: anchors-visible;
+    min-width: 15rem;
+    transform: translateX(100%);
+
+    .Content {
+        display: flex;
+        flex-direction: row;
+    }
+}
+
+.DisabledTrack_TutorialTooltip {
+    @extend .TutorialTooltip;
+    position-anchor: --disabled-track-anchor;
+    position-area: top left;
+}
+
+.SpoofTrack_TutorialTooltip {
+    @extend .TutorialTooltip;
+    position-anchor: --fckcensor-option-anchor;
+    position-area: bottom left;
+}
+
+:global([fckcensoroption]) {
+    anchor-name: --fckcensor-option-anchor;
+}
+
+body:has(.SpoofTrack_TutorialTooltip) :global([fckcensoroption]),
+body:has(.DisabledTrack_TutorialTooltip) :global(.CommonTrack_root__i6shE.CommonTrack_root_disabled__vDyCm) {
+    border: 2px solid red;
+    box-sizing: border-box;
+}
+
+.TooltipButtons {
+    display: flex;
+    align-items: center;
+}
+
+.CloseButton {
+    height: fit-content;
+}
+
+.MaxWidthHeight {
+    width: 100%;
+    height: 100%;
+}
+
+.AlertFromScrim {
+    @extend .Popup;
+
+    position: fixed;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    z-index: var(--ym-z-index-popover);
+
+    // Размеры под контент с ограничениями
+    width: fit-content;
+    min-width: 50vw;
+    max-width: 75vw;
+    height: fit-content;
+    max-height: 75vh;
+
+    display: flex;
+    flex-direction: column;
+
+    // Начальное состояние: сжато до размеров и положения кнопки
+    transform: translate(-50%, -50%) translate(var(--scrim-dx, 0px), var(--scrim-dy, 0px)) scale(var(--scrim-scale-x, 1), var(--scrim-scale-y, 1));
+    transform-origin: center center;
+    opacity: 0;
+
+    transition:
+        transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.2s ease-out;
+
+    // Конечное состояние: полноценное модальное окно по центру экрана
+    &[data-open='true'] {
+        transform: translate(-50%, -50%) translate(0px, 0px) scale(1, 1);
+        opacity: 1;
+    }
+
+    > [role='dialog'] {
+        @extend .MaxWidthHeight;
+
+        position: static;
+        max-height: 75vh;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+}
+
+.AlertContent {
+    overflow-y: auto;
+    min-height: 0;
+    flex: 1 1 auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .AlertFromScrim {
+        transition: none;
+    }
+}
+
+.AddSpoofAlertFieldField {
+    align-content: center;
+    text-align: center;
+    height: 2.75rem;
+    width: 100%;
+    font: inherit;
+    box-sizing: border-box;
+    border: 2px dashed var(--ym-controls-color-primary-text-enabled);
+    color: var(--ym-controls-color-primary-text-enabled);
+}
+
+.AddSpoofAlertFieldFieldGrid {
+    display: grid;
+    grid-template-columns: auto 2fr 5fr 2fr;
+    column-gap: 8px;
+}
+
+.input {
+    box-sizing: border-box;
+    border: 0px;
+    outline: 0px;
+    color: var(--ym-controls-color-primary-text-enabled);
+    font: inherit;
+}
+
+.i {
+    @extend .input;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: var(--ym-spacer-size-m) var(--ym-spacer-size-m);
+}
+
+.TabbedArtist {
+    border-radius: 8px;
+    background-color: var(--ym-controls-color-secondary-default-hovered);
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    position: relative;
+
+    .input {
+        field-sizing: content;
+        background-color: transparent;
+        min-width: 24px;
+    }
+}
+
+.TabbedArtistSearchResults {
+    position: absolute;
+    z-index: 2;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 220px;
+    padding: 4px;
+    border-radius: 8px;
+    background-color: var(--ym-background-color-primary-enabled-popover);
+    box-shadow: 0 4px 16px rgb(0 0 0 / 30%);
+}
+
+.TabbedArtistSearchResult {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px;
+    border: 0;
+    border-radius: 4px;
+    color: var(--ym-controls-color-primary-text-enabled);
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+        background-color: var(--ym-surface-color-primary-enabled-list);
+    }
+
+    img, [data-test-id="ENTITY_COVER_NULL_IMAGE"] {
+        width: 30px;
+        height: 30px;
+        flex: 0 0 30px;
+    }
+}
+
+option {
+    @extend .i;
+    background-color: black;
+    color: white
+}
+
+.CoverAndTitleContainer {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+
+    & > [data-test-id="ENTITY_COVER_IMAGE"], [data-test-id="ENTITY_COVER_NULL_IMAGE"] {
+        width: 150px;
+        height: 150px;
+    }
+
+    & > div:has(> :is(input, textarea)) {
+        width: 100%;
+    }
+}

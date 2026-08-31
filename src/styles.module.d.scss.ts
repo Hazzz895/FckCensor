@@ -1,0 +1,24 @@
+declare const classNames: {
+  readonly Popup: "Popup";
+  readonly AlertFromScrim: "AlertFromScrim";
+  readonly TutorialTooltip: "TutorialTooltip";
+  readonly SpoofTrack_TutorialTooltip: "SpoofTrack_TutorialTooltip";
+  readonly DisabledTrack_TutorialTooltip: "DisabledTrack_TutorialTooltip";
+  readonly FckCensorBadge: "FckCensorBadge";
+  readonly Content: "Content";
+  readonly CommonTrack_root__i6shE: "CommonTrack_root__i6shE";
+  readonly CommonTrack_root_disabled__vDyCm: "CommonTrack_root_disabled__vDyCm";
+  readonly TooltipButtons: "TooltipButtons";
+  readonly CloseButton: "CloseButton";
+  readonly MaxWidthHeight: "MaxWidthHeight";
+  readonly AlertContent: "AlertContent";
+  readonly AddSpoofAlertFieldField: "AddSpoofAlertFieldField";
+  readonly AddSpoofAlertFieldFieldGrid: "AddSpoofAlertFieldFieldGrid";
+  readonly input: "input";
+  readonly i: "i";
+  readonly TabbedArtist: "TabbedArtist";
+  readonly TabbedArtistSearchResults: "TabbedArtistSearchResults";
+  readonly TabbedArtistSearchResult: "TabbedArtistSearchResult";
+  readonly CoverAndTitleContainer: "CoverAndTitleContainer";
+};
+export = classNames;

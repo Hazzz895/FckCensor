@@ -1,0 +1,25 @@
+{
+    "sections": [
+        {
+            "title": "Template",
+            "items": [
+                {
+                    "id": "enabled",
+                    "name": "Enable demo badge",
+                    "description": "Показывать демонстрационный бейдж шаблона.",
+                    "type": "button",
+                    "bool": true,
+                    "defaultParameter": true
+                },
+                {
+                    "id": "accentColor",
+                    "name": "Accent color",
+                    "description": "Цвет рамки у плашки.",
+                    "type": "color",
+                    "input": "#4ade80",
+                    "defaultParameter": "#4ade80"
+                }
+            ]
+        }
+    ]
+}

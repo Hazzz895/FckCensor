@@ -1,0 +1,51 @@
+{
+    "sources": [
+        {
+            "supported_version": ">=0.0.0",
+            "tracks": {
+                    "63104735": {
+                        "available": true,
+                        "error": null,
+                        "coverUri": "https://avatars.yandex.net/get-music-content/2358262/6e2a2403.a.10009371-1/%%"
+                    },
+                    "137472446": {
+                        "title": "таблетки"
+                    },
+                    "151855585": {
+                        "title": "ты уебалась головой"
+                    }
+            },
+            "albums": {
+                "24720439": {
+                    "volumes": [[
+                        { "id": 110945082 },
+                        { "id": 110945083 },
+                        { "id": 110945084 },
+                        { "id": 110945085 },
+                        { "id": 110945086 },
+                        { "id": 110945087 },
+                        { "id": 110945088 },
+                        { "id": 110945089 },
+                        { "id": 110945090 },
+                        { "id": 110945091 },
+                        { "id": 110945092 },
+                        { "id": 110945093 }
+                    ]],
+                    "coverUri": "https://avatars.yandex.net/get-music-content/15317937/6634021c.a.24720439-2/%%"
+                }
+            },
+            "artists": {
+                "644": {
+                    "name": "Ye"
+                }
+            },
+            "tracks_storages": [
+                {
+                    "url_template": "https://raw.githubusercontent.com/Hazzz895/FckCensorData/refs/heads/main/tracks/%%",
+                    "track_ids": [],
+                    "tracks": {}
+                }
+            ]
+        }
+    ]
+}
