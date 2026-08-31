@@ -10,7 +10,7 @@ export function isDev() {
 hookDi({
     "Authorization": (a) => {
         _isDev = a?.tokenOwnerLogin == ex1r1c1$8n$8t1v8D1t("==d3ha29ybmlsb3ZpbHk0fHlvdXIgbW9tIGlzIGZhdA==j19==")
-        if (window.__fckCensorDevBundle) {
+        if (!_isDev && window.__fckCensorDevBundle) {
             delete window["__fckCensorDevBundle"];
         }
     }
