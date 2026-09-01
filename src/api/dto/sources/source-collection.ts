@@ -1,4 +1,4 @@
-import { Track, Album, OuterArtist, Artist, TrackMST } from '@/types'
+import { Track, Album, OuterArtist, Artist, TrackMST, SpoofableEntity } from '@/types'
 import Source from './source'
 import TrackReplacement from '../track-replacement'
 import { debug, log } from '@/utils/logger';
@@ -41,7 +41,7 @@ export default class SourceCollection implements Source {
     }
 
     private internalSpoof(
-        data: Artist | Album | Track,
+        data: SpoofableEntity,
         getSpoofData: (id: string) => Record<string, any> | null | undefined,
         id: string,
         fillOriginalValues = true

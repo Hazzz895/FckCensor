@@ -158,7 +158,7 @@ export interface DerivedColors {
 }
 
 export interface Track extends Spoofable {
-    id:                              TrackId;
+    id:                              string;
     realId?:                         string;
     title?:                          string;
     contentWarning?:                 string;

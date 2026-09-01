@@ -106,6 +106,7 @@ export async function loadLocalDb() {
                 item.coverUri = URL.createObjectURL(item.coverUri as any);
             }
             localSource.trackSpoofs[String(item.id)] = item;
+            delete (item as any).id;
         }
 
         localSource.albumSpoofs = {};
@@ -114,6 +115,7 @@ export async function loadLocalDb() {
                 item.coverUri = URL.createObjectURL(item.coverUri as any);
             }
             localSource.albumSpoofs[String(item.id)] = item;
+            delete (item as any).id;
         }
 
         localSource.artistSpoofs = {};
@@ -122,6 +124,7 @@ export async function loadLocalDb() {
                 item.cover.uri = URL.createObjectURL(item.cover.uri as any);
             }
             localSource.artistSpoofs[String(item.id)] = item;
+            delete (item as any).id;
         }
 
         sources.pushSource(localSource);
