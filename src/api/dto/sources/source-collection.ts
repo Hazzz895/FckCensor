@@ -1,9 +1,10 @@
-import { Track, Album, OuterArtist, Artist, TrackMST, SpoofableEntity } from '@/types'
+import { Track, Album, OuterArtist, Artist, TrackMST, SpoofableEntity, Release } from '@/types'
 import Source from './source'
 import TrackReplacement from '../track-replacement'
 import { debug, log } from '@/utils/logger';
 import { isEmptyObject } from '@/utils/common';
 import { LocalSource } from '@/api/db-api';
+import { ArtistInsertions } from '../artist-insertion';
 
 type Constructor<T> = new (...args: any[]) => T;
 
@@ -22,18 +23,22 @@ export default class SourceCollection implements Source {
     public getSources() { return this.sources }
 
     async buildPlayerReplacement(trackId: string): Promise<TrackReplacement | null> {
+        debug("DOIDJIOD")
         for (const source of this.sources) {
             const result = await source.buildPlayerReplacement(trackId)
             if (result) {
+                debug("RESULTT", result)
                 return result;
             }
         }
+        debug("FUCK")
         return null;
     }
 
     hasPlayerReplacement(trackId: string): boolean {
         for (const source of this.sources) {
             if (source.hasPlayerReplacement(trackId)) {
+                debug("YES IT HAS!!!!!!!!!!!!!!")
                 return true
             }
         }
@@ -102,6 +107,7 @@ export default class SourceCollection implements Source {
 
         track.albums?.forEach((album) => this.spoofAlbum(album))
         track.artists?.forEach((artist) => this.spoofArtist(artist))
+        
         return track
     } 
 
@@ -122,7 +128,6 @@ export default class SourceCollection implements Source {
     getArtistSpoof(artistId: string): Artist | null {
         const artist = { } as Artist
         this.sources.forEach(source => this.internalSpoof(artist, source.getArtistSpoof.bind(source), artistId, false))
-        debug(artistId, artist, this.getSource(LocalSource)?.getArtistSpoof(artistId))
         return artist;
     }
 
@@ -130,6 +135,20 @@ export default class SourceCollection implements Source {
         this.internalSpoof(artist, this.getArtistSpoof.bind(this), String(artist.id))
 
         return artist
+    }
+
+    getArtistInsertions(artistId: string): ArtistInsertions | null {
+        debug("GETTING for", artistId)
+        return {
+            tracks: [{ release: { id: "126677269" }, index: -1 }],
+            albums: []
+        }
+    }
+
+    spoofArtistInsertions(artistId: string, list: Release[], type: "tracks" | "albums"): Release[] {
+        const insertions = this.getArtistInsertions(artistId);
+        list.concat(insertions?.[type].map(insertion => insertion.release) ?? [])
+        return list;
     }
 
     spoofAnyArtist(artist: Artist | OuterArtist): Artist | OuterArtist {
@@ -141,6 +160,16 @@ export default class SourceCollection implements Source {
             a = artist;
         }
 
+        const insertions = this.getArtistInsertions(a.id);
+        if (insertions) {
+            if (a.counts?.tracks) {
+                a.counts.tracks += insertions.tracks.length;
+            }
+            if (a.counts?.directAlbums) {
+                a.counts.directAlbums += insertions.albums.length;
+            }
+        }
+        
         this.spoofArtist(a);
         return artist;
     }

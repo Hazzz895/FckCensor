@@ -1,16 +1,17 @@
 import { ActionButton } from "@/ui/components/alerts/alerts";
 import ElementWrap from "@/ui/components/ElementWrap";
-import { log, error } from "@/utils/logger";
+import { log, error, debug } from "@/utils/logger";
 import { SpoofTrackAlert } from "./SpoofTrackAlert";
 import styles from "@/styles.module.scss";
 import { sources } from "@/api/main-api";
-import { createReplacedBadge } from "@/hooks/ui/badges";
+import { ReplacedBadge } from "@/hooks/ui/badges";
+import { SpoofAlertEntityPropertyField } from "../base/SpoofAlertEntityPropertyField";
+import { getAudioMetadata } from "@/utils/music";
 
-export class SpoofAudioField extends ElementWrap {
-    readonly alert;
-
+export class SpoofAudioField extends SpoofAlertEntityPropertyField {
     private _file?: File;
     private _hasChanges: boolean = false;
+    private durationMs?: number;
 
     public get file() {
         return this._file;
@@ -26,8 +27,7 @@ export class SpoofAudioField extends ElementWrap {
     }
 
     constructor(alert: SpoofTrackAlert) {
-        super();
-        this.alert = alert;
+        super(alert, "durationMs", alert.entity.durationMs);
     }
 
     protected createElement(): HTMLElement {
@@ -68,8 +68,17 @@ export class SpoofAudioField extends ElementWrap {
 
             this.file = file;
             this.reRenderElement();
+            this.durationMs = (await getAudioMetadata(file)).duration * 1000;
             log("Added track " + this.alert.entity.id + " to local tracks");
         })
         .catch((e) => error(e));
+    }
+
+    valueToProperty(): number | undefined {
+        return this._file && this.durationMs ? this.durationMs : this.originalValue;
+    }
+
+    hasDiffs(prop: any): boolean {
+        return !!this._file && this.hasChanges;
     }
 }

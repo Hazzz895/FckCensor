@@ -6,7 +6,9 @@ function hook(gfir: any) {
     hookMethods(gfir, new LocalFileHook(), "getLocalFileDownloadInfo")
 
     hookMethods(gfir, async (idk: boolean, trackId: TrackId, quality: string) => {
+        debug(trackId, "jio")
         if (sources.hasPlayerReplacement(String(trackId))) {
+            debug("true")
             return true;
         } 
     }, "isTrackDownloaded");
@@ -15,6 +17,7 @@ function hook(gfir: any) {
 class LocalFileHook extends FunctionHook {
     public async before(originalMethod: Function, trackId: TrackId) {
         const strTrackId = String(trackId)
+        debug(strTrackId)
         if (sources.hasPlayerReplacement(strTrackId)) {
             const replacement = await sources.buildPlayerReplacement(strTrackId)
             if (replacement) {

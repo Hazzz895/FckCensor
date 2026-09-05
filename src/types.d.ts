@@ -48,11 +48,13 @@ export interface SearchResponse {
   responseType: string
 }
 
-export type SearchType = "all" | "artist"
+export type SearchType = "all" | SpoofableType
 
 export interface SearchResult {
   type: SearchType
   artist: Artist // | ...
+  track: Track;
+  album: Album
 }
 
 export interface Album extends Spoofable {

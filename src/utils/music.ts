@@ -1,6 +1,7 @@
-import { SearchResponse, SearchType, Spoofable, Track } from "@/types";
+import { Album, SearchResponse, SearchType, Spoofable, Track } from "@/types";
 import { debug, error, log } from "./logger";
-import { findModule, hookDi } from "./hook-utils";
+import { findModule, getDiResource, hookDi } from "./hook-utils";
+import { runUnprotected } from "./ui-utils";
 
 export function reloadPlayer(trackId?: string) {
     const e = window.sonataState?.queueState?.currentEntity?.value?.entity;
@@ -19,19 +20,14 @@ export function getTrackAvaiableSpoof(): Track {
 }
 
 export function restoreOriginalValues(data: Spoofable) {
-    Object.assign(data, data.__fckCensor?.originalValues);
-    delete data.__fckCensor?.originalValues;
-    debug(data)
+    runUnprotected(data, () => {
+        Object.assign(data, data.__fckCensor?.originalValues);
+        delete data.__fckCensor?.originalValues;
+    });
 }
 
-let searchClz: any | null = null
-hookDi({
-    "SearchResource": (resource) => { searchClz = resource }
-})
-
 export async function search(text: string, type: SearchType = "all", page=0, args: Record<string, any> = {}): Promise<SearchResponse | null> {
-    if (searchClz == null) return null;
-    return searchClz.getInstantMixedSearch({
+    return getDiResource("SearchResource")?.getInstantMixedSearch({
         "text": text,
         "type": type,
         "page": page,
@@ -41,6 +37,13 @@ export async function search(text: string, type: SearchType = "all", page=0, arg
 
 export async function searchArtists(text: string): Promise<SearchResponse | null> {
     return search(text, "artist");
+}
+
+export async function getAlbumTracks(albumId: TrackId, ...args: any): Promise<Album | null> {
+    return getDiResource("AlbumResource")?.getAlbumWithRichTracks({
+        albumId,
+        ...args
+    })
 }
 
 export function getAudioMetadata(audioFile: File): Promise<HTMLAudioElement> {

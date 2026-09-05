@@ -3,7 +3,7 @@ const addonConfig = {
     directoryName: 'fckcensor',
     name: 'FckCensor (v2)',
     description: 'Подменивает заблюренные треки автоматически и позволяет это делать вручную через контекстное меню.',
-    version: '99.2.0',
+    version: '2.0.99',
     author: 'Hazzz895',
     type: 'script',
     image: '',

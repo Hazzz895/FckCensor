@@ -7,8 +7,11 @@ import Source from "./dto/sources/source";
 import TrackReplacement from "./dto/track-replacement";
 import { sources } from "./main-api";
 import { LocalSource } from "./db-api";
+import { ArtistInsertions } from "./dto/artist-insertion";
+import { isBeta, isDev } from "@/dev/dev-utils";
 
 const BASE_URI = "https://raw.githubusercontent.com/Hazzz895/FckCensorData/refs/heads/main/list_v2.json"
+const OLD_BASE_URI = "https://raw.githubusercontent.com/Hazzz895/FckCensorData/refs/heads/main/list.json"
 const LOCAL_URI = `http://localhost:2007/assets/list_v2.json?name=${addonConfig.id}` 
 
 export let list: RemoteSource | null = null
@@ -16,6 +19,25 @@ export let list: RemoteSource | null = null
 export async function loadRemoteList() {
     RemoteSource.load(BASE_URI)
     RemoteSource.load(LOCAL_URI)
+
+    const old_tracks: Record<string, string> = (await (await fetch(OLD_BASE_URI)).json())["tracks"]
+    debug(old_tracks)
+    sources.pushSource(new RemoteSource(new MinifiedRemoteSource({
+        sources: [
+            {
+                tracks_storages: [
+                    {
+                        tracks: old_tracks,
+                    }
+                ],
+                supported_version: ">0.0.0",
+                albums: {},
+                tracks: {},
+                artists: {}
+            }
+        ]
+    })))
+    debug(sources)
 }
 
 export class MinifiedRemoteSource implements RemoteSourceBase {
@@ -26,6 +48,7 @@ export class MinifiedRemoteSource implements RemoteSourceBase {
             this.tracks = { ...source.tracks, ...this.tracks};
             this.albums = { ...source.albums, ...this.albums};
             this.artists = { ...source.artists, ...this.artists }
+            this.tracks_storages = [ ...source.tracks_storages, ...this.tracks_storages ]
         }
     }
 
@@ -88,7 +111,7 @@ export class RemoteSource implements Source {
             else if (storage.tracks && trackId in storage.tracks) {
                 url = storage.tracks[trackId]
             }
-
+            debug(this, url)
             if (url) {
                 return new TrackReplacement(this, url);
             }
@@ -101,7 +124,7 @@ export class RemoteSource implements Source {
             return false;
         }
         for (const storage of this.list.tracks_storages) {
-            if ((storage.tracks && trackId in storage.tracks) && (storage.track_ids && storage.url_template && Number(trackId) in storage.track_ids)) {
+            if ((storage.tracks && trackId in storage.tracks) || (storage.track_ids && storage.url_template && Number(trackId) in storage.track_ids)) {
                 return true;
             }
         }
@@ -127,5 +150,9 @@ export class RemoteSource implements Source {
             return this.list.artists[artistId];
         }
         return null;
+    }
+
+    getArtistInsertions(artistId: string): ArtistInsertions | null {
+        throw new Error("Method not implemented.");
     }
 }

@@ -1,15 +1,15 @@
-import { Album, Artist, SpoofableEntity, SpoofableType, Track, TrackMST } from "@/types";
+import { Album, Artist, OuterArtist, SpoofableEntity, SpoofableType, Track, TrackMST } from "@/types";
 import { createFlags, flagsToStrings } from "./flags";
 import { debug } from "./logger";
 import { sources } from "@/api/main-api";
-import { updateBadgeInTrackNode } from "@/hooks/ui/badges";
 import { randomString } from "./common";
+import { Q_ARTIST_FIBER_ROOT, Q_ALBUM_FIBER_ROOT, Q_TRACK_ROOT } from "@/hooks/ui/constants";
 
-export function getTrackIdFromNode(node: HTMLElement): TrackId | null {
-    return getTrackFromNode(node)?.id ?? null;
+export function getTrackIdFromNode(node: HTMLElement): string | null {
+    return String(getTrackFromNode(node)?.id) ?? null;
 }
 
-export function walkFiber<T>(node: HTMLElement, callback: (obj: any) => any | null, maxDepth: number = 4): T | null {
+export function walkFiber<T>(node: HTMLElement | null, callback: (obj: any) => any | null, maxDepth: number = 4): T | null {
     if (!node) return null;
     let result = null;
     const reactFiberProp = Object.keys(node).find(key => key.startsWith("__reactFiber"));
@@ -53,21 +53,59 @@ export function walkFiber<T>(node: HTMLElement, callback: (obj: any) => any | nu
 }
 
 export function getTrackFromNode(node: HTMLElement): TrackMST | null {
-    return walkFiber(node, (obj) => obj?.props?.track);
+    return walkFiber(closestInTree(node, Q_TRACK_ROOT), (obj) => obj?.props?.track);
 }
 
-export function spoofTrackNode(node: HTMLElement) {
-    const track = getTrackFromNode(node);
-    if (!track) return;
-    runUnprotected(track, () => {
-        sources.spoofTrack(track);
-        if ("isAvailable" in track && track.available !== undefined) {
-            track.isAvailable = track.available;
+export function getAlbumFromNode(node: HTMLElement): Album | null {
+    return walkFiber(closestInTree(node, Q_ALBUM_FIBER_ROOT), (obj) => obj?.props?.album)
+}
+
+export function getArtistFromNode(node: HTMLElement): Artist | null {
+    const a: Artist | OuterArtist | null = walkFiber(closestInTree(node, Q_ARTIST_FIBER_ROOT), (obj) => obj?.props?.artistMeta)
+    if (!a) {
+        return null;
+    }
+
+    if ("artist" in a) {
+        return a.artist;
+    }
+    else {
+        return a;
+    }
+}
+
+export function spoofNode(node: HTMLElement, entity: SpoofableEntity | SpoofableType) {
+    let e;
+    let m: any;
+    if (typeof entity === "string") {
+        switch (entity) {
+            case "track": e = getTrackFromNode(node); m = sources.spoofTrack; break;
+            case "album": e = getAlbumFromNode(node); m = sources.spoofAlbum; break;
+            case "artist": e = getArtistFromNode(node); m = sources.spoofArtist; break;
+        }
+    }
+    else {
+        e = entity
+        if ("volumes" in e) {
+            m = sources.spoofAlbum;
+        }
+        else if ("albums" in e) {
+            m = sources.spoofTrack;
+        }
+        else {
+            m = sources.spoofArtist;
+        }
+    }
+
+    if (!e) return;
+
+    runUnprotected(e, () => {
+        m(e);
+        if ("isAvailable" in e && "available" in e && e.available !== undefined) {
+            e.isAvailable = e.available;
         }
     });
-    updateBadgeInTrackNode(node)
 }
-
 
 export const [LEFT, TOP, RIGHT, BOTTOM, CENTER] = createFlags(5)
 const anchorToString = {

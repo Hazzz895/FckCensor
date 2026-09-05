@@ -5,6 +5,7 @@ import TrackReplacement from "./dto/track-replacement";
 import { list } from "./remote-api";
 import { sources } from "./main-api";
 import { getTrackAvaiableSpoof, reloadPlayer } from "@/utils/music";
+import { ArtistInsertions } from "./dto/artist-insertion";
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -297,6 +298,10 @@ export class LocalSource implements Source {
     removeArtistSpoof(artistId: string) {
         delete this.artistSpoofs[artistId];
         return this.removeFromDb(ARTIST_SPOOFS, artistId);
+    }
+
+    getArtistInsertions(artistId: string): ArtistInsertions | null {
+        throw new Error("Method not implemented.");
     }
 
     private async removeFromDb(table_name: string, id: string) {

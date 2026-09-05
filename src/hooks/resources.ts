@@ -1,7 +1,8 @@
 import { sources } from "@/api/main-api";
 import { hookDi, hookMethods, HookMethod, findModule, appRequire } from "../utils/hook-utils";
 import { debug, error } from "@/utils/logger";
-import { Album, OuterArtist, Track } from "@/types";
+import { Album, OuterArtist, SearchResponse, Track } from "@/types";
+import { insert } from "@/utils/common";
 
 function hookTrackResource(tr: any) {
     hookMethods(tr, async (tracks: Track) => {
@@ -38,7 +39,6 @@ function hookAlbumResource(ar: any) {
             for (const a of albums) {
                 try {
                     sources.spoofAlbum(a);
-                    debug("SPOOFED", a)
                 } catch (e) {
                     error(e);
                 }
@@ -47,7 +47,6 @@ function hookAlbumResource(ar: any) {
         else if (albums) {
             try {
                 sources.spoofAlbum(albums);
-                debug("SPOOFED", albums)
             } catch (e) {
                 error(e);
             }
@@ -81,11 +80,39 @@ function hookArtistResource(ar: any) {
         spoofTab(familiar.collection)
     }, "getFamiliarYou")
 
-    /*type ArtistId = { artistId: string }
+    type ArtistId = { artistId: string }
 
     hookMethods(ar, async (trackIds: string[], t: ArtistId) => {
-        
-    }, "getArtistTrackIds")*/
+        sources.getArtistInsertions(t.artistId)?.tracks.forEach(insertion => {
+            if (insertion.release) {
+                const id = String(insertion.release.id);
+                if (insertion.index !== undefined) {
+                    trackIds.splice(insertion.index, 0, id)
+                }
+                else {
+                    trackIds.push(id)
+                }
+            }
+        });
+    }, "getArtistTrackIds")
+
+    hookMethods(ar, async (tracks: Track[], t: ArtistId) => {
+        sources.getArtistInsertions(t.artistId)?.tracks.forEach(insertion => {
+            if (insertion.release) {
+                debug(tracks)
+                insert(tracks, insertion.release, insertion.index);
+                debug(tracks)
+            }
+        });
+    }, "getArtistTracks");
+
+    hookMethods(ar, async (albums: Album[], t: ArtistId) => {
+        sources.getArtistInsertions(t.artistId)?.albums.forEach(insertion => {
+            if (insertion.release) {
+                insert(albums, insertion.release, insertion.index);
+            }
+        });
+    }, "getDirectAlbums");
 }
 
 function hookLandingResource(lr: any) {
@@ -94,7 +121,6 @@ function hookLandingResource(lr: any) {
             for (const track of block.tracks) {
                 sources.spoofTrack(track)
             }
-            debug("fucking spooofeddd yeee")
         }
 
         if (block.release) {
@@ -121,11 +147,22 @@ function hookLandingResource(lr: any) {
     }, "getBlock")
 }
 
+function hookSearchResource(sr: any) {
+    hookMethods(sr, async (response: SearchResponse) => {
+        for (const r of response.results) {
+            if (r.album) sources.spoofAlbum(r.album);
+            if (r.artist) sources.spoofAnyArtist(r.artist);
+            if (r.track) sources.spoofTrack(r.track)
+        }
+    })
+}
+
 export function hookResources() { 
     hookDi({
         "TracksResource": hookTrackResource,
         "AlbumResource": hookAlbumResource,
         "ArtistsResource": hookArtistResource,
         "LandingResource": hookLandingResource,
+        "SearchResource": hookSearchResource
     })
 } 

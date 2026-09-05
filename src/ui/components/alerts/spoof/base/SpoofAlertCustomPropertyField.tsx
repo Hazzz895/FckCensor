@@ -36,7 +36,7 @@ export default class SpoofAlertCustomPropertyField extends SpoofAlertEntityPrope
             {x}
             {this.propertyNameField}
             <datalist id="FckCensorEntityPropertiesList">
-                {Object.keys(this.alert.entity).map(x => <option value={x}>x</option>)}
+                {Object.keys(this.alert.entity).map(x => x === "id" ? undefined : <option value={x}>x</option>)}
             </datalist>
             {this.propertyValueField}
             {this.propertyTypeField}

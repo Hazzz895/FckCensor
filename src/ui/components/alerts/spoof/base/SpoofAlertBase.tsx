@@ -3,24 +3,38 @@ import { JSX } from "@/jsx-runtime";
 import { Artist, Album, Track, Release, SpoofableEntity, SpoofableType } from "@/types";
 import { AlertButtons, ActionButton, createScrimAlert, closeAlert } from "@/ui/components/alerts/alerts";
 import { httpsify, isEmptyObject } from "@/utils/common";
-import { log } from "@/utils/logger";
+import { debug, error, log } from "@/utils/logger";
 import { Cover } from "../../../Cover";
 import SpoofAlertCustomPropertyField, { AddSpoofAlertFieldButton } from "./SpoofAlertCustomPropertyField";
 import { SpoofAlertEntityPropertyField } from "./SpoofAlertEntityPropertyField";
 import { SpoofAlertInputField } from "./SpoofAlertInputField";
 import styles from "@/styles.module.scss"
+import { restoreOriginalValues } from "@/utils/music";
+import { CoverProps } from "../spoof-alert";
+import { SpoofAlertCoverField } from "./SpoofAlertCoverField";
 
 export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity> {
     get artist() {
+        if (this.type != "artist") new Error("Tried to get artist from non-artist alert");
         return this.entity as Artist
     }
 
     get release() {
+        if (["album", "track"].indexOf(this.type) == -1) new Error("Tried to get release from non-release alert");
         return this.entity as Release
     }
 
+    get album() {
+        if (this.type != "album") new Error("Tried to get album from non-album alert");
+        return this.entity as Album
+    }
+
+    get track(): Track {
+        if (this.type != "track") new Error("Tried to get track from non-track alert");
+        return this.entity as Track;
+    }
+
     readonly spoofAlert;
-    readonly coverNode?;
     readonly entity;
     readonly type;
     readonly id;
@@ -54,8 +68,6 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         }
         this.id = String(entity.id);
 
-        const coverNode = coverUri ? <Cover src={coverUri}></Cover> : undefined
-
         this.hadSpoof =(this.type == "artist" && sources.hasArtistSpoof(this.id)) ||
                         (this.type == "album" && sources.hasAlbumSpoof(this.id)) ||
                         (this.type == "track" && sources.hasTrackSpoof(this.id));
@@ -73,7 +85,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         let customFields = null
         if (prevSpoof) {
             customFields = []
-            for (const k of Object.keys(prevSpoof).filter(k => !(k == "id" || this.fields.some(f => f.propertyName == k)))) {
+            for (const k of Object.keys(prevSpoof).filter(k => !(["id", "available", "error"].indexOf(k) !== -1 || this.fields.some(f => f.propertyName == k)))) {
                 const field = new SpoofAlertCustomPropertyField(this);
                 const fieldElement = field.element;
                 field.setSavedValue(k, (prevSpoof as any)[k]);
@@ -84,7 +96,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
 
         const spoofAlert = (<div>
             <div class={"EditContentModal_field__rexIL " + styles.CoverAndTitleContainer}>
-                {coverNode}
+                {this.addPropertyField(new SpoofAlertCoverField(this))}
                 {titleField}
             </div>
             {childrenNode}
@@ -97,7 +109,6 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         </div>)
 
         this.spoofAlert = createScrimAlert(scrim as JSX.Element, alertTitle, spoofAlert);
-        this.coverNode = coverNode;
     }
 
     protected onApplyInternal() {
@@ -114,6 +125,9 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
 
     private onSpoofRemoveInternal() {
         closeAlert(this.spoofAlert);
+        try {
+            restoreOriginalValues(this.entity);
+        } catch (e) { error(e) }
         this.onSpoofRemove();
     }
 

@@ -1,11 +1,11 @@
 import { localSource } from "@/api/db-api";
 import { Track } from "@/types";
 import { restoreOriginalValues } from "@/utils/music";
-import { spoofTrackNode } from "@/utils/ui-utils";
 import { debug } from "@/utils/logger";
-import { SpoofEntityWithArtistsAlert } from "../base/SpoofEntityWithArtistsAlert";
+import { SpoofEntityWithArtistsAlert } from "../base/artists/SpoofEntityWithArtistsAlert";
 import { SpoofAudioField } from "./SpoofAudioField";
 import { sources } from "@/api/main-api";
+import { spoofNode } from "@/utils/ui-utils";
 
 export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
     public constructor(data: Track, scrim: HTMLElement, trackNode: HTMLElement) {
@@ -15,10 +15,9 @@ export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
     declare private spoofAudioField: SpoofAudioField;
 
     protected getChildren(): HTMLElement {
-        this.spoofAudioField = new SpoofAudioField(this);
         return <div>
             {super.getChildren()}
-            {this.spoofAudioField.element}
+            {this.addPropertyField(this.spoofAudioField = new SpoofAudioField(this))}
         </div>
     }
 
@@ -42,17 +41,13 @@ export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
         await localSource.pushTrackSpoof(spoofData, this.id)
         if (this.sourceNode) {
             debug(this.sourceNode)
-            spoofTrackNode(this.sourceNode)
+            spoofNode(this.sourceNode, this.entity)
         }
     }
 
     protected async onSpoofRemove() {
         await localSource.removeTrackSpoof(this.id);
         await localSource.removeTrackReplacement(this.id);
-        if (this.sourceNode) {
-            restoreOriginalValues(this.entity);
-            spoofTrackNode(this.sourceNode)
-        }
     }
 
     protected getPrevSpoofedData() {

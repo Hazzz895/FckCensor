@@ -102,30 +102,37 @@ export function findModule(
 type diGetType = (key: string) => any
 
 type Di = {
-    get: diGetType
+    shared: { get: diGetType }
+    get: diGetType;
     prototype: Di
 }
 
-let di: Di | null = null
+let diClass: Di | null = null
 
 function initDiModule(): Di | null {
-    if (di) {
-        return di;
+    if (diClass) {
+        return diClass;
     }
     var diModule = findModule("Dt", "P9", "Gr", "do");
     if (!diModule?.Dt) {
         error("Failed to find DI module. Wait for addon to update!");
         return null;
     }
-    di = diModule.Dt
-    return di
+    diClass = diModule.Dt
+    return diClass
 }
 
 let originalDiGet: diGetType | null = null;
-let pendingHooks: Record<string, Function> = {}
+let pendingHooks: Record<string, Function[]> = {}
+let di: Di | null = null;
 
-function diGet(ts: any, args: any, key: string): any {
-    if (!di || !originalDiGet) {
+export function getDiResource(resource: string) {
+    return di?.get(resource) || null;
+}
+
+function diGet(ts: Di, args: any, key: string): any {
+    di = ts;
+    if (!originalDiGet) {
         return null;
     }
 
@@ -133,7 +140,9 @@ function diGet(ts: any, args: any, key: string): any {
     const hook = pendingHooks[key];
     if (hook && result) {
         delete pendingHooks[key]; 
-        hook(result)
+        for (const h of hook) {
+            h(result)
+        }
     }
 
     return result;
@@ -141,17 +150,24 @@ function diGet(ts: any, args: any, key: string): any {
 
 export function hookDi(values: Record<string, (dimodule: any) => any>): boolean {
     initDiModule();
-    if (!di) {
+    if (!diClass) {
         return false;
     }
 
-    pendingHooks = {...values, ...pendingHooks};
+    for (const key in values) {
+        if (!pendingHooks[key]) {
+            pendingHooks[key] = [values[key]];
+        } else {
+            pendingHooks[key].push(values[key]);
+        }
+    }
+
     if (!originalDiGet) {
-        originalDiGet = di.prototype.get
+        originalDiGet = diClass.prototype.get
     }
 
     if (Object.keys(pendingHooks).length > 0) {
-        di.prototype.get = function(key: string) {
+        diClass.prototype.get = function(key: string) {
             return diGet(this, arguments, key);
         }
     }

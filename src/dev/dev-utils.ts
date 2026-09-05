@@ -1,10 +1,15 @@
 import { hookDi } from "@/utils/hook-utils";
 import { debug } from "@/utils/logger";
+import addonConfig from "../../addon.config.mjs";
 
 let _isDev: boolean | null = null
 
 export function isDev() {
     return _isDev;
+}
+
+export function isBeta() {
+    return addonConfig.version.split('.')[2] == "99"
 }
 
 hookDi({

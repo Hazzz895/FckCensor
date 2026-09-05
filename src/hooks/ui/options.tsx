@@ -1,6 +1,6 @@
 import { JSX } from "@/jsx-runtime";
 import { listenAddNodes } from "./observer";
-import { getContextMenuSource, getTrackFromNode, walkFiber } from "@/utils/ui-utils";
+import { getAlbumFromNode, getArtistFromNode, getContextMenuSource, getTrackFromNode, walkFiber } from "@/utils/ui-utils";
 import { debug, error } from "@/utils/logger";
 import { Album, Artist, OuterArtist, TrackMST } from "@/types";
 import { createAlbumSpoofAlertFor, createArtistSpoofAlertFor, createTrackSpoofAlertFor } from "@/ui/components/alerts/spoof/spoof-alert";
@@ -35,7 +35,7 @@ export function prepareOptions() {
     listenAddOptionsMenu((artistOptionsMenu) => {
         const artistHeaderRoot = getContextMenuSource(artistOptionsMenu, '.ArtistPage_content__iZHVN');
         if (!artistHeaderRoot) return;
-        const artistData = walkFiber<OuterArtist>(artistHeaderRoot, (obj) => obj?.props?.artistMeta, 3)?.artist;
+        const artistData = getArtistFromNode(artistHeaderRoot);
         if (!artistData) return;
         const option = <SpoofOption label="Подменить артиста" onclick={(el: HTMLElement) => createArtistSpoofAlertFor(el, artistData)}/>
         artistOptionsMenu.appendChild(option)
@@ -44,7 +44,7 @@ export function prepareOptions() {
     listenAddOptionsMenu((albumOptionsMenu) => {
         const albumControlsRoot = getContextMenuSource(albumOptionsMenu, '.CommonPageHeader_controls__c27E_');
         if (!albumControlsRoot) return;
-        const albumData = walkFiber<Album>(albumControlsRoot, (obj) => obj?.props?.album);
+        const albumData = getAlbumFromNode(albumControlsRoot);
         if (!albumData) return;
         const option = <SpoofOption label="Подменить альбом" onclick={(el: HTMLElement) => createAlbumSpoofAlertFor(el, albumData)}/>
         albumOptionsMenu.appendChild(option)

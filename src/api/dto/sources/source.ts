@@ -1,5 +1,6 @@
 import { Album, Artist, OuterArtist, Track } from "@/types";
 import TrackReplacement from "../track-replacement";
+import { ArtistInsertions } from "../artist-insertion";
 
 export default interface Source {
     buildPlayerReplacement(trackId: string): Promise<TrackReplacement | null>
@@ -11,4 +12,6 @@ export default interface Source {
     getAlbumSpoof(albumId: string): Album | null
 
     getArtistSpoof(artistId: string): Artist | null
+
+    getArtistInsertions(artistId: string): ArtistInsertions | null
 }

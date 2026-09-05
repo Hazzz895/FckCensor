@@ -2,9 +2,17 @@ import styles from "@/styles.module.scss";
 import { Artist } from "@/types";
 import { CloseButton, TextField } from "@/ui/components/alerts/alerts";
 import { debug } from "@/utils/logger";
-import { SpoofAlertBase } from "./SpoofAlertBase";
-import { SpoofAlertEntityPropertyField } from "./SpoofAlertEntityPropertyField";
+import { SpoofAlertBase } from "../SpoofAlertBase";
+import { SpoofAlertEntityPropertyField } from "../SpoofAlertEntityPropertyField";
 import { TabbedArtist } from "./TabbedArtist";
+import { JSX } from "@/jsx-runtime";
+
+export function AddButton({ ...props }: JSX.HTMLAttributes) {
+    const addButton = <CloseButton {...props}/>
+    addButton.querySelector("svg > use")!.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '/icons/sprite.svg#add_xxs')
+    addButton.classList.remove("YUY9QjXr1E4DQfQdMjGt")
+    return addButton;
+}
 
 export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField {
     public constructor(alert: SpoofAlertBase) {
@@ -50,9 +58,7 @@ export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField {
             container.appendChild(artistNode.element)
         }
 
-        const addButton = <CloseButton onclick={this.onAdd.bind(this)}/>
-        addButton.querySelector("svg > use")!.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '/icons/sprite.svg#add_xxs')
-        addButton.classList.remove("YUY9QjXr1E4DQfQdMjGt")
+        const addButton = <AddButton onclick={this.onAdd.bind(this)}/>
         container.appendChild(addButton)
     }
 

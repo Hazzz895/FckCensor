@@ -24,3 +24,5 @@ export function isEmptyObject(obj?: object | null) {
 }
 
 export const randomString = () => Math.random().toString(36).slice(2);
+
+export const insert = <T>(list: T[], object: T, index: number = -1): T[] => list.splice(clamp(index < 0 ? list.length + index + 1 : index, 0, list.length), 0, object);

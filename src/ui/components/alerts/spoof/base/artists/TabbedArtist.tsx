@@ -3,8 +3,9 @@ import { Artist } from "@/types";
 import ElementWrap from "@/ui/components/ElementWrap";
 import { searchArtists } from "@/utils/music";
 import { debug } from "@/utils/logger";
-import { Cover } from "../../../Cover";
+import { Cover } from "../../../../Cover";
 import styles from "@/styles.module.scss";
+import { eventHandlerForTooltip } from "@/ui/tooltips";
 
 export interface TabbedArtistProps extends JSX.HTMLAttributes {
     artist?: Artist
@@ -26,10 +27,7 @@ export class TabbedArtist extends ElementWrap {
             this.input = <input class={styles.input} oninput={this.onArtistTextChanged.bind(this)} onfocusout={this.onFocusLost.bind(this)}/> as unknown as HTMLInputElement
             this.searchResults = <div hidden={true} class={styles.TabbedArtistSearchResults}/>
         }
-
-        debug(this.artist, this.artist?.coverUri ?? this.artist?.ogImage ?? this.artist?.cover?.uri)
-
-        return <div class={styles.TabbedArtist}> 
+        return <div aria-label="нажмит чтобы удалить" onmouseenter={eventHandlerForTooltip} class={styles.TabbedArtist}> 
                 {this.artist && <Cover mini style="width: 24px; height: 24px; margin-right: 4px; border-radius: 100%" src={this.artist.coverUri ?? this.artist.ogImage ?? this.artist.cover?.uri}/>}
                 {this.artist && this.artist.name}
                 {this.input}
