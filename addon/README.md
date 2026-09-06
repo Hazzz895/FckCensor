@@ -1,16 +1,11 @@
-# PulseSync Addon Template
+# FckCensor (обход запикивания/цензуры)
 
-Пример `script`-аддона для PulseSync.
+> [!CAUTION]
+> Версия 2.0.0 находится на стадии разработки, в репозитории представлен не законченный прогресс, не рекомендуется к сборке и использованию до официального релиза.
 
-Стили подключаются через `script.css`.
-Схема настроек читается из `handleEvents.json`, а пользовательские значения PulseSync хранит отдельно в `pulsesync.settings.json`.
+> [!TIP]
+> [Инструкция к использованию аддона](https://github.com/Hazzz895/FckCensor/blob/v2/FAQ.md)
 
-`handleEvents.json` поддерживает автор аддона.
-`pulsesync.settings.json` создаётся самим PulseSync и не считается частью исходников.
+Аддон позволяет легко подменить любую информацию альбомов, исполнителей и треков (включая аудиопоток), а также автоматически подменивает вышеперечисленную информацию, если такова есть в [удалённом списке](https://github.com/Hazzz895/FckCensorData/blob/main/README.md)
 
-Файлы:
-
-- `script.js`
-- `script.css`
-- `handleEvents.json`
-- `metadata.json`
+<img alt="Пример подмены трека" src="https://github.com/user-attachments/assets/64d58d6e-43d7-42c9-8577-6e007375d2ac" />
