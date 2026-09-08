@@ -23,7 +23,7 @@ export interface TracksStorage {
 
 export interface FckCensorSpoofData {
     originalValues?: Record<string, any>,
-    insertion_index?: number
+    insertionIndex?: number | null
 }
 
 export interface Spoofable {
@@ -66,8 +66,9 @@ export interface Album extends Spoofable {
     type?: string
     contentWarning?:           string;
     year?:                     number;
-    releaseDate?:              Date;
+    releaseDate?:              string;
     coverUri?:                 string;
+    cover?:                    Cover;
     ogImage?:                  string;
     genre?:                    string;
     trackCount?:               number;

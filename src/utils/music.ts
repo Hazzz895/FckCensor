@@ -1,4 +1,4 @@
-import { Album, SearchResponse, SearchType, Spoofable, Track } from "@/types";
+import { Album, Artist, OuterArtist, SearchResponse, SearchType, Spoofable, Track } from "@/types";
 import { debug, error, log } from "./logger";
 import { findModule, getDiResource, hookDi } from "./hook-utils";
 import { runUnprotected } from "./ui-utils";
@@ -26,7 +26,7 @@ export function restoreOriginalValues(data: Spoofable) {
     });
 }
 
-export async function search(text: string, type: SearchType = "all", page=0, args: Record<string, any> = {}): Promise<SearchResponse | null> {
+export function search(text: string, type: SearchType = "all", page=0, args: Record<string, any> = {}): Promise<SearchResponse | null> {
     return getDiResource("SearchResource")?.getInstantMixedSearch({
         "text": text,
         "type": type,
@@ -35,21 +35,33 @@ export async function search(text: string, type: SearchType = "all", page=0, arg
     })
 }
 
-export async function searchArtists(text: string): Promise<SearchResponse | null> {
+export function searchArtists(text: string): Promise<SearchResponse | null> {
     return search(text, "artist");
 }
 
-export async function getAlbumTracks(albumId: TrackId, ...args: any): Promise<Album | null> {
+export function getAlbumTracks(albumId: TrackId, ...args: any): Promise<Album | null> {
     return getDiResource("AlbumResource")?.getAlbumWithRichTracks({
         albumId,
         ...args
     })
 }
 
-export async function getTracks(...trackIds: TrackId[]): Promise<Track[]> {
-    return getDiResource("TracksResource")?.getTracksMeta({
-        trackIds: trackIds
+export function getTracks(...trackIds: string[]): Promise<Track[]> {
+    return getDiResource("TracksResource")?.getTracksMeta({ trackIds });
+}
+
+export function getAlbums(...albumIds: TrackId[]): Promise<Album[]> {
+    return getDiResource("AlbumResource")?.getAlbums({
+        albumIds: albumIds.map(Number)
     });
+}
+
+export function getOuterArtist(artistId: TrackId): Promise<OuterArtist> {
+    return getDiResource("ArtistsResource")?.getInfo({ artistId });
+}
+
+export async function getArtist(artistId: TrackId): Promise<Artist> {
+    return (await getOuterArtist(artistId)).artist;
 }
 
 export function getAudioMetadata(audioFile: File): Promise<HTMLAudioElement> {

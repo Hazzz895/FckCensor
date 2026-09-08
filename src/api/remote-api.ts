@@ -1,4 +1,4 @@
-import { Album, Artist, OuterArtist, RemoteList, RemoteSourceBase, Track, TracksStorage } from "@/types";
+import { Album, Artist, OuterArtist, Release, RemoteList, RemoteSourceBase, Track, TracksStorage } from "@/types";
 import { debug, error, log, warn } from "@/utils/logger";
 import addonConfig from '../../addon.config.mjs'
 import { AnyARecord } from "node:dns";
@@ -36,6 +36,27 @@ export async function loadRemoteList() {
     debug(sources)
 }
 
+export function postProcessingInsertions(insertions: Record<string, ArtistInsertions>, tracks: Record<string, Track>, albums: Record<string, Album>) {
+    for (const [i, entityRecord] of [tracks, albums].entries()) {
+        const entityType = i === 0 ? "tracks" : "albums";
+        for (const [id, t] of Object.entries(entityRecord) as [string, Track | Album][]) {
+            if (!t.artists?.length) continue;
+
+            const data = { 
+                releaseId: id, 
+                index: t.__fckCensor?.insertionIndex ?? undefined 
+            };
+
+            t.artists.forEach((a: Release) => {
+                if (!a.id) return;
+                if (!insertions[a.id]) insertions[a.id] = { tracks: [], albums: [] };
+                if (!insertions[a.id][entityType]) insertions[a.id][entityType] = [];
+                insertions[a.id][entityType]!.push(data)
+            }); 
+        }
+    }
+}
+
 export class MinifiedRemoteSource implements RemoteSourceBase {
     public constructor(list: RemoteList) {
         for (const source of list.sources) {
@@ -48,6 +69,8 @@ export class MinifiedRemoteSource implements RemoteSourceBase {
             if (source.tracks_storages) {
                 this.tracks_storages = [ ...source.tracks_storages, ...this.tracks_storages ]
             }
+
+            postProcessingInsertions(this.artists_insertions, this.tracks, this.albums)
         }
     }
 

@@ -183,7 +183,7 @@ export class FunctionHook {
 }
 export type Hook = FunctionHook | HookMethod;
 
-export function hookMethods(obj: any, hook: Hook, ...methodNames: string[]): boolean {
+export function hookMethods(obj: any, hook: Hook, ...methodNames: [string, ...string[]]): boolean {
     if (!obj || !methodNames || !hook) {
         return false;
     }

@@ -6,7 +6,7 @@ import { SpoofAlertReleasesListField } from "../SpoofAlertReleasesListField";
 import { sources } from "@/api/main-api";
 import ElementWrap from "@/ui/components/ElementWrap";
 import { ReleaseNode } from "../ReleaseNode";
-import { getTracks } from "@/utils/music";
+import { getAlbums, getTracks } from "@/utils/music";
 import { debug } from "@/utils/logger";
 import { Insertion } from "@/api/dto/artist-insertion";
 
@@ -48,7 +48,8 @@ export class SpoofAlertArtistListField extends SpoofAlertReleasesListField imple
 
                 if (get && !this.getting) {
                     this.getting = true;
-                    getTracks(...t.map(release => release.releaseId)).then(releases => {
+                    const method = this.type == "album" ? getAlbums : getTracks;
+                    method(...t.map(release => release.releaseId)).then(releases => {
                         this.releases = releases;
                         this.getting = false;
                         this.reRenderElement();

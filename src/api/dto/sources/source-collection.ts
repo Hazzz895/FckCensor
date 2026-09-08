@@ -122,20 +122,35 @@ export default class SourceCollection implements Source {
         return track
     }
 
-    spoofTrack(track: Track): Track {
-        this.internalSpoof(track, this.getTrackSpoof.bind(this), String(track.id))
+    spoofTrack(track: Track): Track | null {
+        const spoof = this.internalSpoof(track, this.getTrackSpoof.bind(this), String(track.id)) as Track
 
-        track.albums?.forEach((album) => this.spoofAlbum(album))
-        track.artists?.forEach((artist) => this.spoofArtist(artist))
+        let spoofedAlbum = false;
+        track.albums?.forEach((album) => {
+            if (!isEmptyObject(this.spoofAlbum(album)) && !spoofedAlbum) {
+                spoofedAlbum = true;
+            }
+        })
+        track.artists?.forEach(this.spoofArtist.bind(this));
         
-        return track
+        if (spoofedAlbum && track.albums) {
+            for (const a of track.albums) {
+                const uri = a.cover?.uri || a.coverUri || a.ogImage;
+                if (uri) {
+                    track.coverUri = track.ogImage = uri;
+                    break;
+                }
+            }
+        }
+
+        return spoof
     } 
 
     getAlbumSpoof(albumId: string): Album | null {
         const album = { } as Album
         this.sources.forEach(source => this.internalSpoof(album, source.getAlbumSpoof.bind(source), albumId, false))
 
-        if (album && album.volumes) {
+        if (album.volumes) {
             album.trackCount = album.volumes.reduce((acc, v) => acc + v.length, 0);
             if (album.trackCount > 1) {
                 album.type = "album";
@@ -143,6 +158,24 @@ export default class SourceCollection implements Source {
             else {
                 album.type = "single";
             }
+        }
+
+        if (album.coverUri) {
+            if (!album.ogImage) {
+                album.ogImage = album.coverUri;
+            }
+            if (!album.cover) {
+                album.cover = {
+                    "uri": album.coverUri
+                }
+            }
+        }
+
+        if (album.year === undefined && album.releaseDate) {
+            album.year = new Date(album.releaseDate).getFullYear();
+        }
+        else if (album.releaseDate === undefined && album.year) {
+            album.releaseDate = new Date(album.year, 0, 1, 11).toJSON();
         }
 
         if (isEmptyObject(album)) {
@@ -153,9 +186,7 @@ export default class SourceCollection implements Source {
     }
 
     spoofAlbum(album: Album): Album {
-        this.internalSpoof(album, this.getAlbumSpoof.bind(this), String(album.id)) as Album;
-
-        return album
+        return this.internalSpoof(album, this.getAlbumSpoof.bind(this), String(album.id)) as Album;
     }
 
     getArtistSpoof(artistId: string): Artist | null {
@@ -170,9 +201,7 @@ export default class SourceCollection implements Source {
     }
 
     spoofArtist(artist: Artist): Artist {
-        this.internalSpoof(artist, this.getArtistSpoof.bind(this), String(artist.id))
-
-        return artist
+        return this.internalSpoof(artist, this.getArtistSpoof.bind(this), String(artist.id)) as Artist
     }
 
     getArtistInsertions(artistId: string): ArtistInsertions | null {
@@ -183,17 +212,19 @@ export default class SourceCollection implements Source {
             if (source instanceof LocalSource) {
                 const data = source.getArtistInsertions(artistId);
                 if (data) {
-                    localInsertions.tracks.push(...data.tracks);
-                    localInsertions.albums.push(...data.albums);
+                    if (data.tracks) {
+                        localInsertions.tracks!.push(...data.tracks);
+                    }
+                    if (data.albums) {
+                        localInsertions.albums!.push(...data.albums);
+                    }
+
                     has = true;
                 }
             }
         }
 
-        debug("HASLOCAL", has)
-
         if (has) {
-            debug("RETURN LOCAL DATA", localInsertions)
             return localInsertions;
         }
 
@@ -203,18 +234,22 @@ export default class SourceCollection implements Source {
             if (!(source instanceof LocalSource)) {
                 const data = source.getArtistInsertions(artistId);
                 if (data) {
-                    otherInsertions.tracks.push(...data.tracks);
-                    otherInsertions.albums.push(...data.albums);
+                    if (data.tracks) {
+                        otherInsertions.tracks!.push(...data.tracks);
+                    }
+
+                    if (data.albums) {
+                        otherInsertions.albums!.push(...data.albums);
+                    }
                     has = true;
                 }
             }
         }
 
-        debug("RETURN OTHER DATA", has ? otherInsertions : null)
         return has ? otherInsertions : null;
     }
 
-    spoofAnyArtist(artist: Artist | OuterArtist): Artist | OuterArtist {
+    spoofAnyArtist(artist: Artist | OuterArtist): Artist | null {
         let a: Artist;
         if ("artist" in artist) { // artist instanceof OuterArtist
             a = artist.artist;
@@ -226,15 +261,14 @@ export default class SourceCollection implements Source {
         const insertions = this.getArtistInsertions(a.id);
         if (insertions) {
             if (a.counts?.tracks) {
-                a.counts.tracks += insertions.tracks.length;
+                a.counts.tracks += insertions.tracks?.length ?? 0;
             }
             if (a.counts?.directAlbums) {
-                a.counts.directAlbums += insertions.albums.length;
+                a.counts.directAlbums += insertions.albums?.length ?? 0;
             }
         }
         
-        this.spoofArtist(a);
-        return artist;
+        return this.spoofArtist(a);
     }
 
     pushSource(source: Source) {

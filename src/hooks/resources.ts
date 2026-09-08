@@ -3,7 +3,7 @@ import { hookDi, hookMethods, HookMethod, findModule, appRequire } from "../util
 import { debug, error } from "@/utils/logger";
 import { Album, OuterArtist, SearchResponse, Track } from "@/types";
 import { insert } from "@/utils/common";
-import { getTracks } from "@/utils/music";
+import { getAlbums, getTracks } from "@/utils/music";
 
 function hookTrackResource(tr: any) {
     hookMethods(tr, async (tracks: Track) => {
@@ -81,10 +81,10 @@ function hookArtistResource(ar: any) {
         spoofTab(familiar.collection)
     }, "getFamiliarYou")
 
-    type ArtistId = { artistId: string }
+    type ArtistId = { artistId: number }
 
     hookMethods(ar, async (trackIds: string[], t: ArtistId) => {
-        sources.getArtistInsertions(t.artistId)?.tracks.forEach(insertion => {
+        sources.getArtistInsertions(String(t.artistId))?.tracks?.forEach(insertion => {
             if (insertion.index !== undefined) {
                 trackIds.splice(insertion.index, 0, insertion.releaseId);
             }
@@ -95,28 +95,59 @@ function hookArtistResource(ar: any) {
     }, "getArtistTrackIds")
 
     hookMethods(ar, async (tracks: Track[], t: ArtistId) => {
-        const insertions = sources.getArtistInsertions(t.artistId)?.tracks;
-        if (insertions) {
-            const insertionTracksMeta = await getTracks(...insertions.map(x => x.releaseId));
-            insertions.forEach((insertion, i) => {
-                insert(tracks, insertionTracksMeta[i], insertion.index);
-            })
-        }
+        addInsertionsToTracksList(tracks, String(t.artistId));
     }, "getArtistTracks");
 
-    /*hookMethods(ar, async (albums: Album[], t: ArtistId) => {
-        sources.getArtistInsertions(t.artistId)?.albums.forEach(insertion => {
-            if (insertion.release) {
-                insert(albums, insertion.release, insertion.index);
-            }
-        });
-    }, "getDirectAlbums");*/
+    hookMethods(ar, async (albums: Album[], t: ArtistId) => {
+        addInsertionsToAlbumsList(albums, String(t.artistId));
+    }, "getDirectAlbums");
+}
+
+async function addInsertionsToTracksList(tracks: Track[], artistId: string) {
+    const insertions = sources.getArtistInsertions(artistId)?.tracks;
+    if (insertions) {
+        const insertionTracksMeta = await getTracks(...insertions.map(x => x.releaseId));
+        insertions.forEach((insertion, i) => {
+            insert(tracks, insertionTracksMeta[i], insertion.index);
+        })
+    }
+    return insertions;
+}
+
+async function addInsertionsToAlbumsList(albums: Album[], artistId: string) {
+    const insertions = sources.getArtistInsertions(artistId)?.albums;
+    if (insertions) {
+        console.error("GETTING", sources.getArtistInsertions(artistId));
+        const insertionTracksMeta = await getAlbums(...insertions.map(x => x.releaseId));
+        console.error(insertionTracksMeta, insertions, albums);
+        insertions.forEach((insertion, i) => {
+            insert(albums, insertionTracksMeta[i], insertion.index);
+        })
+    }
+    return insertions;
 }
 
 function hookLandingResource(lr: any) {
-    hookMethods(lr, async (block: any) => {
-        // #TODO add insertions
+    hookMethods(lr, async (block: any, info: { type?: "ARTIST_POPULAR_TRACKS" | "ARTIST_ALBUMS", source?: { uri?: string } }) => {
+        debug("\n\n\n\n\n",block, info)
+        let _artistId: string | undefined | null;
+        function getArtistId() {
+            if (_artistId !== undefined) return _artistId;
+            _artistId = null;
+            const re = /\/artists\/(\d*)\/.*/;
+            if (info.source?.uri && re.test(info.source?.uri)) {
+                _artistId = info.source.uri.match(re)![1];
+            }
+            return _artistId;
+        }
+
         if (Array.isArray(block.tracks)) {
+            if (info.type === "ARTIST_POPULAR_TRACKS" && getArtistId()) {
+                const insertions = await addInsertionsToTracksList(block.tracks, _artistId!);
+                if (insertions && block.pager?.total !== undefined) {
+                    block.pager.total += insertions.length
+                }
+            }
             for (const track of block.tracks) {
                 sources.spoofTrack(track)
             }
@@ -129,7 +160,28 @@ function hookLandingResource(lr: any) {
             }
         }
 
+        debug(Array.isArray(block.items), info.type === "ARTIST_ALBUMS", getArtistId())
         if (Array.isArray(block.items)) {
+            if (info.type === "ARTIST_ALBUMS" && getArtistId()) {
+                debug("DOIJDJODIOIJDOIJDJODIOIJDODIJOIJJOIDOIJDOIJD\n\n\n")
+                const albums: Album[] = [];
+                const insertions = await addInsertionsToAlbumsList(albums, _artistId!);
+                debug(albums, insertions)
+                insertions?.forEach((insertion, i) => {
+                    const album = albums[i]
+                    const data = {
+                        "type": "album_item", 
+                        "data": {
+                            "album": album,
+                            "artists": album.artists,
+                            "releaseDate": album.releaseDate
+                        }
+                    }
+                    debug(data)
+                    insert(block.items, data, insertion.index);
+                })
+            }
+
             for (const item of block.items) {
                 switch (item.type) {
                     case "album_item":
@@ -151,9 +203,10 @@ function hookSearchResource(sr: any) {
         for (const r of response.results) {
             if (r.album) sources.spoofAlbum(r.album);
             if (r.artist) sources.spoofAnyArtist(r.artist);
-            if (r.track) sources.spoofTrack(r.track)
+            if (r.track) sources.spoofTrack(r.track);
+            debug(r)
         }
-    })
+    }, "getInstantMixedSearch")
 }
 
 export function hookResources() { 

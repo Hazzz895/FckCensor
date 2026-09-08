@@ -10,6 +10,7 @@ import { IGetValue } from "@/ui/components/IGetValue";
 import { localizeSpoofableType } from "@/utils/common";
 import { getTracks } from "@/utils/music";
 import { AddSpoofAlertFieldButton } from "../SpoofAlertCustomPropertyField";
+import { AddEntityToListField } from "./AddEntityToListField";
 
 export abstract class SpoofAlertReleasesListField extends SpoofAlertEntityPropertyField {
     public constructor(alert: SpoofAlertBase, private readonly title: string, protected readonly type: "track" | "album", originalValue?: any) {
@@ -27,6 +28,7 @@ export abstract class SpoofAlertReleasesListField extends SpoofAlertEntityProper
 
     protected releaseNodes: (ElementWrap & IGetValue<any>)[] = [];
 
+
     protected createElement() {
         this.releaseNodes = []
         return <TextField Tag="div" style="display: flex; gap: 8px; flex-direction: column" header={this.title} class={styles.i + " " + " EditContentModal_input__8O8GH EditContentModal_field__rexIL"}>
@@ -35,17 +37,10 @@ export abstract class SpoofAlertReleasesListField extends SpoofAlertEntityProper
                 return n.element;
             })}
             <div class={styles.FullWidthContainer}>
-                <AddSpoofAlertFieldButton onclick={this.onReleaseAddClick.bind(this)}>{`Добавить ${localizeSpoofableType(this.type)}`}</AddSpoofAlertFieldButton>
+                {new AddEntityToListField<Release>(this.type, this.onReleaseAddInternal).element}
                 {this.getAdditionalActionButton()}
             </div>
         </TextField>
-    }
-
-    protected onReleaseAddClick(ev: MouseEvent) {
-        const button = (ev.currentTarget as HTMLButtonElement);
-        const field = <TextField onfocusout={this.onFocusLost.bind(this)} oninput={this.onTextFieldTextChanged.bind(this)} header={`Поиск по тексту / Ссылка на ${localizeSpoofableType(this.type)}`} placeholder="Поиск..."/>;
-        button.parentElement?.replaceWith(field);
-        field.querySelector("input")!.focus();
     }
 
     private onTextFieldTextChanged(ev: InputEvent) {

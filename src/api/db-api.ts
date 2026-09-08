@@ -2,7 +2,7 @@ import { debug, log } from "@/utils/logger";
 import Source from "./dto/sources/source";
 import { Track, Album, Artist } from "@/types";
 import TrackReplacement from "./dto/track-replacement";
-import { list } from "./remote-api";
+import { list, postProcessingInsertions } from "./remote-api";
 import { sources } from "./main-api";
 import { getTrackAvaiableSpoof, reloadPlayer } from "@/utils/music";
 import { ArtistInsertions } from "./dto/artist-insertion";
@@ -137,6 +137,8 @@ export async function loadLocalDb() {
             localSource.artistsInsertions[item.id] = item;
         }
 
+        postProcessingInsertions(localSource.artistsInsertions, localSource.trackSpoofs, localSource.albumSpoofs);
+        debug("POST PROCESSING", localSource.artistsInsertions, localSource.trackSpoofs, localSource.albumSpoofs);
         sources.pushSource(localSource);
 
         log("Loaded local data:", {
@@ -221,7 +223,6 @@ export class LocalSource implements Source {
     }
 
     getArtistInsertions(artistId: string): ArtistInsertions | null {
-        debug("\n\n\n\n\n\n", this.artistsInsertions)
         return this.artistsInsertions[artistId];
     }
 

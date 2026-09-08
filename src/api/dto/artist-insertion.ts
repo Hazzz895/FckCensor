@@ -1,6 +1,6 @@
 export interface ArtistInsertions {
-    tracks: Insertion[];
-    albums: Insertion[];
+    tracks?: Insertion[];
+    albums?: Insertion[];
 }
 
 export interface Insertion {

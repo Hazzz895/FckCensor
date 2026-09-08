@@ -25,7 +25,7 @@ export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField {
 
     valueToProperty() {
         return this.artistNodes
-                .map(x => x.getArtist())
+                .map(x => x.entity)
                 .filter(x => !!x);
     }
 
