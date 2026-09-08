@@ -26,6 +26,7 @@
   - [Поставить звезду на GitHub](https://github.com/Hazzz895/FckCensor)
   - [Оценить аддон в каталоге расширений PulseSync](https://pulsesync.dev/store/78d083c5-0510-4c41-b3de-41aab30a9fc5)
   - [Подать на чай](https://pay.cloudtips.ru/p/22c899bc)
+  - [Задонатить на хранилище данных аддона](https://t.me/tribute/app?startapp=g64j)
 
 ## Быстрый старт
 1. Установите модификацию [PulseSync](pulsesync.dev)
@@ -85,5 +86,6 @@
 - [Поставить звезду на GitHub](https://github.com/Hazzz895/FckCensor)
 - [Оценить аддон в каталоге расширений PulseSync](https://pulsesync.dev/store/78d083c5-0510-4c41-b3de-41aab30a9fc5)
 - [Подать на чай](https://pay.cloudtips.ru/p/22c899bc)
+- [Задонатить на хранилище данных аддона](https://t.me/tribute/app?startapp=g64j) *(подробнее в [«Не работает автоматическая подмена / подменённый трек не воспроизводится»](#не-работает-автоматическая-подмена--подменённый-трек-не-воспроизводится))*
 
 **Спасибо за то, что пользуетесь аддоном!❤️‍🩹**
