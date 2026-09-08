@@ -16,7 +16,7 @@ export class SpoofAlbumAlert extends SpoofEntityWithArtistsAlert<Album> {
     protected getChildren(): HTMLElement {
         return <div>
             {super.getChildren()}
-            {(this.trackList = new SpoofAlertAlbumTrackListField(this)).element}
+            {this.addPropertyField(new SpoofAlertAlbumTrackListField(this))}
         </div>
     }
 

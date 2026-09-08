@@ -8,9 +8,9 @@ export function ReleaseNode({ release, onremove }: { release?: Release; onremove
             <div class="PlayButtonWithCover_root__s6Orw TrackPlaylist_playButtonCell__Q6YT_">
                 <Cover mini={true} src={release?.coverUri ?? release?.ogImage}/>
             </div>
-            <div class="Meta_root__R8n1h Meta_metaContainer__7i2dp">
-                <div class="Meta_titleContainer__gDuXr">{release?.title ?? String(release?.id) ?? "..."}</div>
-                {release && <div class="SeparatedArtists_root_variant_breakAll__34YbW SeparatedArtists_root_clamp__SyvjM Meta_text__Y5uYH Meta_artists__VnR52">{String(release.artists?.map(x => x.name).join(", "))}</div>}
+            <div class="Meta_root__R8n1h" style="align-items: flex-start; flex-direction: column">
+                <div class="Meta_titleContainer__gDuXr">{release?.title ?? (release?.id ? `ID: ${release.id}` : "...")}</div>
+                {release && (release?.artists?.length ?? 0) > 0 ? <div class="SeparatedArtists_root_variant_breakAll__34YbW SeparatedArtists_root_clamp__SyvjM Meta_text__Y5uYH Meta_artists__VnR52">{String(release.artists?.map(x => x.name).join(", "))}</div> : undefined}
             </div>
             <CloseButton onclick={onremove}/>
         </div>;

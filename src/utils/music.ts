@@ -46,6 +46,12 @@ export async function getAlbumTracks(albumId: TrackId, ...args: any): Promise<Al
     })
 }
 
+export async function getTracks(...trackIds: TrackId[]): Promise<Track[]> {
+    return getDiResource("TracksResource")?.getTracksMeta({
+        trackIds: trackIds
+    });
+}
+
 export function getAudioMetadata(audioFile: File): Promise<HTMLAudioElement> {
    return new Promise((resolve, reject) => {
         const url = URL.createObjectURL(audioFile);

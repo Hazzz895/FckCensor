@@ -3,6 +3,7 @@ import { hookDi, hookMethods, HookMethod, findModule, appRequire } from "../util
 import { debug, error } from "@/utils/logger";
 import { Album, OuterArtist, SearchResponse, Track } from "@/types";
 import { insert } from "@/utils/common";
+import { getTracks } from "@/utils/music";
 
 function hookTrackResource(tr: any) {
     hookMethods(tr, async (tracks: Track) => {
@@ -84,39 +85,37 @@ function hookArtistResource(ar: any) {
 
     hookMethods(ar, async (trackIds: string[], t: ArtistId) => {
         sources.getArtistInsertions(t.artistId)?.tracks.forEach(insertion => {
-            if (insertion.release) {
-                const id = String(insertion.release.id);
-                if (insertion.index !== undefined) {
-                    trackIds.splice(insertion.index, 0, id)
-                }
-                else {
-                    trackIds.push(id)
-                }
+            if (insertion.index !== undefined) {
+                trackIds.splice(insertion.index, 0, insertion.releaseId);
+            }
+            else {
+                trackIds.push(insertion.releaseId)
             }
         });
     }, "getArtistTrackIds")
 
     hookMethods(ar, async (tracks: Track[], t: ArtistId) => {
-        sources.getArtistInsertions(t.artistId)?.tracks.forEach(insertion => {
-            if (insertion.release) {
-                debug(tracks)
-                insert(tracks, insertion.release, insertion.index);
-                debug(tracks)
-            }
-        });
+        const insertions = sources.getArtistInsertions(t.artistId)?.tracks;
+        if (insertions) {
+            const insertionTracksMeta = await getTracks(...insertions.map(x => x.releaseId));
+            insertions.forEach((insertion, i) => {
+                insert(tracks, insertionTracksMeta[i], insertion.index);
+            })
+        }
     }, "getArtistTracks");
 
-    hookMethods(ar, async (albums: Album[], t: ArtistId) => {
+    /*hookMethods(ar, async (albums: Album[], t: ArtistId) => {
         sources.getArtistInsertions(t.artistId)?.albums.forEach(insertion => {
             if (insertion.release) {
                 insert(albums, insertion.release, insertion.index);
             }
         });
-    }, "getDirectAlbums");
+    }, "getDirectAlbums");*/
 }
 
 function hookLandingResource(lr: any) {
     hookMethods(lr, async (block: any) => {
+        // #TODO add insertions
         if (Array.isArray(block.tracks)) {
             for (const track of block.tracks) {
                 sources.spoofTrack(track)

@@ -4,14 +4,15 @@ export interface RemoteList {
 }
 
 export interface RemoteSourceBase {
-    tracks:  Record<string, Track>;
-    albums:  Record<string, Album>;
-    artists: Record<string, Artist>;
-    tracks_storages: TracksStorage[];
+    tracks?:  Record<string, Track>;
+    albums?:  Record<string, Album>;
+    artists?: Record<string, Artist>;
+    artists_insertions?: Record<string, ArtistInsertions>;
+    tracks_storages?: TracksStorage[];
 }
 
 export interface RemoteSource extends RemoteSourceBase {
-    supported_version: string;
+    supported_version?: string;
 }
 
 export interface TracksStorage {
@@ -21,7 +22,8 @@ export interface TracksStorage {
 }
 
 export interface FckCensorSpoofData {
-    originalValues?: Record<string, any>
+    originalValues?: Record<string, any>,
+    insertion_index?: number
 }
 
 export interface Spoofable {
@@ -61,6 +63,7 @@ export interface Album extends Spoofable {
     id:                        number;
     title?:                    string;
     metaType?:                 string;
+    type?: string
     contentWarning?:           string;
     year?:                     number;
     releaseDate?:              Date;

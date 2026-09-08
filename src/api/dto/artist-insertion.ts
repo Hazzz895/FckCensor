@@ -1,11 +1,9 @@
-import { Album, Release, Track } from "@/types";
-
 export interface ArtistInsertions {
-    tracks: Insertion<Track>[];
-    albums: Insertion<Album>[];
+    tracks: Insertion[];
+    albums: Insertion[];
 }
 
-export interface Insertion<T extends Release> {
+export interface Insertion {
     index?: number;
-    release: T;
+    releaseId: string;
 }

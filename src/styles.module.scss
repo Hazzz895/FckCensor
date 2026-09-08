@@ -222,3 +222,13 @@ option {
         width: 100%;
     }
 }
+
+.FullWidthContainer {
+    width: 100%;
+    display: flex;
+    gap: 16px;
+
+    & > * {
+        flex: 1
+    }
+}

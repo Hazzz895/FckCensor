@@ -4,8 +4,6 @@
             "supported_version": ">=0.0.0",
             "tracks": {
                     "63104735": {
-                        "available": true,
-                        "error": null,
                         "coverUri": "https://avatars.yandex.net/get-music-content/2358262/6e2a2403.a.10009371-1/%%"
                     },
                     "137472446": {
@@ -13,6 +11,15 @@
                     },
                     "151855585": {
                         "title": "ты уебалась головой"
+                    },
+                    "145054524": {
+                        "artists": [
+                            { "id": 4952161, "name": "Пошлая Молли" }
+                        ],
+                        "coverUri": "https://t2.genius.com/unsafe/%%/https%3A%2F%2Fimages.genius.com%2Fe5ac445f79bbf3af7a3582d2694c6de6.1000x1000x1.png",
+                        "__fckCensor": {
+                            "insertion_index": 2
+                        }
                     }
             },
             "albums": {
@@ -45,7 +52,13 @@
                     "track_ids": [],
                     "tracks": {}
                 }
-            ]
+            ],
+            "artists_insertions": {
+                "6531894": {
+                    "tracks": [{ "releaseId": "57905", "index": 0 }],
+                    "albums": []
+                }
+            }
         }
     ]
 }

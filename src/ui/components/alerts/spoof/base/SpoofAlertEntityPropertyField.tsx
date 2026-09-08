@@ -16,5 +16,7 @@ export abstract class SpoofAlertEntityPropertyField<T extends HTMLElement = HTML
 
     abstract valueToProperty(): any;
 
-    abstract hasDiffs(prop: any): boolean;
+    hasDiffs(prop: any): boolean {
+        return JSON.stringify(prop) != JSON.stringify(this.originalValue);
+    }
 }

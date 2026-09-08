@@ -1,3 +1,5 @@
+import { SpoofableType } from "@/types";
+
 export const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
 
 export function numberToHsl(number: number) {
@@ -17,6 +19,10 @@ export const httpsify = (url: string) => url.includes("://") ? url : "https://" 
 export function isEmptyObject(obj?: object | null) {
     if (!obj) return true;
 
+    if (Array.isArray(obj)) {
+        return obj.length === 0;
+    }
+
     for (let _ in obj) 
         return false;
 
@@ -26,3 +32,11 @@ export function isEmptyObject(obj?: object | null) {
 export const randomString = () => Math.random().toString(36).slice(2);
 
 export const insert = <T>(list: T[], object: T, index: number = -1): T[] => list.splice(clamp(index < 0 ? list.length + index + 1 : index, 0, list.length), 0, object);
+
+export function localizeSpoofableType(type: SpoofableType) {
+    switch (type) {
+        case "album": return "альбом"
+        case "artist": return "исполнитель"
+        case "track": return "трек"
+    }
+}

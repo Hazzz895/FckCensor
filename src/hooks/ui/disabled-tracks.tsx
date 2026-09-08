@@ -3,7 +3,7 @@ import { ActionButton, AlertButtons, closeAlert, createScrimAlert, ScrimAlert } 
 import { listenAddTrackNodes } from "./observer";
 import { Q_DISABLED_TRACK, Q_TRACK_ROOT } from "./constants";
 import { getDb, localSource } from "@/api/db-api";
-import { closestInTree, getTrackFromNode, spoofTrackNode } from "@/utils/ui-utils";
+import { closestInTree, getTrackFromNode } from "@/utils/ui-utils";
 import { completeTutorial, DISABLED_TRACK_TUTORIAL } from "./tutorial";
 import { createTrackSpoofAlertFor } from "@/ui/components/alerts/spoof/spoof-alert";
 

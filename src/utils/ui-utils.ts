@@ -99,6 +99,8 @@ export function spoofNode(node: HTMLElement, entity: SpoofableEntity | Spoofable
 
     if (!e) return;
 
+    m = m.bind(sources);
+
     runUnprotected(e, () => {
         m(e);
         if ("isAvailable" in e && "available" in e && e.available !== undefined) {

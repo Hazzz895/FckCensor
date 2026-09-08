@@ -15,6 +15,7 @@ const REPORTED_TRACKS = "reported_tracks"
 const TRACK_SPOOFS = "track_spoofs"
 const ALBUM_SPOOFS = "album_spoofs"
 const ARTIST_SPOOFS = "artists_spoofs"
+const ARTIST_INSERTIONS = "artists_insertions"
 
 export function getDb(): Promise<IDBDatabase> {
     if (!dbPromise) {
@@ -66,6 +67,7 @@ export function getDb(): Promise<IDBDatabase> {
                     TRACK_SPOOFS,
                     ALBUM_SPOOFS,
                     ARTIST_SPOOFS,
+                    ARTIST_INSERTIONS
                 );
             };
 
@@ -80,7 +82,7 @@ export async function loadLocalDb() {
     try {
         const db = await getDb();
         const tx = db.transaction(
-            [TRACKS, TRACK_SPOOFS, ALBUM_SPOOFS, ARTIST_SPOOFS],
+            [TRACKS, TRACK_SPOOFS, ALBUM_SPOOFS, ARTIST_SPOOFS, ARTIST_INSERTIONS],
             "readonly"
         );
 
@@ -88,50 +90,57 @@ export async function loadLocalDb() {
         const trackSpoofsStore = tx.objectStore(TRACK_SPOOFS);
         const albumSpoofsStore = tx.objectStore(ALBUM_SPOOFS);
         const artistSpoofsStore = tx.objectStore(ARTIST_SPOOFS);
+        const artistInsertionsStore = tx.objectStore(ARTIST_INSERTIONS);
 
         const tracksReq = tracksStore.getAllKeys();
         const trackSpoofsReq = trackSpoofsStore.getAll();
         const albumSpoofsReq = albumSpoofsStore.getAll();
         const artistSpoofsReq = artistSpoofsStore.getAll();
+        const artistInsertionsReq = artistInsertionsStore.getAll();
 
         await new Promise<void>((resolve, reject) => {
             tx.oncomplete = () => resolve();
             tx.onerror = () => reject(tx.error);
         });
 
-        localSource.trackIds = tracksReq.result.map(String);
+        localSource.replacementsTrackIds = tracksReq.result.map(String);
 
         localSource.trackSpoofs = {};
-        for (const item of trackSpoofsReq.result as (Track & { id: TrackId })[]) {
+        for (const item of trackSpoofsReq.result as (Track & { id: string })[]) {
             if (item.coverUri && (item.coverUri as any) instanceof Blob) {
                 item.coverUri = URL.createObjectURL(item.coverUri as any);
             }
-            localSource.trackSpoofs[String(item.id)] = item;
+            localSource.trackSpoofs[item.id] = item;
             delete (item as any).id;
         }
 
         localSource.albumSpoofs = {};
-        for (const item of albumSpoofsReq.result as (Album & { id: TrackId })[]) {
+        for (const item of albumSpoofsReq.result as (Album & { id: string })[]) {
             if (item.coverUri && (item.coverUri as any) instanceof Blob) {
                 item.coverUri = URL.createObjectURL(item.coverUri as any);
             }
-            localSource.albumSpoofs[String(item.id)] = item;
+            localSource.albumSpoofs[item.id] = item;
             delete (item as any).id;
         }
 
         localSource.artistSpoofs = {};
-        for (const item of artistSpoofsReq.result as (Artist & { id: TrackId })[]) {
+        for (const item of artistSpoofsReq.result as (Artist & { id: string })[]) {
             if (item.cover?.uri && (item.cover.uri as any) instanceof Blob) {
                 item.cover.uri = URL.createObjectURL(item.cover.uri as any);
             }
-            localSource.artistSpoofs[String(item.id)] = item;
+            localSource.artistSpoofs[item.id] = item;
             delete (item as any).id;
+        }
+
+        localSource.artistsInsertions = {};
+        for (const item of artistInsertionsReq.result as (ArtistInsertions & { id: string })[]) {
+            localSource.artistsInsertions[item.id] = item;
         }
 
         sources.pushSource(localSource);
 
         log("Loaded local data:", {
-            tracks: localSource.trackIds.length,
+            tracks: localSource.replacementsTrackIds.length,
             trackSpoofs: Object.keys(localSource.trackSpoofs).length,
             albumSpoofs: Object.keys(localSource.albumSpoofs).length,
             artistSpoofs: Object.keys(localSource.artistSpoofs).length,
@@ -146,7 +155,8 @@ const MAX_TRACKS_CACHE_LENGTH = 4;
 export class LocalSource implements Source {
     private readonly playerReplacementsCache: Map<string, TrackReplacement> = new Map<string, TrackReplacement>();
     
-    public trackIds: string[] = [];
+    public replacementsTrackIds: string[] = [];
+    public artistsInsertions: Record<string, ArtistInsertions> = {};
     public trackSpoofs: Record<string, Track> = {};
     public albumSpoofs: Record<string, Album> = {};
     public artistSpoofs: Record<string, Artist> = {};
@@ -182,7 +192,7 @@ export class LocalSource implements Source {
     }
 
     hasPlayerReplacement(trackId: string): boolean {
-        return this.trackIds.includes(String(trackId)) || this.playerReplacementsCache.has(trackId);
+        return this.replacementsTrackIds.includes(String(trackId)) || this.playerReplacementsCache.has(trackId);
     }
 
     getTrackSpoof(trackId: string): Track | null {
@@ -210,22 +220,27 @@ export class LocalSource implements Source {
         return null;
     }
 
+    getArtistInsertions(artistId: string): ArtistInsertions | null {
+        debug("\n\n\n\n\n\n", this.artistsInsertions)
+        return this.artistsInsertions[artistId];
+    }
+
     isRemoteException(trackId: string): boolean {
         return false;
     }
 
-    async pushTrackReplacement(trackId: string, file: File) {
-        if (!this.trackIds.includes(trackId)) {
-            this.trackIds.push(trackId);
+    pushTrackReplacement(trackId: string, file: File) {
+        if (!this.replacementsTrackIds.includes(trackId)) {
+            this.replacementsTrackIds.push(trackId);
         }
 
         reloadPlayer(trackId);
-        await this.pushToDb(TRACKS, trackId, { data: file });
+        return this.pushToDb(TRACKS, trackId, { data: file });
         //await this.buildPlayerReplacement(strId);
     }
 
     removeTrackReplacement(trackId: string) {
-        this.trackIds = this.trackIds.filter(x => x !== trackId);
+        this.replacementsTrackIds = this.replacementsTrackIds.filter(x => x !== trackId);
         if (this.playerReplacementsCache.has(trackId)) {
             URL.revokeObjectURL(this.playerReplacementsCache.get(trackId)!.url);
             this.playerReplacementsCache.delete(trackId);
@@ -234,7 +249,7 @@ export class LocalSource implements Source {
         return this.removeFromDb(TRACKS, trackId);
     }
 
-    async pushTrackSpoof(track: Track, trackId?: string) {
+    pushTrackSpoof(track: Track, trackId?: string) {
         const id = String(trackId || track.id);
 
         const oldTrack = this.trackSpoofs[id];
@@ -248,7 +263,7 @@ export class LocalSource implements Source {
         }
 
         this.trackSpoofs[id] = track;
-        await this.pushToDb(TRACK_SPOOFS, id, dbTrack);
+        return this.pushToDb(TRACK_SPOOFS, id, dbTrack);
     }
 
     removeTrackSpoof(trackId: string) {
@@ -256,7 +271,7 @@ export class LocalSource implements Source {
         return this.removeFromDb(TRACK_SPOOFS, trackId);
     }
 
-    async pushAlbumSpoof(album: Album, albumId?: string) {
+    pushAlbumSpoof(album: Album, albumId?: string) {
         const id = String(albumId || album.id);
 
         const oldAlbum = this.albumSpoofs[id];
@@ -270,7 +285,7 @@ export class LocalSource implements Source {
         }
 
         this.albumSpoofs[id] = album;
-        await this.pushToDb(ALBUM_SPOOFS, id, dbAlbum);
+        return this.pushToDb(ALBUM_SPOOFS, id, dbAlbum);
     }
 
     removeAlbumSpoof(albumId: string) {
@@ -278,7 +293,7 @@ export class LocalSource implements Source {
         return this.removeFromDb(ALBUM_SPOOFS, albumId);
     }
 
-    async pushArtistSpoof(artist: Artist, artistId?: string) {
+    pushArtistSpoof(artist: Artist, artistId?: string) {
         const id = String(artistId || artist.id);
 
         const oldArtist = this.artistSpoofs[id];
@@ -292,7 +307,7 @@ export class LocalSource implements Source {
         }
 
         this.artistSpoofs[id] = artist;
-        await this.pushToDb(ARTIST_SPOOFS, id, dbArtist);
+        return this.pushToDb(ARTIST_SPOOFS, id, dbArtist);
     }
 
     removeArtistSpoof(artistId: string) {
@@ -300,21 +315,30 @@ export class LocalSource implements Source {
         return this.removeFromDb(ARTIST_SPOOFS, artistId);
     }
 
-    getArtistInsertions(artistId: string): ArtistInsertions | null {
-        throw new Error("Method not implemented.");
+    pushArtistInsertions(artistId: string, insertions: ArtistInsertions) {
+        debug("PUSHING", artistId, insertions)
+        this.artistsInsertions[artistId] = insertions;
+        return this.pushToDb(ARTIST_INSERTIONS, artistId, insertions);
+    }
+
+    removeArtistInsertions(artistId: string) {
+        delete this.artistsInsertions[artistId];
+        return this.removeFromDb(ARTIST_INSERTIONS, artistId);
+    }
+
+    private async openStore(table_name: string, mode: IDBTransactionMode = "readwrite") {
+        const db = await getDb();
+        return db.transaction(table_name, mode)
+                 .objectStore(table_name);
     }
 
     private async removeFromDb(table_name: string, id: string) {
-        const db = await getDb();
-        const tx = db.transaction(table_name, "readwrite");
-        const store = tx.objectStore(table_name);
+        const store = await this.openStore(table_name);
         store.delete(id);
     }
 
     private async pushToDb(table_name: string, id: string, value: any) {
-        const db = await getDb();
-        const tx = db.transaction(table_name, "readwrite");
-        const store = tx.objectStore(table_name);
+        const store = await this.openStore(table_name);
         store.put({ ...value, id });
     }
 }

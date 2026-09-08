@@ -21,4 +21,12 @@ export default abstract class ElementWrap<T extends HTMLElement = HTMLElement> {
         }
         return this._element
     }
+
+    public static from(node: HTMLElement): ElementWrap {
+        return new class clz extends this {
+            protected createElement() {
+                return node;
+            }
+        }
+    }
 }

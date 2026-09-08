@@ -20,5 +20,6 @@ declare const classNames: {
   readonly TabbedArtistSearchResults: "TabbedArtistSearchResults";
   readonly TabbedArtistSearchResult: "TabbedArtistSearchResult";
   readonly CoverAndTitleContainer: "CoverAndTitleContainer";
+  readonly FullWidthContainer: "FullWidthContainer";
 };
 export = classNames;

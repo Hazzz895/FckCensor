@@ -68,11 +68,11 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         }
         this.id = String(entity.id);
 
-        this.hadSpoof =(this.type == "artist" && sources.hasArtistSpoof(this.id)) ||
+        this.hadSpoof =(this.type == "artist" && (sources.hasInsertions(this.id) || sources.hasArtistSpoof(this.id))) ||
                         (this.type == "album" && sources.hasAlbumSpoof(this.id)) ||
                         (this.type == "track" && sources.hasTrackSpoof(this.id));
 
-        const addPropButton = <AddSpoofAlertFieldButton onclick={(ev: MouseEvent) => onAddPropButtonClick(this, ev)}/>
+        const addPropButton = <AddSpoofAlertFieldButton onclick={(ev: MouseEvent) => onAddPropButtonClick(this, ev)}>Добавить поле</AddSpoofAlertFieldButton>
 
         function onAddPropButtonClick(ts: SpoofAlertBase, ev: MouseEvent) {
             spoofAlert.insertBefore(ts.addPropertyField(new SpoofAlertCustomPropertyField(ts)), addPropButton)

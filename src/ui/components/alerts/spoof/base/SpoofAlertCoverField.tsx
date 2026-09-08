@@ -25,7 +25,7 @@ export class SpoofAlertCoverField extends SpoofAlertEntityPropertyField {
     }
 
     hasDiffs(prop: any): boolean {
-        return prop !== this.alert.entity.coverUri;
+        return this.currentImageUrl != null && prop !== this.alert.entity.coverUri;
     }
 
     protected createElement(): HTMLElement {

@@ -37,7 +37,7 @@ export function prepareOptions() {
         if (!artistHeaderRoot) return;
         const artistData = getArtistFromNode(artistHeaderRoot);
         if (!artistData) return;
-        const option = <SpoofOption label="Подменить артиста" onclick={(el: HTMLElement) => createArtistSpoofAlertFor(el, artistData)}/>
+        const option = <SpoofOption label="Подменить исполнителя" onclick={(el: HTMLElement) => createArtistSpoofAlertFor(el, artistData)}/>
         artistOptionsMenu.appendChild(option)
     }, "artist")
 

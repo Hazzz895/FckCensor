@@ -30,10 +30,6 @@ export async function loadRemoteList() {
                         tracks: old_tracks,
                     }
                 ],
-                supported_version: ">0.0.0",
-                albums: {},
-                tracks: {},
-                artists: {}
             }
         ]
     })))
@@ -43,18 +39,22 @@ export async function loadRemoteList() {
 export class MinifiedRemoteSource implements RemoteSourceBase {
     public constructor(list: RemoteList) {
         for (const source of list.sources) {
-            if (!source.supported_version || !versionSatisfies(addonConfig.version, source.supported_version)) continue;
+            if (source.supported_version && !versionSatisfies(addonConfig.version, source.supported_version)) continue;
             
             this.tracks = { ...source.tracks, ...this.tracks};
             this.albums = { ...source.albums, ...this.albums};
             this.artists = { ...source.artists, ...this.artists }
-            this.tracks_storages = [ ...source.tracks_storages, ...this.tracks_storages ]
+            this.artists_insertions = { ...source.artists_insertions, ...this.artists_insertions };
+            if (source.tracks_storages) {
+                this.tracks_storages = [ ...source.tracks_storages, ...this.tracks_storages ]
+            }
         }
     }
 
     tracks: Record<string, Track> = {};
     albums: Record<string, Album> = {};
     artists: Record<string, Artist> = {};
+    artists_insertions: Record<string, ArtistInsertions> = {};
     tracks_storages: TracksStorage[] = [];
 }
 
@@ -132,27 +132,18 @@ export class RemoteSource implements Source {
     }
 
     getTrackSpoof(trackId: string): Track | null {
-        if (trackId in this.list.tracks) {
-            return this.list.tracks[trackId]
-        }
-        return null;
+        return this.list.tracks[trackId] ?? null;
     }
 
     getAlbumSpoof(albumId: string): Album | null {
-        if (albumId in this.list.albums) {
-            return this.list.albums[albumId]
-        }
-        return null;
+        return this.list.albums[albumId] ?? null;
     }
 
     getArtistSpoof(artistId: string): Artist | null {
-        if (artistId in this.list.artists) {
-            return this.list.artists[artistId];
-        }
-        return null;
+        return this.list.artists[artistId] ?? null;
     }
 
     getArtistInsertions(artistId: string): ArtistInsertions | null {
-        throw new Error("Method not implemented.");
+        return this.list.artists_insertions[artistId] ?? null;
     }
 }

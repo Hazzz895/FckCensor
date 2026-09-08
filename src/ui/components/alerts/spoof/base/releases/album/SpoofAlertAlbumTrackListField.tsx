@@ -6,11 +6,12 @@ import ElementWrap from "@/ui/components/ElementWrap";
 import { IGetValue } from "@/ui/components/IGetValue";
 import { getAlbumTracks } from "@/utils/music";
 import { debug } from "@/utils/logger";
+import { ActionButton } from "@/ui/components/alerts/alerts";
+import { AddSpoofAlertFieldButton } from "../../SpoofAlertCustomPropertyField";
 
-export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField<DiskNode> implements IGetValue<Track[][]> {
+export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField implements IGetValue<Track[][]> {
     public constructor(alert: SpoofAlertBase) {
-        debug(alert.album)
-        super(alert, "track");
+        super(alert, "Треки альбома", "track", alert.album.volumes);
     }
 
     private tracks?: Track[][] | null
@@ -40,7 +41,26 @@ export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField<D
     }
 
     public getValue() {
-        return this.releaseNodes.map(node => node.getValue());
+        return (this.releaseNodes as DiskNode[]).map(node => node.getValue()).filter(x => x.length > 0);
+    }
+
+    protected getAdditionalActionButton(): HTMLElement | undefined {
+        return <AddSpoofAlertFieldButton onclick={this.onAddDiskClick.bind(this)}>Добавить диск</AddSpoofAlertFieldButton>
+    }
+
+    private onAddDiskClick() {
+        this.tracks?.push([]);
+        this.reRenderElement();
+    }
+
+    protected onReleaseAdd(track: Track): void {
+        if (!this.tracks) return;
+        this.tracks[this.tracks.length - 1].push(track);
+    }
+
+    valueToProperty() {
+        debug(this.originalValue, this.getValue());
+        return this.getValue();
     }
 }
 
@@ -51,7 +71,7 @@ export class DiskNode extends ElementWrap implements IGetValue<Track[]> {
         const header = this.index !== undefined ? <div class="TextVolume_root__wxSaK"><h2 class="_MWOVuZRvUQdXKTMcOPx _sd8Q9d_Ttn0Ufe4ISWS nSU6fV9y80WrZEfafvww CommonAlbumPage_text__kqBSb">Диск {this.index + 1}</h2></div> : undefined;
         return <div>
             {header}
-            {this.disk.map(t => <ReleaseNode onremove={(ev) => {}} release={t}/>)}
+            {this.disk.map((t, i) => <ReleaseNode onremove={() => { this.disk.splice(i, 1); this.reRenderElement(); }} release={t}/>)}
         </div>
     }
 

@@ -3,6 +3,7 @@ import { CloseButton, TextField } from "@/ui/components/alerts/alerts";
 import { debug } from "@/utils/logger";
 import { SpoofAlertBase } from "./SpoofAlertBase";
 import styles from "@/styles.module.scss";
+import { JSX } from "@/jsx-runtime";
 
 export default class SpoofAlertCustomPropertyField extends SpoofAlertEntityPropertyField {
     public constructor(alert: SpoofAlertBase) {
@@ -147,6 +148,6 @@ export default class SpoofAlertCustomPropertyField extends SpoofAlertEntityPrope
     }
 
 
-export function AddSpoofAlertFieldButton({ ...props }) {
-    return <button {...props} class={`EditContentModal_input__8O8GH EditContentModal_field__rexIL ${styles.AddSpoofAlertFieldField}`}>Добавить поле</button>
+export function AddSpoofAlertFieldButton({ children, ...props }: JSX.HTMLAttributes) {
+    return <button {...props} class={`EditContentModal_input__8O8GH EditContentModal_field__rexIL ${styles.AddSpoofAlertFieldField}`}>{children ?? "Добавить поле"}</button>
 }

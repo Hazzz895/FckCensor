@@ -39,14 +39,10 @@ export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField {
         debug(prop, this.originalValue)
         if (prop.length != this.originalValue.length) return true;
 
-        const set = new Set(this.originalValue.map((item: Artist) => this.artistIdentity(item)));
-        return !prop.every((item: Artist) => set.has(this.artistIdentity(item)));
+        return JSON.stringify(this.originalValue) != JSON.stringify(prop);
     }
 
-    private artistIdentity(artist: Artist) {
-        return artist.id != null ? `id:${artist.id}` : `name:${artist.name ?? ""}`;
-    }
-    
+
     renderArtists() {
         const container = this.element.querySelector('.EditContentModal_field__rexIL > .EditContentModal_input__8O8GH')!
         container.innerHTML = ''
