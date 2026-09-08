@@ -1,10 +1,12 @@
 {
+    
+    "$schema": "./list_v2.schema.json",
     "sources": [
         {
             "supported_version": ">=0.0.0",
             "tracks": {
                     "63104735": {
-                        "coverUri": "https://avatars.yandex.net/get-music-content/2358262/6e2a2403.a.10009371-1/%%"
+                        "coverUri": "avatars.yandex.net/get-music-content/2358262/6e2a2403.a.10009371-1/%%"
                     },
                     "137472446": {
                         "title": "таблетки"
@@ -16,9 +18,10 @@
                         "artists": [
                             { "id": 4952161, "name": "Пошлая Молли" }
                         ],
-                        "coverUri": "https://t2.genius.com/unsafe/%%/https%3A%2F%2Fimages.genius.com%2Fe5ac445f79bbf3af7a3582d2694c6de6.1000x1000x1.png",
+                        "coverUri": "t2.genius.com/unsafe/%%/https%3A%2F%2Fimages.genius.com%2Fe5ac445f79bbf3af7a3582d2694c6de6.1000x1000x1.png",
+                        "durationMs": 123190,
                         "__fckCensor": {
-                            "insertion_index": 2
+                            "insertionIndex": 2
                         }
                     }
             },
@@ -38,7 +41,29 @@
                         { "id": 110945092 },
                         { "id": 110945093 }
                     ]],
-                    "coverUri": "https://avatars.yandex.net/get-music-content/15317937/6634021c.a.24720439-2/%%"
+                    "coverUri": "avatars.yandex.net/get-music-content/15317937/6634021c.a.24720439-2/%%"
+                },
+                "41940329": {
+                    "title": "Жилы",
+                    "artists": [
+                        { "name": "zavet", "id": 7081546 }
+                    ],
+                    "releaseDate": "2020-04-10T00:00:00+03:00",
+                    "__fckCensor": {
+                        "insertionIndex": -1
+                    },
+                    "coverUri": "avatars.yandex.net/get-music-content/2358262/e39db8cc.a.10241804-1/%%"
+                },
+                "41831097": {
+                    "title": "Kaidan",
+                    "artists": [
+                        { "name": "zavet", "id": 7081546 }
+                    ],
+                    "releaseDate": "2019-07-10T00:00:00+03:00",
+                    "__fckCensor": {
+                        "insertionIndex": -1
+                    },
+                    "coverUri": "avatars.yandex.net/get-music-content/142001/f498c5cb.a.7399294-1/%%"
                 }
             },
             "artists": {
@@ -48,15 +73,14 @@
             },
             "tracks_storages": [
                 {
-                    "url_template": "https://raw.githubusercontent.com/Hazzz895/FckCensorData/refs/heads/main/tracks/%%",
+                    "url_template": "raw.githubusercontent.com/Hazzz895/FckCensorData/refs/heads/main/tracks/%%",
                     "track_ids": [],
                     "tracks": {}
                 }
             ],
             "artists_insertions": {
-                "6531894": {
-                    "tracks": [{ "releaseId": "57905", "index": 0 }],
-                    "albums": []
+                "7081546": {
+                    "tracks": [{ "releaseId": "63104735", "index": 0 }]
                 }
             }
         }

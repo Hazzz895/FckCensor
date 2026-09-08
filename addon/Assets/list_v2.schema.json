@@ -1,0 +1,312 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Hazzz895/FckCensorData/refs/heads/main/list_v2.schema.json",
+  "title": "FckCensor RemoteList",
+  "description": "Схема для https://raw.githubusercontent.com/Hazzz895/FckCensorData/refs/heads/main/list_v2.json",
+  "type": "object",
+  "required": ["sources"],
+  "properties": {
+    "sources": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/RemoteSource" }
+    },
+    "$schema": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+
+  "$defs": {
+    "EntityId": {
+      "description": "ID сущности.",
+      "oneOf": [
+        { "type": "string" },
+        { "type": "number" }
+      ]
+    },
+
+    "CoverUri": {
+      "description": "Ссылка на обложку. Не должна начинаться на https://",
+      "pattern": "^(?!https:\/\/).+",
+      "type": "string"
+    },
+
+    "NumericKeyRecord": {
+      "description": "Общий шаблон для Record<string, T>, где ключ — числовой id в виде строки.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[0-9]+$"
+      }
+    },
+
+    "FckCensorSpoofData": {
+      "type": "object",
+      "properties": {
+        "originalValues": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Исходные (до подмены) значения полей сущности."
+        },
+        "insertionIndex": {
+          "type": "number",
+          "description": "Позиция вставки в профиль авторов трека начиная с нуля. Применимо только на треках и альбомах с явным указанием исполнетелей. Может быть положительным и отрицательным. Подробнее: https://github.com/Hazzz895/FckCensor/blob/v2/FAQ.md#добавление-треков-и-альбомов-в-профиль-исполнителя"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "RemoteSource": {
+      "type": "object",
+      "properties": {
+        "supported_version": {
+          "type": "string",
+          "description": "Диапазон поддерживаемых версий клиента в формате semver, например '>=0.0.0'."
+        },
+        "tracks": { "$ref": "#/$defs/TrackRecord" },
+        "albums": { "$ref": "#/$defs/AlbumRecord" },
+        "artists": { "$ref": "#/$defs/ArtistRecord" },
+        "artists_insertions": { "$ref": "#/$defs/ArtistInsertionsRecord" },
+        "tracks_storages": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/TracksStorage" }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "TrackRecord": {
+      "allOf": [
+        { "$ref": "#/$defs/NumericKeyRecord" },
+        {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/Track" }
+        }
+      ]
+    },
+
+    "AlbumRecord": {
+      "allOf": [
+        { "$ref": "#/$defs/NumericKeyRecord" },
+        {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/Album" }
+        }
+      ]
+    },
+
+    "ArtistRecord": {
+      "allOf": [
+        { "$ref": "#/$defs/NumericKeyRecord" },
+        {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/Artist" }
+        }
+      ]
+    },
+
+    "ArtistInsertionsRecord": {
+      "allOf": [
+        { "$ref": "#/$defs/NumericKeyRecord" },
+        {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/ArtistInsertions" }
+        }
+      ]
+    },
+
+    "Cover": {
+      "type": "object",
+      "properties": {
+        "uri": { "$ref": "#/$defs/CoverUri" },
+        "color": { "type": "string" },
+        "derivedColors": { "$ref": "#/$defs/DerivedColors" },
+        "prefix": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "DerivedColors": {
+      "type": "object",
+      "properties": {
+        "average": { "type": "string" },
+        "waveText": { "type": "string" },
+        "miniPlayer": { "type": "string" },
+        "accent": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "Counts": {
+      "type": "object",
+      "properties": {
+        "tracks": { "type": "integer", "minimum": 0 },
+        "directAlbums": { "type": "integer", "minimum": 0 },
+        "alsoAlbums": { "type": "integer", "minimum": 0 },
+        "alsoTracks": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+
+    "Artist": {
+      "description": "Сущность исполнителя.",
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/$defs/EntityId" },
+        "name": { "type": "string" },
+        "various": { "type": "boolean" },
+        "composer": { "type": "boolean" },
+        "cover": { "$ref": "#/$defs/Cover" },
+        "coverUri": { "$ref": "#/$defs/CoverUri" },
+        "ogImage": { "type": "string" },
+        "genres": { "type": "array", "items": { "type": "string" } },
+        "counts": { "$ref": "#/$defs/Counts" },
+        "available": { "type": "boolean" },
+        "disclaimers": { "type": "array", "items": {} },
+        "ratings": {},
+        "links": { "type": "array", "items": {} },
+        "ticketsAvailable": { "type": "boolean" },
+        "likesCount": { "type": "integer", "minimum": 0 },
+        "fullNames": { "type": "array", "items": { "type": "string" } },
+        "description": {},
+        "countries": { "type": "array", "items": { "type": "string" } },
+        "initDate": { "type": "string", "format": "date-time" },
+        "enWikipediaLink": { "type": "string" },
+        "dbAliases": { "type": "array", "items": { "type": "string" } },
+        "extraActions": { "type": "array", "items": {} },
+        "hasTrailer": { "type": "boolean" },
+        "trailer": {},
+        "derivedColors": { "$ref": "#/$defs/DerivedColors" },
+        "__fckCensor": { "$ref": "#/$defs/FckCensorSpoofData" }
+      },
+      "additionalProperties": false
+    },
+
+    "Album": {
+      "description": "Сущность альбома.",
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/$defs/EntityId" },
+        "title": { "type": "string" },
+        "metaType": { "type": "string" },
+        "type": { "type": "string" },
+        "contentWarning": { "type": "string" },
+        "year": { "type": "integer" },
+        "releaseDate": { "type": "string", "format": "date-time" },
+        "coverUri": { "$ref": "#/$defs/CoverUri" },
+        "ogImage": { "type": "string" },
+        "genre": { "type": "string" },
+        "trackCount": { "type": "integer", "minimum": 0 },
+        "likesCount": { "type": "integer", "minimum": 0 },
+        "recent": { "type": "boolean" },
+        "veryImportant": { "type": "boolean" },
+        "artists": { "type": "array", "items": { "$ref": "#/$defs/Artist" } },
+        "labels": { "type": "array", "items": {} },
+        "available": { "type": "boolean" },
+        "availableForPremiumUsers": { "type": "boolean" },
+        "availableForOptions": { "type": "array", "items": { "type": "string" } },
+        "availableForMobile": { "type": "boolean" },
+        "availablePartially": { "type": "boolean" },
+        "bests": { "type": "array", "items": {} },
+        "disclaimers": { "type": "array", "items": { "type": "string" } },
+        "listeningFinished": { "type": "boolean" },
+        "trackPosition": {},
+        "volumes": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/Track" }
+          }
+        },
+        "__fckCensor": { "$ref": "#/$defs/FckCensorSpoofData" }
+      },
+      "additionalProperties": false
+    },
+
+    "Track": {
+      "description": "Сущность трека.",
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/$defs/EntityId" },
+        "realId": { "$ref": "#/$defs/EntityId" },
+        "title": { "type": "string" },
+        "contentWarning": { "type": "string" },
+        "available": { "type": "boolean" },
+        "availableForPremiumUsers": { "type": "boolean" },
+        "availableFullWithoutPermission": { "type": "boolean" },
+        "availableForOptions": { "type": "array", "items": { "type": "string" } },
+        "disclaimers": { "type": "array", "items": { "type": "string" } },
+        "artists": { "type": "array", "items": { "$ref": "#/$defs/Artist" } },
+        "albums": { "type": "array", "items": { "$ref": "#/$defs/Album" } },
+        "lyricsAvailable": { "type": "boolean" },
+        "type": { "type": "string" },
+        "rememberPosition": { "type": "boolean" },
+        "trackSharingFlag": { "type": "string" },
+        "lyricsInfo": {},
+        "trackSource": { "type": "string" },
+        "error": { "type": "string" },
+        "major": {},
+        "storageDir": {},
+        "durationMs": { "type": "integer", "minimum": 0 },
+        "fileSize": { "type": "integer", "minimum": 0 },
+        "r128": {},
+        "fade": {},
+        "previewDurationMs": { "type": "integer", "minimum": 0 },
+        "coverUri": { "$ref": "#/$defs/CoverUri" },
+        "derivedColors": {},
+        "ogImage": { "type": "string" },
+        "specialAudioResources": { "type": "array", "items": { "type": "string" } },
+        "__fckCensor": { "$ref": "#/$defs/FckCensorSpoofData" }
+      },
+      "additionalProperties": false
+    },
+
+    "TracksStorage": {
+      "type": "object",
+      "properties": {
+        "url_template": {
+          "type": "string",
+          "description": "Шаблон URL для получения файла трека. '%%' заменяется на ID трека."
+        },
+        "track_ids": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "description": "Список ID треков, которые будут подставлены в url_template"
+        },
+        "tracks": {
+          "type": "object",
+          "additionalProperties": { "type": ["string", "null"] },
+          "description": "Список треков с фиксированными ссылками."
+        }
+      },
+      "anyOf": [
+        {
+          "comment": "Подмена по шаблону: подмене подлежат все треки из track_ids, а выходная ссылка состоит из url_template с заменённым '%%' на ID трека",
+          "required": ["url_template", "track_ids"]
+        },
+        {
+          "required": ["tracks"]
+        }
+      ],
+      "additionalProperties": false
+    },
+
+    "Insertion": {
+      "type": "object",
+      "required": ["releaseId"],
+      "properties": {
+        "index": { "type": "integer" },
+        "releaseId": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "ArtistInsertions": {
+      "type": "object",
+      "properties": {
+        "tracks": { "type": "array", "items": { "$ref": "#/$defs/Insertion" } },
+        "albums": { "type": "array", "items": { "$ref": "#/$defs/Insertion" } }
+      },
+      "additionalProperties": false
+    }
+  }
+}
