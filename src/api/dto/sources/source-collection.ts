@@ -136,9 +136,13 @@ export default class SourceCollection implements Source {
         if (spoofedAlbum && track.albums) {
             for (const a of track.albums) {
                 const uri = a.cover?.uri || a.coverUri || a.ogImage;
-                if (uri) {
+                if (spoof?.coverUri === undefined && spoof?.ogImage === undefined && uri) {
                     track.coverUri = track.ogImage = uri;
-                    break;
+                }
+                if (spoof?.artists === undefined && a.artists) {
+                    if (a.__fckCensor?.replaceArtistsInAlbumVolumes) {
+                        track.artists = a.artists;
+                    }
                 }
             }
         }
@@ -186,7 +190,11 @@ export default class SourceCollection implements Source {
     }
 
     spoofAlbum(album: Album): Album {
-        return this.internalSpoof(album, this.getAlbumSpoof.bind(this), String(album.id)) as Album;
+        const spoof = this.internalSpoof(album, this.getAlbumSpoof.bind(this), String(album.id)) as Album;
+
+        album.volumes?.forEach(v => v.forEach(t => this.spoofTrack(t)));
+
+        return spoof
     }
 
     getArtistSpoof(artistId: string): Artist | null {

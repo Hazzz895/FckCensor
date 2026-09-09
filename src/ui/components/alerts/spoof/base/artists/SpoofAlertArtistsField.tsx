@@ -20,6 +20,12 @@ export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField {
         this.artists = alert.release.artists!;
     }
 
+    private onAddListener?: (artist: Artist) => void
+
+    public setOnAddListener(listener: (artist: Artist) => void) {
+        this.onAddListener = listener;
+    }
+
     private artistNodes: TabbedArtist[] = [];
     private artists;
 
@@ -35,13 +41,12 @@ export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField {
         return this._element;
     }
 
-    hasDiffs(prop: any): boolean {
-        debug(prop, this.originalValue)
-        if (prop.length != this.originalValue.length) return true;
+    hasDiffs(prop: any, originalValue?: Artist[]): boolean {
+        originalValue ??= this.originalValue;
+        if (prop.length !== originalValue?.length) return true;
 
-        return JSON.stringify(this.originalValue) != JSON.stringify(prop);
+        return JSON.stringify(originalValue) != JSON.stringify(prop);
     }
-
 
     renderArtists() {
         const container = this.element.querySelector('.EditContentModal_field__rexIL > .EditContentModal_input__8O8GH')!
@@ -64,5 +69,6 @@ export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField {
         const p = (ev.currentTarget as HTMLElement).parentElement;
         p?.insertBefore($new.element, p.lastElementChild)
         $new.focusMaybe();
+        this.onAddListener?.($new.entity!);
     }
 }

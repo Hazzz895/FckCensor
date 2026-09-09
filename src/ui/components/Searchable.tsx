@@ -14,7 +14,7 @@ export class Searchable<T extends SpoofableEntity> extends ElementWrap {
     public entity?: T
 
     protected createElement(): HTMLElement {
-        return <div>
+        return <div style="position: relative">
             {this.input = <input class={styles.input} oninput={this.onTextChanged.bind(this)} onfocusout={this.onFocusLost.bind(this)}></input> as unknown as HTMLInputElement}
             {this.searchResults = <div hidden={true} class={styles.TabbedArtistSearchResults}/>}
         </div>
@@ -67,7 +67,7 @@ export class Searchable<T extends SpoofableEntity> extends ElementWrap {
     private onTextChanged(ev: InputEvent) {
         clearTimeout(this.timeout);
         
-        const re = new RegExp(`.*/${this.type}\/(\\d+)`);
+        const re = new RegExp(`.*/${this.type}\/(.+)`); // #FIXME чето добавляется пустой трек
         if (re.test(this.input?.value ?? "")) {
             const id = this.input?.value?.match(re)![1];
             if (!id) return;
@@ -84,9 +84,6 @@ export class Searchable<T extends SpoofableEntity> extends ElementWrap {
     protected onFocusLost(ev: FocusEvent) {
         if (this.searchResults) {
             this.searchResults.hidden = true;
-        }
-        if (!this.input?.value) {
-            this.element.remove();
         }
         clearTimeout(this.timeout);
     }

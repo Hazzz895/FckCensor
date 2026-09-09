@@ -185,6 +185,7 @@ export interface Track extends Spoofable {
     error?:                          string;
     major?:                          any;
     storageDir?:                     any;
+    canPublish?:                     boolean;
     durationMs?:                     number;
     fileSize?:                       number;
     r128?:                           any;
@@ -194,6 +195,7 @@ export interface Track extends Spoofable {
     derivedColors?:                  any;
     ogImage?:                        string;
     specialAudioResources?:          string[];
+    hasTrackLink?:          boolean;
 }
 
 export interface TrackMST extends Track {

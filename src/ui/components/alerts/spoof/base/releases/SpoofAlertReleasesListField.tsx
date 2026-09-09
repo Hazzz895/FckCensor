@@ -37,30 +37,10 @@ export abstract class SpoofAlertReleasesListField extends SpoofAlertEntityProper
                 return n.element;
             })}
             <div class={styles.FullWidthContainer}>
-                {new AddEntityToListField<Release>(this.type, this.onReleaseAddInternal).element}
+                {new AddEntityToListField<Release>(this.type, this.onReleaseAddInternal.bind(this)).element}
                 {this.getAdditionalActionButton()}
             </div>
         </TextField>
-    }
-
-    private onTextFieldTextChanged(ev: InputEvent) {
-        const text = (ev.currentTarget as HTMLInputElement).value;
-        debug(text)
-        if (this.type == "track") {
-            const trackUrlRegex = /.*track\/(\d+)/
-            if (trackUrlRegex.test(text)) {
-                const trackId = trackUrlRegex.exec(text)![1];
-                if (trackId) {
-                    getTracks(trackId).then(tracks => {
-                        this.onReleaseAddInternal(tracks[0]);
-                    })
-                }
-            }
-        }
-    }
-
-    private onFocusLost(ev: FocusEvent) {
-        this.reRenderElement();
     }
 
     private onReleaseAddInternal(release: Release) {

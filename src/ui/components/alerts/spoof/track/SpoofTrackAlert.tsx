@@ -6,6 +6,7 @@ import { SpoofEntityWithArtistsAlert } from "../base/artists/SpoofEntityWithArti
 import { SpoofAudioField } from "./SpoofAudioField";
 import { sources } from "@/api/main-api";
 import { spoofNode } from "@/utils/ui-utils";
+import { ActionButton } from "../../alerts";
 
 export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
     public constructor(data: Track, scrim: HTMLElement, trackNode: HTMLElement) {
@@ -23,6 +24,23 @@ export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
 
     protected forceSpoof(): boolean {
         return this.spoofAudioField.hasChanges;
+    }
+
+    protected getAdditionalButtons() {
+        const isLocalTrack = !(this.track.hasTrackLink ?? true);
+        return isLocalTrack ? <ActionButton onclick={this.onLocalTrackLinkCopy.bind(this)}>Скопировать ссылку</ActionButton> :
+                              <ActionButton>Сообщить о цензуре</ActionButton>; // #TODO 
+    }
+
+    private onLocalTrackLinkCopy() {
+        const BASE_URL = "fckcensor://track/";
+        const url = BASE_URL + this.id;
+        navigator.clipboard.writeText(url).then(() => {
+            window.pulsesyncApi?.showNotification?.(`Ссылка на локальный трек скопирована в буфер обмена. Вставьте ее в окно подмены альбома или исполнителя.`, "info", { 
+                durationMs: 4e3,
+                icon: 'share',
+             });
+        })
     }
 
     protected async onApplyInternal() {

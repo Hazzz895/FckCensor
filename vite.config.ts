@@ -113,6 +113,6 @@ export default defineConfig(({ mode }) => {
             },
         },
         plugins: [packagePulseSyncAddon(), inlineDebugPlugin(),
-            sassDts({allGenerate: true}),],
+            sassDts({allGenerate: true} as any),],
     }
 })

@@ -35,7 +35,11 @@ export class TabbedArtist extends Searchable<Artist> {
     }
 
     protected onFocusLost(ev: FocusEvent) {
-        if (!this.entity && this.input) {
+        super.onFocusLost(ev);
+        if (!this.input?.value) {
+            this.element.remove();
+        }
+        else if (!this.entity && this.input) {
             this.entity = { "name": this.input.value } as Artist
         }
     }

@@ -18,6 +18,10 @@ export function h(tag: any, attrs: any, ...children: any[]): HTMLElement {
 
   if (attrs) {
     for (const [key, val] of Object.entries(attrs)) {
+      if (val === null || val === undefined) {
+        continue;
+      }
+
       if (key.startsWith('on') && typeof val === 'function') {
         el.addEventListener(key.substring(2).toLowerCase(), val as EventListener);
         continue;

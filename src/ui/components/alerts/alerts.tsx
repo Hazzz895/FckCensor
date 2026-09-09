@@ -226,7 +226,7 @@ export function TextField({ header, placeholder, multiline, children, ...props }
         <div class="_MWOVuZRvUQdXKTMcOPx g3qWNP6xl__7qxNmtrvd _3_Mxw7Si7j2g4kWjlpR EditContentModal_label__Cf3Kp">
             {header}
         </div>) : ""}
-        <Tag {...props} class={"EditContentModal_input__8O8GH " + styles.i} placeholder={placeholder ?? ""}>
+        <Tag {...props} class={"kAYDswAvA1AJoAzRV4rY EditContentModal_input__8O8GH " + styles.i} placeholder={placeholder ?? ""}>
             {children}
         </Tag>
     </div>)

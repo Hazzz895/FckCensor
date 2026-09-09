@@ -102,14 +102,21 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
             {childrenNode}
             {customFields}
             {addPropButton}
-            <AlertButtons>
-                <ActionButton onclick={this.onSpoofRemoveInternal.bind(this)} {...(!this.hadSpoof ? { disabled: true } : {})}>Удалить подмену</ActionButton>
-                <ActionButton onclick={this.onApplyInternal.bind(this)}>Применить</ActionButton>
-            </AlertButtons>
+            <div style="display: flex; justify-content: space-between">
+                <div style="display: flex; gap: 8px">
+                    {this.getAdditionalButtons()}
+                </div>
+                <div style="display: flex; gap: 8px">
+                    <ActionButton onclick={this.onSpoofRemoveInternal.bind(this)} {...(!this.hadSpoof ? { disabled: true } : {})}>Удалить подмену</ActionButton>
+                    <ActionButton onclick={this.onApplyInternal.bind(this)}>Применить</ActionButton>
+                </div>
+            </div>
         </div>)
 
         this.spoofAlert = createScrimAlert(scrim as JSX.Element, alertTitle, spoofAlert);
     }
+
+    protected getAdditionalButtons(): JSX.Child { return [] }
 
     protected onApplyInternal() {
         closeAlert(this.spoofAlert);

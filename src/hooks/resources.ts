@@ -94,13 +94,25 @@ function hookArtistResource(ar: any) {
         });
     }, "getArtistTrackIds")
 
-    hookMethods(ar, async (tracks: Track[], t: ArtistId) => {
-        addInsertionsToTracksList(tracks, String(t.artistId));
+    hookMethods(ar, async (result: { pager?: any; tracks?: Track[] } | Track[], t: ArtistId) => {
+        const tracks = Array.isArray(result) ? result : result?.tracks;
+        if (!tracks) return;
+        try {
+            await addInsertionsToTracksList(tracks, String(t.artistId));
+        } catch (e) {
+            error(e);
+        }
     }, "getArtistTracks");
 
-    hookMethods(ar, async (albums: Album[], t: ArtistId) => {
-        addInsertionsToAlbumsList(albums, String(t.artistId));
-    }, "getDirectAlbums");
+    hookMethods(ar, async (result: { pager?: any; albums?: Album[] } | Album[], t: ArtistId) => {
+        const albums = Array.isArray(result) ? result : result?.albums;
+        if (!albums) return;
+        try {
+            await addInsertionsToAlbumsList(albums, String(t.artistId));
+        } catch (e) {
+            error(e);
+        }
+}, "getDirectAlbums");
 }
 
 async function addInsertionsToTracksList(tracks: Track[], artistId: string) {
