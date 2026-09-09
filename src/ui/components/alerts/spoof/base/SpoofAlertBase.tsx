@@ -2,7 +2,7 @@ import { sources } from "@/api/main-api";
 import { JSX } from "@/jsx-runtime";
 import { Artist, Album, Track, Release, SpoofableEntity, SpoofableType } from "@/types";
 import { AlertButtons, ActionButton, createScrimAlert, closeAlert } from "@/ui/components/alerts/alerts";
-import { httpsify, isEmptyObject } from "@/utils/common";
+import { httpsify, isEmptyObject, localizeSpoofableType } from "@/utils/common";
 import { debug, error, log } from "@/utils/logger";
 import { Cover } from "../../../Cover";
 import SpoofAlertCustomPropertyField, { AddSpoofAlertFieldButton } from "./SpoofAlertCustomPropertyField";
@@ -154,6 +154,8 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
 
         if (this.forceSpoof() || !isEmptyObject(spoofData)) {
             log("Applying spoof to", this.type, spoofData)
+            const l = localizeSpoofableType(this.type);
+            window.pulsesyncApi?.showNotification?.(`${l[0].toUpperCase() + l.slice(1)} подменен успешно! Для применения изменений может потребоваться перезаход.`, "info", { coverUrl: this.entity.coverUri && httpsify(this.entity.coverUri).replace('%%', '100x100') })
             return spoofData;
         }
         else {
