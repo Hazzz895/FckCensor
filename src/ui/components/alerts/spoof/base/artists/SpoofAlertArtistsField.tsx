@@ -56,6 +56,10 @@ export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField {
         for (const a of this.artists) {
             const artistNode = new TabbedArtist(a);
             this.artistNodes.push(artistNode);
+            artistNode.element.addEventListener("click", () => {
+                this.artistNodes = this.artistNodes.filter(x => x !== artistNode);
+                artistNode.element.remove();
+            });
             container.appendChild(artistNode.element)
         }
 
