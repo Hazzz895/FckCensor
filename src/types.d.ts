@@ -7,8 +7,8 @@ export interface RemoteSourceBase {
     tracks?:  Record<string, Track>;
     albums?:  Record<string, Album>;
     artists?: Record<string, Artist>;
-    artists_insertions?: Record<string, ArtistInsertions>;
-    tracks_storages?: TracksStorage[];
+    artistsInsertions?: Record<string, ArtistInsertions>;
+    tracksStorages?: TracksStorage[];
 }
 
 export interface RemoteSource extends RemoteSourceBase {
@@ -16,14 +16,15 @@ export interface RemoteSource extends RemoteSourceBase {
 }
 
 export interface TracksStorage {
-    url_template?: string;
-    track_ids?:    number[];
+    urlTemplate?: string;
+    trackIds?:    number[];
     tracks?:       Record<string, string?>;
 }
 
 export interface FckCensorSpoofData {
     originalValues?: Record<string, any>,
-    insertionIndex?: number | null
+    insertionIndex?: number | null,
+    replaceArtistsInAlbumVolumes?: boolean
 }
 
 export interface Spoofable {

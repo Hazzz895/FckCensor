@@ -25,7 +25,7 @@ export async function loadRemoteList() {
     sources.pushSource(new RemoteSource(new MinifiedRemoteSource({
         sources: [
             {
-                tracks_storages: [
+                tracksStorages: [
                     {
                         tracks: old_tracks,
                     }
@@ -65,20 +65,20 @@ export class MinifiedRemoteSource implements RemoteSourceBase {
             this.tracks = { ...source.tracks, ...this.tracks};
             this.albums = { ...source.albums, ...this.albums};
             this.artists = { ...source.artists, ...this.artists }
-            this.artists_insertions = { ...source.artists_insertions, ...this.artists_insertions };
-            if (source.tracks_storages) {
-                this.tracks_storages = [ ...source.tracks_storages, ...this.tracks_storages ]
+            this.artistsInsertions = { ...source.artistsInsertions, ...this.artistsInsertions };
+            if (source.tracksStorages) {
+                this.tracksStorages = [ ...source.tracksStorages, ...this.tracksStorages ]
             }
 
-            postProcessingInsertions(this.artists_insertions, this.tracks, this.albums)
+            postProcessingInsertions(this.artistsInsertions, this.tracks, this.albums)
         }
     }
 
     tracks: Record<string, Track> = {};
     albums: Record<string, Album> = {};
     artists: Record<string, Artist> = {};
-    artists_insertions: Record<string, ArtistInsertions> = {};
-    tracks_storages: TracksStorage[] = [];
+    artistsInsertions: Record<string, ArtistInsertions> = {};
+    tracksStorages: TracksStorage[] = [];
 }
 
 export class RemoteSource implements Source {
@@ -126,10 +126,10 @@ export class RemoteSource implements Source {
         if (this.findDbSource()?.isRemoteException(trackId)) {
             return null;
         }
-        for (const storage of this.list.tracks_storages) {
+        for (const storage of this.list.tracksStorages) {
             let url = null
-            if (storage.track_ids && storage.url_template && Number(trackId) in storage.track_ids) {
-                url = storage.url_template.replace('%%', trackId);
+            if (storage.trackIds && storage.urlTemplate && Number(trackId) in storage.trackIds) {
+                url = storage.urlTemplate.replace('%%', trackId);
             }
             else if (storage.tracks && trackId in storage.tracks) {
                 url = storage.tracks[trackId]
@@ -146,8 +146,8 @@ export class RemoteSource implements Source {
         if (this.findDbSource()?.isRemoteException(trackId)) {
             return false;
         }
-        for (const storage of this.list.tracks_storages) {
-            if ((storage.tracks && trackId in storage.tracks) || (storage.track_ids && storage.url_template && Number(trackId) in storage.track_ids)) {
+        for (const storage of this.list.tracksStorages) {
+            if ((storage.tracks && trackId in storage.tracks) || (storage.trackIds && storage.urlTemplate && Number(trackId) in storage.trackIds)) {
                 return true;
             }
         }
@@ -167,6 +167,6 @@ export class RemoteSource implements Source {
     }
 
     getArtistInsertions(artistId: string): ArtistInsertions | null {
-        return this.list.artists_insertions[artistId] ?? null;
+        return this.list.artistsInsertions[artistId] ?? null;
     }
 }

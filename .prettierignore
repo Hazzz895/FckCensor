@@ -6,4 +6,5 @@ yarn.lock
 *.md
 .prettierignore
 *.json
+!**/list_v2.json
 *.yml
