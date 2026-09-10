@@ -15,10 +15,22 @@ export interface RemoteSource extends RemoteSourceBase {
     supported_version?: string;
 }
 
+export interface TrackReplacementStorageBase {
+    durationMs?: number
+}
+
+export type TrackReplacementStorage = ({
+    id: number
+} & TrackReplacementStorageBase) | number
+
+export type TrackReplacementStorageTemplate = ({
+    url: string
+} & TrackReplacementStorageBase) | string
+
 export interface TracksStorage {
     urlTemplate?: string;
-    trackIds?:    number[];
-    tracks?:       Record<string, string?>;
+    trackIds?:    TrackReplacementStorage[];
+    tracks?:      Record<string, TrackReplacementStorageTemplate>;
 }
 
 export interface FckCensorSpoofData {

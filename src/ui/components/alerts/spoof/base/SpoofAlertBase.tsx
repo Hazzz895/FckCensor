@@ -85,7 +85,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         let customFields = null
         if (prevSpoof) {
             customFields = []
-            for (const k of Object.keys(prevSpoof).filter(k => !(["id", "available", "error"].indexOf(k) !== -1 || this.fields.some(f => f.propertyName == k)))) {
+            for (const k of Object.keys(prevSpoof).filter(k => ["id"].indexOf(k) === -1 && this.fields.some(f => f.propertyName == k))) {
                 const field = new SpoofAlertCustomPropertyField(this);
                 const fieldElement = field.element;
                 field.setSavedValue(k, (prevSpoof as any)[k]);

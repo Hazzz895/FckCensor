@@ -78,6 +78,42 @@
       "additionalProperties": false
     },
 
+    "TrackReplacementTemplate": {
+      "oneOf": [
+        { "type": "number" },
+        { 
+          "type": "object",
+          "properties": {
+            "durationMs": {
+              "type": "number"
+            },
+            "id": {
+              "type": "number"
+            }
+          },
+          "required": ["id"]
+        }
+      ]
+    },
+
+    "TrackReplacement": {
+      "oneOf": [
+        { "type": "string" },
+        { 
+          "type": "object",
+          "properties": {
+            "durationMs": {
+              "type": "number"
+            },
+            "url": {
+              "type": "string"
+            }
+          },
+          "required": ["url"]
+        }
+      ]
+    },
+
     "TrackRecord": {
       "allOf": [
         { "$ref": "#/$defs/NumericKeyRecord" },
@@ -273,13 +309,18 @@
         },
         "trackIds": {
           "type": "array",
-          "items": { "type": "integer" },
+          "items": { "$ref": "#/$defs/TrackReplacementTemplate" },
           "description": "Список ID треков, которые будут подставлены в urlTemplate"
         },
         "tracks": {
           "type": "object",
-          "additionalProperties": { "type": ["string", "null"] },
-          "description": "Список треков с фиксированными ссылками."
+          "description": "Список треков с фиксированными ссылками.",
+          "additionalProperties": {
+            "oneOf": [
+              { "type": "number" },
+              { "$ref": "#/defs/TrackReplacement" }
+            ]
+          }
         }
       },
       "anyOf": [

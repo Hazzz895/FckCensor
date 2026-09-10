@@ -71,7 +71,7 @@
             "tracksStorages": [
                 {
                     "urlTemplate": "raw.githubusercontent.com/Hazzz895/FckCensorData/refs/heads/main/tracks/%%",
-                    "trackIds": [ ]
+                    "trackIds": []
                 }
             ],
             "artistsInsertions": {

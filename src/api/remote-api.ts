@@ -1,4 +1,4 @@
-import { Album, Artist, OuterArtist, Release, RemoteList, RemoteSourceBase, Track, TracksStorage } from "@/types";
+import { Album, Artist, OuterArtist, Release, RemoteList, RemoteSourceBase, Track, TrackReplacementStorageBase, TracksStorage } from "@/types";
 import { debug, error, log, warn } from "@/utils/logger";
 import addonConfig from '../../addon.config.mjs'
 import { AnyARecord } from "node:dns";
@@ -70,6 +70,26 @@ export class MinifiedRemoteSource implements RemoteSourceBase {
                 this.tracksStorages = [ ...source.tracksStorages, ...this.tracksStorages ]
             }
 
+            for (const storage of this.tracksStorages) {
+                const replacements = storage.trackIds ?? (storage.tracks ? Object.entries(storage.tracks) : []);
+                for (const replacement of replacements) {
+                    let trackId: string;
+                    let durationMs: number | undefined;
+
+                    if (Array.isArray(replacement)) {
+                        trackId = replacement[0];
+                        durationMs = typeof replacement[1] === "string" ? undefined : replacement[1].durationMs;
+                    }
+                    else {
+                        trackId = String(typeof replacement === "number" ? replacement : replacement.id);
+                        durationMs = typeof replacement === "number" ? undefined : replacement.durationMs;
+                    }
+
+                    if (durationMs === undefined) continue;
+                    this.tracks[trackId] = { ...this.tracks[trackId], durationMs };
+                }
+            }
+
             postProcessingInsertions(this.artistsInsertions, this.tracks, this.albums)
         }
     }
@@ -132,9 +152,15 @@ export class RemoteSource implements Source {
                 url = storage.urlTemplate.replace('%%', trackId);
             }
             else if (storage.tracks && trackId in storage.tracks) {
-                url = storage.tracks[trackId]
+                const o = storage.tracks[trackId]
+                if (typeof o === 'string') {
+                    url = o
+                }
+                else {
+                    url = o.url
+                }
             }
-            debug(this, url)
+
             if (url) {
                 return new TrackReplacement(this, url);
             }

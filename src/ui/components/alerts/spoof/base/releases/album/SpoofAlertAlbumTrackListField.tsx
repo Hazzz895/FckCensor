@@ -59,7 +59,6 @@ export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField i
     }
 
     public moveTrack(diskIndex: number, trackIndex: number, delta: number) {
-        debug("DOIJDJOIOJDOIJDOIOIJ")
         if (!this.tracks) return;
         const disk = this.tracks[diskIndex];
         if (!disk) return;
