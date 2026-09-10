@@ -14,7 +14,7 @@ export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField i
         super(alert, "Треки альбома", "track", alert.album.volumes);
     }
 
-    private tracks?: Track[][] | null
+    public tracks?: Track[][] | null
 
     protected fillElements(): DiskNode[] {
         this.tracks ??= this.alert.album.volumes;
@@ -30,13 +30,13 @@ export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField i
                     this.reRenderElement();
                 }
             })
-            return [new DiskNode(Array(this.alert.album.trackCount).fill(undefined), undefined)];
+            return [new DiskNode(this, Array(this.alert.album.trackCount).fill(undefined), 0, undefined)];
         }
         else if (this.tracks == null) {
             return []
         }
         else {
-            return this.tracks.map((v, i) => new DiskNode(v, this.tracks!.length > 1 ? i : undefined));
+            return this.tracks.map((v, i) => new DiskNode(this, v, i, this.tracks!.length > 1 ? i : undefined));
         }
     }
 
@@ -58,6 +58,40 @@ export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField i
         this.tracks[this.tracks.length - 1].push(track);
     }
 
+    public moveTrack(diskIndex: number, trackIndex: number, delta: number) {
+        debug("DOIJDJOIOJDOIJDOIOIJ")
+        if (!this.tracks) return;
+        const disk = this.tracks[diskIndex];
+        if (!disk) return;
+
+        const targetIndex = trackIndex + delta;
+        const [track] = disk.splice(trackIndex, 1);
+
+        if (targetIndex >= 0 && targetIndex <= disk.length) {
+            disk.splice(targetIndex, 0, track);
+        }
+        else if (targetIndex < 0) {
+            const prevDisk = this.tracks[diskIndex - 1];
+            if (prevDisk) {
+                prevDisk.push(track);
+            }
+            else {
+                disk.splice(trackIndex, 0, track);
+            }
+        }
+        else {
+            const nextDisk = this.tracks[diskIndex + 1];
+            if (nextDisk) {
+                nextDisk.unshift(track);
+            }
+            else {
+                disk.splice(trackIndex, 0, track);
+            }
+        }
+
+        this.reRenderElement();
+    }
+
     valueToProperty() {
         debug(this.originalValue, this.getValue());
         return this.getValue();
@@ -65,13 +99,25 @@ export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField i
 }
 
 export class DiskNode extends ElementWrap implements IGetValue<Track[]> {
-    public constructor(private readonly disk: (Track | undefined)[], private readonly index?: number) { super(); }
+    public constructor(
+        private readonly field: SpoofAlertAlbumTrackListField,
+        private readonly disk: (Track | undefined)[],
+        private readonly diskIndex: number,
+        private readonly displayIndex?: number
+    ) { super(); }
 
     protected createElement(): HTMLElement {
-        const header = this.index !== undefined ? <div class="TextVolume_root__wxSaK"><h2 class="_MWOVuZRvUQdXKTMcOPx _sd8Q9d_Ttn0Ufe4ISWS nSU6fV9y80WrZEfafvww CommonAlbumPage_text__kqBSb">Диск {this.index + 1}</h2></div> : undefined;
-        return <div>
+        const header = this.displayIndex !== undefined ? <div class="TextVolume_root__wxSaK"><h2 class="_MWOVuZRvUQdXKTMcOPx _sd8Q9d_Ttn0Ufe4ISWS nSU6fV9y80WrZEfafvww CommonAlbumPage_text__kqBSb">Диск {this.displayIndex + 1}</h2></div> : undefined;
+        const totalDisks = this.field.tracks?.length ?? 1;
+        return <div style="width: 100%">
             {header}
-            {this.disk.map((t, i) => <ReleaseNode onremove={() => { this.disk.splice(i, 1); this.reRenderElement(); }} release={t}/>)}
+            {this.disk.map((t, i) => <ReleaseNode
+                onIndexChange={delta => this.field.moveTrack(this.diskIndex, i, delta)}
+                onremove={() => { this.disk.splice(i, 1); this.reRenderElement(); }}
+                release={t}
+                disableUp={this.diskIndex === 0 && i === 0}
+                disableDown={this.diskIndex === totalDisks - 1 && i === this.disk.length - 1}
+            />)}
         </div>
     }
 

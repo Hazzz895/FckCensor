@@ -35,7 +35,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
     }
 
     readonly spoofAlert;
-    readonly entity;
+    readonly entity: T;
     readonly type;
     readonly id;
     readonly title;
@@ -75,7 +75,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         const addPropButton = <AddSpoofAlertFieldButton onclick={(ev: MouseEvent) => onAddPropButtonClick(this, ev)}>Добавить поле</AddSpoofAlertFieldButton>
 
         function onAddPropButtonClick(ts: SpoofAlertBase, ev: MouseEvent) {
-            spoofAlert.insertBefore(ts.addPropertyField(new SpoofAlertCustomPropertyField(ts)), addPropButton)
+            addPropButton.parentElement!.insertBefore(ts.addPropertyField(new SpoofAlertCustomPropertyField(ts)), addPropButton)
         }
 
         const titleField = this.addPropertyField(new SpoofAlertInputField(this, type === "artist" ? "name" : "title", type === "artist" ? "Имя исполнителя" : "Название", title));
@@ -94,14 +94,24 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
             }
         }
 
+        
+        let jsonStructure = (this.entity as any)?.toJSON?.();
+
         const spoofAlert = (<div>
             <div class={"EditContentModal_field__rexIL " + styles.CoverAndTitleContainer}>
                 {this.addPropertyField(new SpoofAlertCoverField(this))}
                 {titleField}
             </div>
             {childrenNode}
-            {customFields}
-            {addPropButton}
+            <details class="EditContentModal_field__rexIL">
+                <summary class="EditContentModal_field__rexIL">Дополнительные поля (продвинуто)</summary>
+                {jsonStructure && <details>
+                    <summary class="EditContentModal_field__rexIL">JSON-структура</summary>
+                    <pre style="color: var(--ym-controls-color-secondary-text-enabled_variant)" class={"EditContentModal_input__8O8GH " + styles.i}>{JSON.stringify(jsonStructure, null, 4)}</pre>
+                </details>}
+                {customFields}
+                {addPropButton}
+            </details>
             <div style="display: flex; justify-content: space-between">
                 <div style="display: flex; gap: 8px">
                     {this.getAdditionalButtons()}
@@ -168,7 +178,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
 
     protected abstract onSpoofRemove(): Promise<void>;
 
-    protected abstract getChildren(): HTMLElement;
+    protected abstract getChildren(): JSX.Child;
 
     protected abstract getPrevSpoofedData(): object | null;
 }

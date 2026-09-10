@@ -131,7 +131,7 @@ export default class SpoofAlertCustomPropertyField extends SpoofAlertEntityPrope
             case "number":
                 return Number(value);
             case "boolean":
-                return Boolean(value);
+                return value == "true";
             case "json": 
                 switch (value) {
                     case "undefined":

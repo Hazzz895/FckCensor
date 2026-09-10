@@ -70,7 +70,6 @@ body:has(.DisabledTrack_TutorialTooltip) :global(.CommonTrack_root__i6shE.Common
     inset-inline-start: 50%;
     z-index: var(--ym-z-index-popover);
 
-    // Размеры под контент с ограничениями
     width: fit-content;
     min-width: 50vw;
     max-width: 75vw;
@@ -80,7 +79,6 @@ body:has(.DisabledTrack_TutorialTooltip) :global(.CommonTrack_root__i6shE.Common
     display: flex;
     flex-direction: column;
 
-    // Начальное состояние: сжато до размеров и положения кнопки
     transform: translate(-50%, -50%) translate(var(--scrim-dx, 0px), var(--scrim-dy, 0px)) scale(var(--scrim-scale-x, 1), var(--scrim-scale-y, 1));
     transform-origin: center center;
     opacity: 0;
@@ -89,7 +87,6 @@ body:has(.DisabledTrack_TutorialTooltip) :global(.CommonTrack_root__i6shE.Common
         transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
         opacity 0.2s ease-out;
 
-    // Конечное состояние: полноценное модальное окно по центру экрана
     &[data-open='true'] {
         transform: translate(-50%, -50%) translate(0px, 0px) scale(1, 1);
         opacity: 1;
@@ -127,6 +124,7 @@ body:has(.DisabledTrack_TutorialTooltip) :global(.CommonTrack_root__i6shE.Common
     box-sizing: border-box;
     border: 2px dashed var(--ym-controls-color-primary-text-enabled);
     color: var(--ym-controls-color-primary-text-enabled);
+    cursor: pointer;
 }
 
 .AddSpoofAlertFieldFieldGrid {
@@ -231,4 +229,34 @@ option {
     & > * {
         flex: 1
     }
+}
+
+.IndexControls {
+    display: flex;
+    flex-direction: column;
+}
+
+.IndexButton {
+    width: 100%;
+    height: 1rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
+.IndexTriangle {
+    display: block;
+    width: 100%;
+    height: 100%;
+    color: var(--ym-controls-color-primary-text-enabled, gray);
+    transition: color 0.2s ease-in-out;
+}
+
+.IndexTriangle[disabled] {
+    color: var(--ym-controls-color-secondary-default-enabled);
+}
+
+.IndexTriangle:not([disabled]):hover {
+    color: var(--ym-controls-color-secondary-on_default-enabled);
 }
