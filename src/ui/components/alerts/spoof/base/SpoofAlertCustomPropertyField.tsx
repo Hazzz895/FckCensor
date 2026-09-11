@@ -5,7 +5,7 @@ import { SpoofAlertBase } from "./SpoofAlertBase";
 import styles from "@/styles.module.scss";
 import { JSX } from "@/jsx-runtime";
 
-export default class SpoofAlertCustomPropertyField extends SpoofAlertEntityPropertyField {
+export default class SpoofAlertCustomPropertyField extends SpoofAlertEntityPropertyField<any> {
     public constructor(alert: SpoofAlertBase) {
         super(alert)
     }
@@ -44,7 +44,7 @@ export default class SpoofAlertCustomPropertyField extends SpoofAlertEntityPrope
         </div>;
     }
 
-    private getValue() {
+    public getValue() {
         return this.propertyValueField.querySelector<HTMLInputElement | HTMLTextAreaElement>('input, textarea')!.value;
     }
 

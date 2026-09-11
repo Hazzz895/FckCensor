@@ -14,7 +14,7 @@ export function AddButton({ ...props }: JSX.HTMLAttributes) {
     return addButton;
 }
 
-export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField {
+export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField<Artist[]> {
     public constructor(alert: SpoofAlertBase) {
         super(alert, "artists", alert.release.artists)
         this.artists = alert.release.artists!;
@@ -29,7 +29,7 @@ export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField {
     private artistNodes: TabbedArtist[] = [];
     private artists;
 
-    valueToProperty() {
+    getValue() {
         return this.artistNodes
                 .map(x => x.entity)
                 .filter(x => !!x);

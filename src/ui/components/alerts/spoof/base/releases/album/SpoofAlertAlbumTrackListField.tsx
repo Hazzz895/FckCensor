@@ -9,7 +9,7 @@ import { debug } from "@/utils/logger";
 import { ActionButton } from "@/ui/components/alerts/alerts";
 import { AddSpoofAlertFieldButton } from "../../SpoofAlertCustomPropertyField";
 
-export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField implements IGetValue<Track[][]> {
+export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField<Track[]> {
     public constructor(alert: SpoofAlertBase) {
         super(alert, "Треки альбома", "track", alert.album.volumes);
     }
@@ -94,6 +94,10 @@ export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField i
     valueToProperty() {
         debug(this.originalValue, this.getValue());
         return this.getValue();
+    }
+
+    hasDiffs(prop: Track[][]): boolean {
+        return prop.map(d => d.map(t => t.id).join(',')).join('|') != (this.originalValue as Track[][]).map(d => d.map(t => t.id).join(',')).join('|');
     }
 }
 

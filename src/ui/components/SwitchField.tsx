@@ -1,12 +1,10 @@
+import { SpoofAlertBase } from "./alerts/spoof/base/SpoofAlertBase";
+import { SpoofAlertEntityPropertyField } from "./alerts/spoof/base/SpoofAlertEntityPropertyField";
 import ElementWrap from "./ElementWrap";
 import { IGetValue } from "./IGetValue";
 
-export class SwitchField extends ElementWrap implements IGetValue<boolean> {
-    public constructor(protected _label: string, protected _value: boolean = false) { super() }
-
-    getValue(): boolean {
-        return this._value;
-    }
+export class SwitchField extends SpoofAlertEntityPropertyField<boolean> {
+    public constructor(alert: SpoofAlertBase, protected _label: string, propertyName?: string, private _value: boolean = false) { super(alert,propertyName,_value); }
 
     set value(v: boolean) { 
         this._value = v;
@@ -39,4 +37,11 @@ export class SwitchField extends ElementWrap implements IGetValue<boolean> {
         </div>
     }
 
+    getValue() {
+        return this.value;
+    }
+
+    hasDiffs(prop: any): boolean {
+        return this.value != this.originalValue;
+    }
 }

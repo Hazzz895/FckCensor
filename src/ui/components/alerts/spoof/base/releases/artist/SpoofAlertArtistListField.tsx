@@ -10,7 +10,7 @@ import { getAlbums, getTracks } from "@/utils/music";
 import { debug } from "@/utils/logger";
 import { Insertion } from "@/api/dto/artist-insertion";
 
-export class SpoofAlertArtistListField extends SpoofAlertReleasesListField implements IGetValue<Insertion[]> {
+export class SpoofAlertArtistListField extends SpoofAlertReleasesListField<Insertion> {
     getValue(): Insertion[] {
         return this.valueToProperty();
     }

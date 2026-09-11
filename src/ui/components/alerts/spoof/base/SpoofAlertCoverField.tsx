@@ -20,7 +20,7 @@ export class SpoofAlertCoverField extends SpoofAlertEntityPropertyField {
         this.reRenderElement();
     }
 
-    valueToProperty() {
+    getValue() {
         return this.file;
     }
 

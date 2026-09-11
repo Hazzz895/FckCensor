@@ -3,7 +3,7 @@ import { SpoofAlertBase } from "./SpoofAlertBase";
 import { SpoofAlertEntityPropertyField } from "./SpoofAlertEntityPropertyField";
 
 
-export class SpoofAlertInputField extends SpoofAlertEntityPropertyField {
+export class SpoofAlertInputField extends SpoofAlertEntityPropertyField<string> {
     readonly label;
 
     public constructor(alert: SpoofAlertBase, propertyName: string, label?: string, value?: string) {
@@ -11,7 +11,7 @@ export class SpoofAlertInputField extends SpoofAlertEntityPropertyField {
         this.label = label;
     }
 
-    valueToProperty() {
+    getValue() {
         return this.element.querySelector<HTMLInputElement | HTMLTextAreaElement>('input, textarea')?.value ?? this.originalValue ?? "";
     }
 

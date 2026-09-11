@@ -192,7 +192,7 @@ export default class SourceCollection implements Source {
     spoofAlbum(album: Album): Album {
         const spoof = this.internalSpoof(album, this.getAlbumSpoof.bind(this), String(album.id)) as Album;
 
-        album.volumes?.forEach(v => v.forEach(t => this.spoofTrack(t)));
+        album.volumes?.forEach(v => Object.keys(v).length <= 1 || v.forEach(t => this.spoofTrack(t)));
 
         return spoof
     }

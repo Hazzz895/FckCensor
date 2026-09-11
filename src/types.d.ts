@@ -34,9 +34,15 @@ export interface TracksStorage {
 }
 
 export interface FckCensorSpoofData {
+    /** Оригинальные значения до подмены */
     originalValues?: Record<string, any>,
+    /** Только для альбомов и треков. Индекс вставки сущности в профиль исполнителя */
     insertionIndex?: number | null,
-    replaceArtistsInAlbumVolumes?: boolean
+    /** Только для альбомов с подмененёнными исполнителями. Подменивать ли исполнителей у треков альбома на соответствующих альбому исполнителей*/
+    replaceArtistsInAlbumVolumes?: boolean;
+    
+    // /** ID сущности, с которой необходимо скопировать подмену. */
+    // matches?: string
 }
 
 export interface Spoofable {

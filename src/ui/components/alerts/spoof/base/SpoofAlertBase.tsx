@@ -156,7 +156,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         const spoofData: Record<string, any> = {};
         for (const field of this.fields) {
             if (!field.propertyName) continue;
-            const prop = field.valueToProperty();
+            const prop = field.getValue();
             if (field.hasDiffs(prop)) {
                 spoofData[field.propertyName] = prop;
             }

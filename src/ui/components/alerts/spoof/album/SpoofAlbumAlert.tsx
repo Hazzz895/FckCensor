@@ -17,7 +17,7 @@ export class SpoofAlbumAlert extends SpoofEntityWithArtistsAlert<Album> {
     protected getChildren(): HTMLElement {
         const el = <div>
             {super.getChildren()}
-            {(this.spoofVolumesArtistsSwitch = new SwitchField("Включить подмену исполнителей", false)).element}
+            {(this.spoofVolumesArtistsSwitch = new SwitchField(this, "Подменить исполнителей для треков", undefined, !!this.album?.__fckCensor?.replaceArtistsInAlbumVolumes)).element}
             {this.addPropertyField(new SpoofAlertAlbumTrackListField(this))}
         </div>
         this.updateSpoofVolumesArtistsSwitchVisibility();
@@ -26,7 +26,7 @@ export class SpoofAlbumAlert extends SpoofEntityWithArtistsAlert<Album> {
     }
 
     private updateSpoofVolumesArtistsSwitchVisibility(): boolean {
-        const show = this.artistsField.hasDiffs(this.artistsField.valueToProperty(), this.entity?.__fckCensor?.originalValues?.artists);
+        const show = this.artistsField.hasDiffs(this.artistsField.getValue(), this.entity?.__fckCensor?.originalValues?.artists);
         this.spoofVolumesArtistsSwitch.element.hidden = !show;
         return show
     }
@@ -35,7 +35,16 @@ export class SpoofAlbumAlert extends SpoofEntityWithArtistsAlert<Album> {
         this.updateSpoofVolumesArtistsSwitchVisibility();
     }
 
+    protected forceSpoof() {
+        return this.spoofVolumesArtistsSwitch.hasDiffs(this.spoofVolumesArtistsSwitch.value);
+    }
+
     protected async onApply(spoofData: Album) {
+        debug(this.spoofVolumesArtistsSwitch.value)
+        if (this.spoofVolumesArtistsSwitch.value) {
+            spoofData.__fckCensor ??= {};
+            spoofData.__fckCensor.replaceArtistsInAlbumVolumes = true;
+        }
         localSource.pushAlbumSpoof(spoofData, this.id)
         runUnprotected(this.entity, () => {
             sources.spoofAlbum(this.entity)

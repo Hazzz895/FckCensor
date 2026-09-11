@@ -12,22 +12,21 @@ import { getTracks } from "@/utils/music";
 import { AddSpoofAlertFieldButton } from "../SpoofAlertCustomPropertyField";
 import { AddEntityToListField } from "./AddEntityToListField";
 
-export abstract class SpoofAlertReleasesListField extends SpoofAlertEntityPropertyField {
+export abstract class SpoofAlertReleasesListField<T> extends SpoofAlertEntityPropertyField<T[]> {
     public constructor(alert: SpoofAlertBase, private readonly title: string, protected readonly type: "track" | "album", originalValue?: any) {
         super(alert, alert.type == "album" && type == "track" ? "volumes" : undefined, originalValue);
     }
 
-    public hasDiffs(prop: any) {
+    public hasDiffs(prop: T[]) {
         debug("diff", prop, this.originalValue);
         return super.hasDiffs(prop);
     }
 
     get hasChanges() {
-        return this.hasDiffs(this.valueToProperty());
+        return this.hasDiffs(this.getValue());
     }
 
-    protected releaseNodes: (ElementWrap & IGetValue<any>)[] = [];
-
+    protected releaseNodes: (ElementWrap & IGetValue<T>)[] = [];
 
     protected createElement() {
         this.releaseNodes = []
@@ -54,5 +53,5 @@ export abstract class SpoofAlertReleasesListField extends SpoofAlertEntityProper
         return undefined;
     }
 
-    protected abstract fillElements(): (ElementWrap & IGetValue<any>)[];
+    protected abstract fillElements(): (ElementWrap & IGetValue<T>)[];
 }

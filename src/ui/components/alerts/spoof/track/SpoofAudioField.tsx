@@ -8,7 +8,7 @@ import { ReplacedBadge } from "@/hooks/ui/badges";
 import { SpoofAlertEntityPropertyField } from "../base/SpoofAlertEntityPropertyField";
 import { getAudioMetadata } from "@/utils/music";
 
-export class SpoofAudioField extends SpoofAlertEntityPropertyField {
+export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | undefined> {
     private _file?: File;
     private _hasChanges: boolean = false;
     private durationMs?: number;
@@ -74,7 +74,7 @@ export class SpoofAudioField extends SpoofAlertEntityPropertyField {
         .catch((e) => error(e));
     }
 
-    valueToProperty(): number | undefined {
+    getValue() {
         return this._file && this.durationMs ? this.durationMs : this.originalValue;
     }
 
