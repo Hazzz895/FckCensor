@@ -13,9 +13,12 @@ export interface TabbedArtistProps extends JSX.HTMLAttributes {
 }
 
 export class TabbedArtist extends Searchable<Artist> {
-    constructor(artist?: Artist) {
-        super("artist");
+    private readonly onChanged?: (removed: boolean) => void;
+
+    constructor(artist?: Artist, onChanged?: (removed: boolean) => void) {
+        super("artist", () => onChanged?.(false));
         this.entity = artist;
+        this.onChanged = onChanged;
     }
 
     createElement(): HTMLElement {
@@ -38,9 +41,11 @@ export class TabbedArtist extends Searchable<Artist> {
         super.onFocusLost(ev);
         if (!this.input?.value) {
             this.element.remove();
+            this.onChanged?.(true);
         }
         else if (!this.entity && this.input) {
             this.entity = { "name": this.input.value } as Artist
+            this.onChanged?.(false);
         }
     }
 }

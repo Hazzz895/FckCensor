@@ -41,7 +41,7 @@ export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField<T
     }
 
     public getValue() {
-        return (this.releaseNodes as DiskNode[]).map(node => node.getValue()).filter(x => x.length > 0);
+        return (this.releaseNodes as DiskNode[]).map(node => node.getValue().map(x => ({ id: x.id } as Track))).filter(x => x.length > 0);
     }
 
     protected getAdditionalActionButton(): HTMLElement | undefined {
@@ -97,7 +97,7 @@ export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField<T
     }
 
     hasDiffs(prop: Track[][]): boolean {
-        return prop.map(d => d.map(t => t.id).join(',')).join('|') != (this.originalValue as Track[][]).map(d => d.map(t => t.id).join(',')).join('|');
+        return prop.map(d => d.map(t => t.id).join(',')).join('|') != (this.originalValue ?? [] as Track[][]).map(d => d.map(t => t.id).join(',')).join('|');
     }
 }
 

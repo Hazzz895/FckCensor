@@ -260,3 +260,22 @@ option {
 .IndexTriangle:not([disabled]):hover {
     color: var(--ym-controls-color-secondary-on_default-enabled);
 }
+
+.Switch {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    padding-block-end: var(--ym-spacer-size-xxxs);
+    padding-block-start: var(--ym-spacer-size-xxxs);
+    transition: color var(--ym-duration-transition);
+    gap: 10px
+}
+
+.Switch[disabled] {
+    color: var(--ym-controls-color-primary-text-disabled);
+    transition: color var(--ym-duration-transition);
+}
+
+.Switch:not([disabled]) {
+    color: var(--ym-controls-color-primary-text-enabled_variant);
+}

@@ -20,10 +20,10 @@ export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField<Artist
         this.artists = alert.release.artists!;
     }
 
-    private onAddListener?: (artist: Artist) => void
+    private onChanged?: () => void
 
-    public setOnAddListener(listener: (artist: Artist) => void) {
-        this.onAddListener = listener;
+    public setOnChangedListener(listener: () => void) {
+        this.onChanged = listener;
     }
 
     private artistNodes: TabbedArtist[] = [];
@@ -44,7 +44,7 @@ export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField<Artist
     hasDiffs(prop: any, originalValue?: Artist[]): boolean {
         originalValue ??= this.originalValue;
         if (prop.length !== originalValue?.length) return true;
-
+        
         return JSON.stringify(originalValue) != JSON.stringify(prop);
     }
 
@@ -54,11 +54,12 @@ export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField<Artist
         this.artistNodes = [];
 
         for (const a of this.artists) {
-            const artistNode = new TabbedArtist(a);
+            const artistNode = new TabbedArtist(a, () => this.onChanged?.());
             this.artistNodes.push(artistNode);
             artistNode.element.addEventListener("click", () => {
                 this.artistNodes = this.artistNodes.filter(x => x !== artistNode);
                 artistNode.element.remove();
+                this.onChanged?.();
             });
             container.appendChild(artistNode.element)
         }
@@ -68,11 +69,15 @@ export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField<Artist
     }
 
     private onAdd(ev: MouseEvent) {
-        const $new = new TabbedArtist();
+        const $new = new TabbedArtist(undefined, (removed) => {
+            if (removed) {
+                this.artistNodes = this.artistNodes.filter(x => x !== $new);
+            }
+            this.onChanged?.();
+        });
         this.artistNodes.push($new);
         const p = (ev.currentTarget as HTMLElement).parentElement;
         p?.insertBefore($new.element, p.lastElementChild)
         $new.focusMaybe();
-        this.onAddListener?.($new.entity!);
     }
 }

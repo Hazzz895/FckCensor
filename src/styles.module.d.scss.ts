@@ -24,5 +24,6 @@ declare const classNames: {
   readonly IndexControls: "IndexControls";
   readonly IndexButton: "IndexButton";
   readonly IndexTriangle: "IndexTriangle";
+  readonly Switch: "Switch";
 };
 export = classNames;

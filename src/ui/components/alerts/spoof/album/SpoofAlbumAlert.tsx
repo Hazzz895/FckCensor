@@ -20,19 +20,20 @@ export class SpoofAlbumAlert extends SpoofEntityWithArtistsAlert<Album> {
             {(this.spoofVolumesArtistsSwitch = new SwitchField(this, "Подменить исполнителей для треков", undefined, !!this.album?.__fckCensor?.replaceArtistsInAlbumVolumes)).element}
             {this.addPropertyField(new SpoofAlertAlbumTrackListField(this))}
         </div>
-        this.updateSpoofVolumesArtistsSwitchVisibility();
-        this.artistsField.setOnAddListener(this.onArtistAdd.bind(this));
+        this.updateSpoofVolumesArtistsSwitch();
+        this.artistsField.setOnChangedListener(this.onArtistAdd.bind(this));
         return el;
     }
 
-    private updateSpoofVolumesArtistsSwitchVisibility(): boolean {
-        const show = this.artistsField.hasDiffs(this.artistsField.getValue(), this.entity?.__fckCensor?.originalValues?.artists);
-        this.spoofVolumesArtistsSwitch.element.hidden = !show;
+    private updateSpoofVolumesArtistsSwitch(): boolean {
+        const show = this.artistsField.hasDiffs(this.artistsField.getValue(), this.entity?.__fckCensor?.originalValues?.artists ?? this.album.artists);
+        this.spoofVolumesArtistsSwitch.disabled = !show;
         return show
     }
 
     private onArtistAdd() {
-        this.updateSpoofVolumesArtistsSwitchVisibility();
+        debug("ADDED")
+        this.updateSpoofVolumesArtistsSwitch();
     }
 
     protected forceSpoof() {

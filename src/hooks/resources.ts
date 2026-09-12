@@ -52,7 +52,37 @@ function hookAlbumResource(ar: any) {
                 error(e);
             }
         }
-    }, "getAlbums", "getAlbumWithRichTracks", "getAlbumWithTracksIds", "getAlbumWithTracksIdsWithEtag");
+    }, "getAlbums", "getAlbumWithTracksIds", "getAlbumWithTracksIdsWithEtag");
+
+    hookMethods(ar, async (albums: Album | Album[]) => {
+        async function spoof(a: Album) {
+            try {
+                debug("spoofing")
+                const spoof = sources.spoofAlbum(a);
+                debug(spoof.volumes, a.volumes)
+                if (spoof.volumes) {
+                    const tracks = await getTracks(...spoof.volumes.flatMap(v => v.map(t => t.id)));
+                    let i = 0;
+                    a.volumes = spoof.volumes.map(volume => {
+                        const volumeTracks = tracks.slice(i, i + volume.length);
+                        i += volume.length;
+                        return volumeTracks;
+                    });
+                }
+            } catch (e) {
+                error(e)
+            }
+        }
+
+        if (Array.isArray(albums)) {
+            for (const a of albums) {
+                await spoof(a)
+            }
+        }
+        else if (albums) {
+            await spoof(albums)
+        }
+    }, "getAlbumWithRichTracks");
 }
 
 function hookArtistResource(ar: any) {

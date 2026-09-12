@@ -21,7 +21,6 @@ export async function loadRemoteList() {
     RemoteSource.load(LOCAL_URI)
 
     const old_tracks: Record<string, string> = (await (await fetch(OLD_BASE_URI)).json())["tracks"]
-    debug(old_tracks)
     sources.pushSource(new RemoteSource(new MinifiedRemoteSource({
         sources: [
             {
@@ -33,7 +32,6 @@ export async function loadRemoteList() {
             }
         ]
     })))
-    debug(sources)
 }
 
 export function postProcessingInsertions(insertions: Record<string, ArtistInsertions>, tracks: Record<string, Track>, albums: Record<string, Album>) {
@@ -109,7 +107,16 @@ export class RemoteSource implements Source {
             }
             const response = await fetch(url);
             if (!response.ok) {
-                //error("Failed list fetching: " + response.statusText + `(${response.status})`);
+                if (url === BASE_URI) {
+                    error("Failed list fetching: " + response.statusText + `(${response.status})`);
+                    window.pulsesyncApi?.showNotification?.("Не удалось загрузить список автоматических подмен. Применяются только пользовательские подмены.", "error", {
+                        link: {
+                            label: "Нажмите, чтобы исправить",
+                            href: "https://github.com/Hazzz895/FckCensor/blob/v2/FAQ.md#%D0%BD%D0%B5-%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D0%B0%D0%B5%D1%82-%D0%B0%D0%B2%D1%82%D0%BE%D0%BC%D0%B0%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B0%D1%8F-%D0%BF%D0%BE%D0%B4%D0%BC%D0%B5%D0%BD%D0%B0--%D0%BF%D0%BE%D0%B4%D0%BC%D0%B5%D0%BD%D1%91%D0%BD%D0%BD%D1%8B%D0%B9-%D1%82%D1%80%D0%B5%D0%BA-%D0%BD%D0%B5-%D0%B2%D0%BE%D1%81%D0%BF%D1%80%D0%BE%D0%B8%D0%B7%D0%B2%D0%BE%D0%B4%D0%B8%D1%82%D1%81%D1%8F",
+                        },
+                        durationMs: 6e4
+                    })
+                }
                 return null;
             }
             const json = await response.json();
@@ -181,6 +188,7 @@ export class RemoteSource implements Source {
     }
 
     getTrackSpoof(trackId: string): Track | null {
+        debug(this.list.tracks)
         return this.list.tracks[trackId] ?? null;
     }
 

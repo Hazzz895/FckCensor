@@ -1,5 +1,6 @@
 import { debug, error, log, warn } from "@/utils/logger";
 import addonConfig from "../../addon.config.mjs";
+import { isDev, putToBundle } from "@/dev/dev-utils";
 
 type AppRequire = Function & {
   m: number[]
@@ -131,6 +132,7 @@ export function getDiResource(resource: string) {
 }
 
 function diGet(ts: Di, args: any, key: string): any {
+    putToBundle("getDiResource", getDiResource);
     di = ts;
     if (!originalDiGet) {
         return null;

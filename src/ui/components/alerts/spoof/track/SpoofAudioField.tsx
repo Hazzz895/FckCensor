@@ -7,6 +7,7 @@ import { sources } from "@/api/main-api";
 import { ReplacedBadge } from "@/hooks/ui/badges";
 import { SpoofAlertEntityPropertyField } from "../base/SpoofAlertEntityPropertyField";
 import { getAudioMetadata } from "@/utils/music";
+import { localSource } from "@/api/db-api";
 
 export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | undefined> {
     private _file?: File;
@@ -32,7 +33,7 @@ export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | unde
 
     protected createElement(): HTMLElement {
         return <div class={"EditContentModal_field__rexIL " + styles.i} style="display: grid; align-items: center; grid-template-columns: 1fr 1fr; gap: 24px">
-                <ActionButton onclick={this.onReplaceButtonClick.bind(this)} style="width: 100%">{this._file ? "Удалить подмену аудио" : "Подменить аудио"}</ActionButton>
+                <ActionButton onclick={this.onReplaceButtonClick.bind(this)} style="width: 100%">{this._file || sources.hasPlayerReplacement(this.alert.id) ? "Удалить подмену аудио" : "Подменить аудио"}</ActionButton>
                 <div style="text-align: center">
                     <span>{!!((this.hasChanges && this._file) || sources.hasPlayerReplacement(this.alert.id)) ? "Аудио подменено" : "Аудио не подменивается."}</span>
                 </div>
@@ -43,6 +44,9 @@ export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | unde
         if (this._file) {
             this._file = undefined;
             this.reRenderElement();
+        }
+        else if (sources.hasPlayerReplacement(this.alert.id)) {
+            // #TODO: remove track replacement
         }
         else {
             this.openFilePicker();

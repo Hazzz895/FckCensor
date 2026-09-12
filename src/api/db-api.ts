@@ -205,6 +205,11 @@ export class LocalSource implements Source {
         if (trackId in this.trackSpoofs) {
             Object.assign(track, this.trackSpoofs[trackId]);
         }
+        else {
+            debug("RETURNING NULL")
+            return null;
+        }
+
         return track as Track;
     }
 
