@@ -1,6 +1,6 @@
 
 import { debug } from './utils/logger';
-import { loadApis } from './api/main-api';
+import { loadSources } from './api/main-api';
 import '@/ym_styles.scss'
 import '@/styles.module.scss'
 import { invokeAddNodesListeners } from './hooks/ui/observer';
@@ -31,6 +31,6 @@ function prepareHooks() {
 
 debug("Starting")
 prepareHooks();
-loadApis().then(() => { 
+loadSources().then(() => { 
     invokeAddNodesListeners();
 })   
