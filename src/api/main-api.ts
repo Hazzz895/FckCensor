@@ -21,8 +21,19 @@ export async function loadSources() {
         });
 }
 
-export default class MainSource implements Source {
-    private sources: Source[] = []
+export class SourcesCollection {
+    private localSources: LocalSource[] = [];
+    private nonLocalSources: Source[] = [];
+
+    public get sources(): Source[] { return [...this.localSources, ...this.nonLocalSources] }
+
+    public push(source: Source) {
+        if (source instanceof LocalSource) {
+            this.localSources.push(source);
+        } else {
+            this.nonLocalSources.push(source);
+        }
+    }
 
     public getSource<T extends Source>(targetClass: Constructor<T>): T | null {
         for (const source of this.sources) {
@@ -33,44 +44,129 @@ export default class MainSource implements Source {
         return null;
     }
 
-    public getSources() { return this.sources }
+    public reduce<T>(
+        initial: T,
+        callback: (acc: T, source: Source) => T,
+        matches: (acc: T) => boolean
+    ): T {
+        let acc = initial;
 
-    async buildPlayerReplacement(trackId: string): Promise<TrackReplacement | null> {
-        debug("DOIDJIOD")
-        for (const source of this.sources) {
-            const result = await source.buildPlayerReplacement(trackId)
-            if (result) {
-                debug("RESULTT", result)
-                return result;
+        for (const source of this.localSources) {
+            acc = callback(acc, source);
+        }
+
+        if (matches(acc)) {
+            return acc;
+        }
+
+        for (const source of this.nonLocalSources) {
+            acc = callback(acc, source);
+        }
+        return acc;
+    }
+
+    public reduceSpoof<T extends object>(
+        initial: T,
+        getSpoof: (source: Source) => T | null | undefined
+    ): T {
+        const acc = initial;
+
+        let foundLocal = false;
+        for (const source of this.localSources) {
+            const data = getSpoof(source);
+            if (data != null) {
+                Object.assign(acc, data);
+                foundLocal = true;
             }
         }
-        debug("FUCK")
-        return null;
+
+        if (foundLocal) {
+            return acc;
+        }
+
+        for (const source of this.nonLocalSources) {
+            const data = getSpoof(source);
+            if (data != null) {
+                Object.assign(acc, data);
+            }
+        }
+
+        return acc;
+    }
+
+    public first<T>(
+        callback: (source: Source) => T | null | undefined,
+        matches: (value: T) => boolean = (value) => !!value
+    ): T | null {
+        function walk(sources: Source[]): T | null {
+            for (const source of sources) {
+                const result = callback(source);
+                if (result != null && matches(result)) {
+                    return result;
+                }
+            }
+            return null;
+        };
+
+        const localResult = walk(this.localSources);
+        if (localResult !== null) {
+            return localResult;
+        }
+        return walk(this.nonLocalSources);
+    }
+
+    public async firstAsync<T>(
+        callback: (source: Source) => Promise<T | null | undefined>,
+        matches: (value: T) => boolean = (value) => !!value
+    ): Promise<T | null> {
+        async function walk(sources: Source[]): Promise<T | null> {
+            for (const source of sources) {
+                const result = await callback(source);
+                if (result != null && matches(result)) {
+                    return result;
+                }
+            }
+            return null;
+        };
+
+        const localResult = await walk(this.localSources);
+        if (localResult !== null) {
+            return localResult;
+        }
+        return walk(this.nonLocalSources);
+    }
+}
+
+export default class MainSource implements Source {
+    private sourcesCollection = new SourcesCollection();
+
+    public getSourcesCollection() { return this.sourcesCollection }
+
+    getSource<T extends Source>(targetClass: Constructor<T>): T | null {
+        return this.sourcesCollection.getSource(targetClass);
+    }
+
+    async buildPlayerReplacement(trackId: string): Promise<TrackReplacement | null> {
+        return this.sourcesCollection.firstAsync(
+            source => source.buildPlayerReplacement(trackId)
+        );
     }
 
     hasPlayerReplacement(trackId: string): boolean {
-        for (const source of this.sources) {
-            if (source.hasPlayerReplacement(trackId)) {
-                debug("YES IT HAS!!!!!!!!!!!!!!")
-                return true
-            }
-        }
-        return false;
+        return this.sourcesCollection.first(source => source.hasPlayerReplacement(trackId)) ?? false;
     }
 
-    private internalSpoof(
-        data: SpoofableEntity,
-        getSpoofData: (id: string) => Record<string, any> | null | undefined,
+    private internalSpoof<T extends SpoofableEntity>(
+        data: T,
+        getSpoofData: (id: string) => T | null | undefined,
         id: string,
         fillOriginalValues = true
-    ): Record<string, any> | null | undefined {
+    ): T | null | undefined {
         const spoofData = getSpoofData(id);
 
         if (!spoofData || isEmptyObject(spoofData)) {
             return null;
         }
-
-        const rawData = data as Record<string, any>;
 
         if (isEmptyObject(spoofData)) {
             return null;
@@ -92,7 +188,7 @@ export default class MainSource implements Source {
         const originalValues = data.__fckCensor.originalValues;
         for (const key of Object.keys(spoofData)) {
             if (!(key in originalValues)) {
-                originalValues[key] = rawData[key];
+                originalValues[key] = (data as Record<string, any>)[key];
             }
         }
 
@@ -101,8 +197,10 @@ export default class MainSource implements Source {
     }
 
     getTrackSpoof(trackId: string): Track | null {
-        const track = { } as Track
-        this.sources.forEach(source => this.internalSpoof(track, source.getTrackSpoof.bind(source), trackId, false));
+        const track = this.sourcesCollection.reduceSpoof<Track>(
+            {} as Track,
+            (source) => source.getTrackSpoof(trackId)
+        );
 
         if (this.hasPlayerReplacement(trackId)) {
             track.error = undefined;
@@ -149,8 +247,10 @@ export default class MainSource implements Source {
     } 
 
     getAlbumSpoof(albumId: string): Album | null {
-        const album = { } as Album
-        this.sources.forEach(source => this.internalSpoof(album, source.getAlbumSpoof.bind(source), albumId, false))
+        const album = this.sourcesCollection.reduceSpoof<Album>(
+            {} as Album,
+            (source) => source.getAlbumSpoof(albumId)
+        );
 
         if (album.volumes) {
             album.trackCount = album.volumes.reduce((acc, v) => acc + v.length, 0);
@@ -194,8 +294,10 @@ export default class MainSource implements Source {
     }
 
     getArtistSpoof(artistId: string): Artist | null {
-        const artist = { } as Artist
-        this.sources.forEach(source => this.internalSpoof(artist, source.getArtistSpoof.bind(source), artistId, false))
+        const artist = this.sourcesCollection.reduceSpoof<Artist>(
+            {} as Artist,
+            (source) => source.getArtistSpoof(artistId)
+        );
 
         if (isEmptyObject(artist)) {
             return null;
@@ -209,48 +311,28 @@ export default class MainSource implements Source {
     }
 
     getArtistInsertions(artistId: string): ArtistInsertions | null {
-        const localInsertions: ArtistInsertions = { tracks: [], albums: [] };
-        let has = false;
-
-        for (const source of this.sources) {
-            if (source instanceof LocalSource) {
+        const insertions = this.sourcesCollection.reduce<Required<ArtistInsertions>>(
+            { tracks: [], albums: [] },
+            (acc, source) => {
                 const data = source.getArtistInsertions(artistId);
                 if (data) {
                     if (data.tracks) {
-                        localInsertions.tracks!.push(...data.tracks);
+                        acc.tracks.push(...data.tracks);
                     }
                     if (data.albums) {
-                        localInsertions.albums!.push(...data.albums);
+                        acc.albums.push(...data.albums);
                     }
-
-                    has = true;
                 }
-            }
+                return acc;
+            },
+            (acc) => acc.tracks.length > 0 || acc.albums.length > 0
+        );
+
+        if (insertions.tracks.length === 0 && insertions.albums.length === 0) {
+            return null;
         }
 
-        if (has) {
-            return localInsertions;
-        }
-
-        const otherInsertions: ArtistInsertions = { tracks: [], albums: [] };
-
-        for (const source of this.sources) {
-            if (!(source instanceof LocalSource)) {
-                const data = source.getArtistInsertions(artistId);
-                if (data) {
-                    if (data.tracks) {
-                        otherInsertions.tracks!.push(...data.tracks);
-                    }
-
-                    if (data.albums) {
-                        otherInsertions.albums!.push(...data.albums);
-                    }
-                    has = true;
-                }
-            }
-        }
-
-        return has ? otherInsertions : null;
+        return insertions;
     }
 
     spoofAnyArtist(artist: Artist | OuterArtist): Artist | null {
@@ -276,25 +358,23 @@ export default class MainSource implements Source {
     }
 
     pushSource(source: Source) {
-        this.sources.push(source)
+        this.sourcesCollection.push(source)
     }
 
     hasTrackSpoof(trackId: string): boolean {
-        return !isEmptyObject(this.getTrackSpoof(trackId))
+        return !!this.getTrackSpoof(trackId)
     }
 
     hasAlbumSpoof(albumId: string): boolean {
-        return !isEmptyObject(this.getAlbumSpoof(albumId))
+        return !!this.getAlbumSpoof(albumId)
     }
 
     hasArtistSpoof(artistId: string): boolean {
-        return !isEmptyObject(this.getArtistSpoof(artistId))
+        return !!this.getArtistSpoof(artistId)
     }
 
     hasInsertions(artistId: string): boolean {
-        const i = this.getArtistInsertions(artistId);
-        debug(i)
-        return !isEmptyObject(i)
+        return !isEmptyObject(this.getArtistInsertions(artistId));
     }
 }
 
