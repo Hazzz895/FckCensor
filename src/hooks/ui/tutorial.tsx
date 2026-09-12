@@ -23,17 +23,6 @@ export function createDisabledTrackTutorialTooltip(): HTMLElement {
     return tooltip
 }
 
-export function createSpoofTrackTutorialTooltip(): HTMLElement {
-    const tooltip = createTutorialTooltip(
-        'Нажмите на кнопку "Подменить трек", чтобы подменить или отменить подмену аудиопотока и информации о треке',
-        SPOOF_TUTORIAL
-    )
-    if (styles.SpoofTrack_TutorialTooltip) {
-        tooltip.classList.add(styles.SpoofTrack_TutorialTooltip)
-    }
-    return tooltip
-}
-
 function createTutorialTooltip(description: string, key: string): HTMLElement {
     return createClosableTooltipInternal(description, key, () => completeTutorial(key))
 }
@@ -63,36 +52,6 @@ export function prepareTutorials(): void {
                 })
             }
         }, Q_DISABLED_TRACK)
-    }
-
-    const SPOOF_SELECTOR = "[fckcensoroption]"
-    if (shouldShowTutorial(SPOOF_TUTORIAL)) {
-        let removeListener: ((el: HTMLElement) => void) | null = null
-        let addListener: ((el: HTMLElement) => void) | null = null
-
-        addListener = listenAddNodes((el) => {
-            if (!shouldShowTutorial(SPOOF_TUTORIAL)) {
-                if (addListener) unlistenAddNodes(addListener)
-                return
-            }
-
-            const targetContainer = el.parentElement?.parentElement
-            if (targetContainer) {
-                targetContainer.appendChild(createSpoofTrackTutorialTooltip())
-            }
-
-            if (!removeListener) {
-                removeListener = listenRemovedNodes(() => {
-                    if (document.querySelectorAll(SPOOF_SELECTOR).length === 0) {
-                        removeTooltip(SPOOF_TUTORIAL)
-                        if (removeListener) {
-                            unlistenRemovedNodes(removeListener)
-                            removeListener = null
-                        }
-                    }
-                })
-            }
-        }, SPOOF_SELECTOR)
     }
 }
 

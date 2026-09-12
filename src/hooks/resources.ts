@@ -241,7 +241,7 @@ function hookLandingResource(lr: any) {
 }
 
 function hookSearchResource(sr: any) {
-    hookMethods(sr, async (response: SearchResponse) => {
+    hookMethods(sr, async (response: SearchResponse) => { // FIXME
         for (const r of response.results) {
             if (r.album) sources.spoofAlbum(r.album);
             if (r.artist) sources.spoofAnyArtist(r.artist);

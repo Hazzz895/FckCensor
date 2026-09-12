@@ -40,6 +40,8 @@ export interface FckCensorSpoofData {
     insertionIndex?: number | null,
     /** Только для альбомов с подмененёнными исполнителями. Подменивать ли исполнителей у треков альбома на соответствующих альбому исполнителей*/
     replaceArtistsInAlbumVolumes?: boolean;
+    /** Только для треков. ID трека, с которого необходимо скопировать аудиопоток */
+    audioSourceId?: string
     
     // /** ID сущности, с которой необходимо скопировать подмену. */
     // matches?: string

@@ -12,6 +12,9 @@ export abstract class SpoofAlertEntityPropertyField<T = any> extends ElementWrap
         super();
         this.alert = alert;
         this.propertyName = propertyName;
+        if (value === undefined && propertyName !== undefined) {
+            value = alert.getOriginalValue(propertyName);
+        }
         this.originalValue = value;
     }
 

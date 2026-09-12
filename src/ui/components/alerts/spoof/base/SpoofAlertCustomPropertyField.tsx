@@ -113,11 +113,11 @@ export default class SpoofAlertCustomPropertyField extends SpoofAlertEntityPrope
         if (!this.propertyName) return false;
 
         if (this.getType() != "json") {
-            return prop != (this.alert.entity as any)[this.propertyName]
+            return prop != this.alert.getOriginalValue(this.propertyName);
         }
         else {
             for (const k in prop) {
-                if ((this.alert.entity as any)[k] != prop[k]) {
+                if (this.alert.getOriginalValue(this.propertyName) != prop[k]) {
                     return true;
                 }
             }

@@ -117,13 +117,17 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
                     {this.getAdditionalButtons()}
                 </div>
                 <div style="display: flex; gap: 8px">
-                    <ActionButton onclick={this.onSpoofRemoveInternal.bind(this)} {...(!this.hadSpoof ? { disabled: true } : {})}>Удалить подмену</ActionButton>
+                    <ActionButton onclick={this.onSpoofRemoveInternal.bind(this)} {...(!this.hadSpoof ? { disabled: true } : {})}>Удалить подмену</ActionButton> {/**#TODO реализовать отмену автоматической подмены добавляя в локальные подмены {} */}
                     <ActionButton onclick={this.onApplyInternal.bind(this)}>Применить</ActionButton>
                 </div>
             </div>
         </div>)
 
         this.spoofAlert = createScrimAlert(scrim as JSX.Element, alertTitle, spoofAlert);
+    }
+
+    getOriginalValue(propertyName: string) {
+        return this.entity.__fckCensor?.originalValues && propertyName in this.entity.__fckCensor.originalValues ? this.entity.__fckCensor?.originalValues?.[propertyName] : (this.entity as any)[propertyName];
     }
 
     protected getAdditionalButtons(): JSX.Child { return [] }
@@ -152,17 +156,17 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         return false;
     }
 
-    private getSpoofData(): object | null {
-        const spoofData: Record<string, any> = {};
+    private getSpoofData(): T | null {
+        const spoofData: T | null = null;
         for (const field of this.fields) {
             if (!field.propertyName) continue;
             const prop = field.getValue();
             if (field.hasDiffs(prop)) {
-                spoofData[field.propertyName] = prop;
+                (spoofData as any)[field.propertyName] = prop;
             }
         }
 
-        if (this.forceSpoof() || !isEmptyObject(spoofData)) {
+        if (this.forceSpoof() || !!spoofData) {
             log("Applying spoof to", this.type, spoofData)
             const l = localizeSpoofableType(this.type);
             window.pulsesyncApi?.showNotification?.(`${l[0].toUpperCase() + l.slice(1)} подменен успешно! Для применения изменений может потребоваться перезаход.`, "info", { coverUrl: this.entity.coverUri && httpsify(this.entity.coverUri).replace('%%', '100x100') })
