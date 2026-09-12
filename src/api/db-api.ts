@@ -26,29 +26,14 @@ export function getDb(): Promise<IDBDatabase> {
                 if (!event.target) return;
                 const db = (event.target as IDBOpenDBRequest).result;
 
-                if (event.oldVersion < 5 && db.objectStoreNames.contains(REMOTE_EXCEPTIONS)) { // < 2.0.0
-                    const tx = (event.target as IDBOpenDBRequest).transaction!;
-                    const store = tx.objectStore(REMOTE_EXCEPTIONS);
-                    const cursorRequest = store.openCursor();
+                if (event.oldVersion < 5 ) { // < 2.0.0
+                    if (db.objectStoreNames.contains(REMOTE_EXCEPTIONS)) {
+                        db.deleteObjectStore(REMOTE_EXCEPTIONS);
+                    }
 
-                    cursorRequest.onsuccess = () => {
-                        const cursor = cursorRequest.result;
-                        if (!cursor) return;
-
-                        const record = cursor.value as { id: TrackId };
-                        const oldId = String(record.id);
-
-                        if (!oldId.startsWith("track_")) {
-                            store.delete(record.id);
-                            store.put({ ...record, id: `track_${oldId}` });
-                        }
-
-                        cursor.continue();
-                    };
-
-                    cursorRequest.onerror = () => {
-                        console.error("Failed to migrate remote_exceptions:", cursorRequest.error);
-                    };
+                    if (db.objectStoreNames.contains(REPORTED_TRACKS)) { // TODO: migrate
+                        // ...
+                    }
                 }
 
                 const key = { keyPath: "id" };
@@ -62,7 +47,6 @@ export function getDb(): Promise<IDBDatabase> {
 
                 createIfNotExist(
                     TRACKS,
-                    REMOTE_EXCEPTIONS,
                     REPORTED_TRACKS,
                     TRACK_SPOOFS,
                     ALBUM_SPOOFS,

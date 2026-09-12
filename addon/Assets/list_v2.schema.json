@@ -318,7 +318,7 @@
           "additionalProperties": {
             "oneOf": [
               { "type": "number" },
-              { "$ref": "#/defs/TrackReplacement" }
+              { "$ref": "#/$defs/TrackReplacement" }
             ]
           }
         }
