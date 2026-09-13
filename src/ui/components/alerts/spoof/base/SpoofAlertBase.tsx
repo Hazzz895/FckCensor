@@ -9,7 +9,7 @@ import SpoofAlertCustomPropertyField, { AddSpoofAlertFieldButton } from "./Spoof
 import { SpoofAlertEntityPropertyField } from "./SpoofAlertEntityPropertyField";
 import { SpoofAlertInputField } from "./SpoofAlertInputField";
 import styles from "@/styles.module.scss"
-import { restoreOriginalValues } from "@/utils/music";
+import { getSpoof, restoreOriginalValues } from "@/utils/music";
 import { CoverProps } from "../spoof-alert";
 import { SpoofAlertCoverField } from "./SpoofAlertCoverField";
 import { localSource } from "@/api/db-api";
@@ -157,7 +157,13 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         try {
             restoreOriginalValues(this.entity);
         } catch (e) { error(e) }
-        this.onSpoofRemove();
+
+        if (!getSpoof(localSource, this.type, this.id)) {
+            localSource.pushSpoof({}, this.id, this.type);
+        }
+        else {
+            this.onSpoofRemove();
+        }
     }
 
     protected forceSpoof() {

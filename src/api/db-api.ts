@@ -344,6 +344,10 @@ export class LocalSource implements Source {
         return this.pushToDb(REPORTED_ENTITIES, `${type}_${strId}`, { type, entityId: strId });
     }
 
+    pushSpoof(spoof: any, id: string, type: SpoofableType) {
+        return (type == "album" ? this.pushAlbumSpoof : type == "artist" ? this.pushArtistSpoof : this.pushTrackSpoof).bind(this)(spoof, id);
+    }
+
     private async openStore(table_name: string, mode: IDBTransactionMode = "readwrite") {
         const db = await getDb();
         return db.transaction(table_name, mode)

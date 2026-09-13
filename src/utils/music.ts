@@ -1,7 +1,8 @@
-import { Album, Artist, OuterArtist, SearchResponse, SearchType, Spoofable, Track } from "@/types";
+import { Album, Artist, OuterArtist, SearchResponse, SearchType, Spoofable, SpoofableEntity, SpoofableType, Track } from "@/types";
 import { debug, error, log } from "./logger";
 import { findModule, getDiResource, hookDi } from "./hook-utils";
 import { runUnprotected } from "./ui-utils";
+import Source from "@/api/dto/sources/source";
 
 export function reloadPlayer(trackId?: string) {
     const e = window.sonataState?.queueState?.currentEntity?.value?.entity;
@@ -79,4 +80,8 @@ export function getAudioMetadata(audioFile: File): Promise<HTMLAudioElement> {
             reject(new Error(`Failed to read audio meta. ${err.error}`));
         });
     });
+}
+
+export function getSpoof<T extends SpoofableEntity>(source: Source, type: SpoofableType, id: string): T | null {
+    return (type == "album" ? source.getAlbumSpoof : type == "artist" ? source.getArtistSpoof : source.getTrackSpoof).bind(source)(id) as T
 }
