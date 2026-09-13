@@ -197,27 +197,33 @@ export function hookMethods(obj: any, hook: Hook, ...methodNames: [string, ...st
         }
         obj[methodName] = async function(...args: any) {
             let result: any | undefined = undefined;
-            if (hook instanceof FunctionHook) {
-                result = await hook.before(originalMethod, ...args);
-            }
+            try {
+                if (hook instanceof FunctionHook) {
+                    result = await hook.before(originalMethod, ...args);
+                }
 
-            if (result === undefined) {
-                result = await originalMethod.apply(this, args);
-            }
+                if (result === undefined) {
+                    result = await originalMethod.apply(this, args);
+                }
 
-            let hookResult: any | undefined = undefined;
-            if (hook instanceof FunctionHook) {
-                hookResult = await hook.after(result, ...args);
-            }
-            else {
-                hookResult = await hook(result, ...args);
-            }
+                let hookResult: any | undefined = undefined;
+                if (hook instanceof FunctionHook) {
+                    hookResult = await hook.after(result, ...args);
+                }
+                else {
+                    hookResult = await hook(result, ...args);
+                }
 
-            if (hookResult !== undefined) {
-                result = hookResult;
+                if (hookResult !== undefined) {
+                    result = hookResult;
+                }
             }
-
-            return result;
+            catch (e) {
+                error(`Error while hooking method ${methodName}`, e);
+            }
+            finally {
+                return result;
+            }
         }
     });
     return true;

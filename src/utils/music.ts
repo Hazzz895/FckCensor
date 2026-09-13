@@ -1,4 +1,4 @@
-import { Album, Artist, OuterArtist, SearchResponse, SearchType, Spoofable, SpoofableEntity, SpoofableType, Track } from "@/types";
+import { Album, Artist, FckCensorSpoofData, OuterArtist, SearchResponse, SearchType, Spoofable, SpoofableEntity, SpoofableType, Track } from "@/types";
 import { debug, error, log } from "./logger";
 import { findModule, getDiResource, hookDi } from "./hook-utils";
 import { runUnprotected } from "./ui-utils";
@@ -20,11 +20,19 @@ export function getTrackAvaiableSpoof(): Track {
     } as any
 }
 
-export function restoreOriginalValues(data: Spoofable) {
+export function restoreOriginalValues(data: Spoofable, fckCensorData?: FckCensorSpoofData | null) {
+    const source = fckCensorData ?? data.__fckCensor;
+    const originalValues = source?.originalValues;
+    if (!originalValues) return;
+
     runUnprotected(data, () => {
-        Object.assign(data, data.__fckCensor?.originalValues);
-        delete data.__fckCensor?.originalValues;
+        Object.assign(data, originalValues);
     });
+
+    delete source.originalValues;
+    if (data.__fckCensor && data.__fckCensor !== source) {
+        delete data.__fckCensor.originalValues;
+    }
 }
 
 export function search(text: string, type: SearchType = "all", page=0, args: Record<string, any> = {}): Promise<SearchResponse | null> {

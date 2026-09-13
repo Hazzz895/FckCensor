@@ -1,7 +1,7 @@
 import { loadRemoteList } from "./remote-api";
 import { getDb, loadLocalDb } from "./db-api";
 
-import { Track, Album, OuterArtist, Artist, TrackMST, SpoofableEntity, Release } from '@/types'
+import { Track, Album, OuterArtist, Artist, TrackMST, SpoofableEntity, Release, FckCensorSpoofData, SpoofableType } from '@/types'
 import { debug, log } from '@/utils/logger';
 import { isEmptyObject } from '@/utils/common';
 import { LocalSource } from '@/api/db-api';
@@ -140,6 +140,24 @@ export class SourcesCollection {
 export default class MainSource implements Source {
     private sourcesCollection = new SourcesCollection();
 
+    private fckCensorData: Map<string, FckCensorSpoofData> = new Map();
+
+    private static fckCensorKey(type: SpoofableType, id: string): string {
+        return `${type}:${id}`;
+    }
+
+    private rememberFckCensorData(type: SpoofableType, id: string, data: FckCensorSpoofData) {
+        this.fckCensorData.set(MainSource.fckCensorKey(type, id), data);
+    }
+
+    public getFckCensorData(type: SpoofableType, id: string): FckCensorSpoofData | null {
+        return this.fckCensorData.get(MainSource.fckCensorKey(type, id)) ?? null;
+    }
+
+    public forgetFckCensorData(type: SpoofableType, id: string) {
+        this.fckCensorData.delete(MainSource.fckCensorKey(type, id));
+    }
+
     public getSourcesCollection() { return this.sourcesCollection }
 
     getSource<T extends Source>(targetClass: Constructor<T>): T | null {
@@ -160,15 +178,12 @@ export default class MainSource implements Source {
         data: T,
         getSpoofData: (id: string) => T | null | undefined,
         id: string,
-        fillOriginalValues = true
-    ): T | null | undefined {
+        fillOriginalValues = true,
+        type?: SpoofableType
+    ): T | null {
         const spoofData = getSpoofData(id);
 
         if (!spoofData || isEmptyObject(spoofData)) {
-            return null;
-        }
-
-        if (isEmptyObject(spoofData)) {
             return null;
         }
 
@@ -187,12 +202,30 @@ export default class MainSource implements Source {
 
         const originalValues = data.__fckCensor.originalValues;
         for (const key of Object.keys(spoofData)) {
+            // __fckCensor - это метаданные аддона (флаги, insertionIndex и т.д.),
+            // а не подменяемое поле сущности, поэтому под "original value" его сохранять не нужно.
+            if (key === "__fckCensor") continue;
             if (!(key in originalValues)) {
                 originalValues[key] = (data as Record<string, any>)[key];
             }
         }
 
-        Object.assign(data, spoofData);
+        // spoofData может нести собственный __fckCensor (например replaceArtistsInAlbumVolumes,
+        // сохранённый ранее из SpoofAlbumAlert.onApply). Раньше здесь было
+        // `Object.assign(data, spoofData)`, который полностью заменял data.__fckCensor
+        // объектом из spoofData - вместе с ним пропадали originalValues, собранные строчками
+        // выше. Поэтому спойф-метаданные нужно мержить в data.__fckCensor, а не перезатирать его.
+        const { __fckCensor: spoofMeta, ...spoofContent } = spoofData as T & { __fckCensor?: FckCensorSpoofData };
+        Object.assign(data, spoofContent);
+
+        if (spoofMeta) {
+            Object.assign(data.__fckCensor, spoofMeta);
+        }
+
+        if (type) {
+            this.rememberFckCensorData(type, id, data.__fckCensor);
+        }
+
         return spoofData;
     }
 
@@ -219,7 +252,7 @@ export default class MainSource implements Source {
     }
 
     spoofTrack(track: Track): Track | null {
-        const spoof = this.internalSpoof(track, this.getTrackSpoof.bind(this), String(track.id)) as Track
+        const spoof = this.internalSpoof(track, this.getTrackSpoof.bind(this), String(track.id), true, "track") as Track
 
         let spoofedAlbum = false;
         track.albums?.forEach((album) => {
@@ -287,10 +320,8 @@ export default class MainSource implements Source {
         return album;
     }
 
-    spoofAlbum(album: Album): Album {
-        const spoof = this.internalSpoof(album, this.getAlbumSpoof.bind(this), String(album.id)) as Album;
-
-        return spoof
+    spoofAlbum(album: Album): Album | null {
+        return this.internalSpoof(album, this.getAlbumSpoof.bind(this), String(album.id), true, "album");
     }
 
     getArtistSpoof(artistId: string): Artist | null {
@@ -306,8 +337,8 @@ export default class MainSource implements Source {
         return artist;
     }
 
-    spoofArtist(artist: Artist): Artist {
-        return this.internalSpoof(artist, this.getArtistSpoof.bind(this), String(artist.id)) as Artist
+    spoofArtist(artist: Artist): Artist | null {
+        return this.internalSpoof(artist, this.getArtistSpoof.bind(this), String(artist.id), true, "artist")
     }
 
     getArtistInsertions(artistId: string): ArtistInsertions | null {

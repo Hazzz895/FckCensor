@@ -57,10 +57,9 @@ function hookAlbumResource(ar: any) {
     hookMethods(ar, async (albums: Album | Album[]) => {
         async function spoof(a: Album) {
             try {
-                debug("spoofing")
                 const spoof = sources.spoofAlbum(a);
-                debug(spoof.volumes, a.volumes)
-                if (spoof.volumes) {
+                
+                if (spoof?.volumes) {
                     const tracks = await getTracks(...spoof.volumes.flatMap(v => v.map(t => t.id)));
                     let i = 0;
                     a.volumes = spoof.volumes.map(volume => {

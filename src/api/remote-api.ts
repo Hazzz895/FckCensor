@@ -171,7 +171,6 @@ export class RemoteSource implements Source {
     }
 
     getTrackSpoof(trackId: string): Track | null {
-        debug(this.list.tracks)
         return this.list.tracks[trackId] ?? null;
     }
 

@@ -58,7 +58,6 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
     }
 
     protected constructor(entity: T, type: SpoofableType, alertTitle: string, sourceNode?: HTMLElement, scrim?: HTMLElement) {
-        debug(entity)
         this.entity = entity;
         this.scrim = scrim;
         this.sourceNode = sourceNode;
@@ -71,6 +70,10 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
             coverUri = httpsify(coverUri);
         }
         this.id = String(entity.id);
+        // entity здесь может быть уже MST-инстансом (см. getAlbumFromNode/getTrackFromNode/
+        // getArtistFromNode), у которого __fckCensor не сохраняется при конвертации из сырого
+        // JSON - поэтому логируем то, что реально лежит в реестре по id, а не entity.__fckCensor.
+        debug(entity, sources.getFckCensorData(type, this.id))
 
         this.hadSpoof =(this.type == "artist" && (sources.hasInsertions(this.id) || sources.hasArtistSpoof(this.id))) ||
                         (this.type == "album" && sources.hasAlbumSpoof(this.id)) ||
@@ -131,12 +134,9 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
     }
 
     getOriginalValue(propertyName: string) {
-        return this.__fckCensor?.originalValues && propertyName in this.__fckCensor.originalValues ? this.__fckCensor?.originalValues?.[propertyName] : (this.entity as any)[propertyName];
+        const originalValues = sources.getFckCensorData(this.type, this.id)?.originalValues ?? this.entity.__fckCensor?.originalValues;
+        return originalValues && propertyName in originalValues ? originalValues[propertyName] : (this.entity as any)[propertyName];
     }
-
-    private ___fckCensor?: FckCensorSpoofData | null;
-
-    get __fckCensor(): FckCensorSpoofData | null { return this.___fckCensor ?? (this.___fckCensor = sources.getTrackSpoof(this.id)?.__fckCensor ?? null) }
 
     protected getAdditionalButtons(): JSX.Child { return new ReportCensorActionButton({ id: this.id, type: this.type }).element }
 
@@ -155,8 +155,9 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
     private onSpoofRemoveInternal() {
         closeAlert(this.spoofAlert);
         try {
-            restoreOriginalValues(this.entity);
+            restoreOriginalValues(this.entity, sources.getFckCensorData(this.type, this.id));
         } catch (e) { error(e) }
+        sources.forgetFckCensorData(this.type, this.id);
 
         if (!getSpoof(localSource, this.type, this.id)) {
             localSource.pushSpoof({}, this.id, this.type);

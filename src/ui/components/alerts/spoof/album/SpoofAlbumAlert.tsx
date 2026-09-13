@@ -15,9 +15,10 @@ export class SpoofAlbumAlert extends SpoofEntityWithArtistsAlert<Album> {
     declare private spoofVolumesArtistsSwitch: SwitchField
 
     protected getChildren() {
+        const fckCensorData = sources.getFckCensorData("album", this.id);
         const el = <div>
             {super.getChildren()}
-            {(this.spoofVolumesArtistsSwitch = new SwitchField(this, "Подменить исполнителей для треков", undefined, !!this.album?.__fckCensor?.replaceArtistsInAlbumVolumes)).element}
+            {(this.spoofVolumesArtistsSwitch = new SwitchField(this, "Подменить исполнителей для треков", undefined, !!fckCensorData?.replaceArtistsInAlbumVolumes)).element}
             {this.addPropertyField(new SpoofAlertAlbumTrackListField(this))}
         </div>
         this.updateSpoofVolumesArtistsSwitch();
@@ -26,7 +27,8 @@ export class SpoofAlbumAlert extends SpoofEntityWithArtistsAlert<Album> {
     }
 
     private updateSpoofVolumesArtistsSwitch(): boolean {
-        const show = this.artistsField.hasDiffs(this.artistsField.getValue(), this.entity?.__fckCensor?.originalValues?.artists ?? this.album.artists);
+        const originalArtists = sources.getFckCensorData("album", this.id)?.originalValues?.artists ?? this.album.artists;
+        const show = this.artistsField.hasDiffs(this.artistsField.getValue(), originalArtists);
         this.spoofVolumesArtistsSwitch.disabled = !show;
         return show
     }
