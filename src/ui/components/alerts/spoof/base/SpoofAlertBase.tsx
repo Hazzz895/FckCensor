@@ -1,6 +1,6 @@
 import { sources } from "@/api/main-api";
 import { JSX } from "@/jsx-runtime";
-import { Artist, Album, Track, Release, SpoofableEntity, SpoofableType } from "@/types";
+import { Artist, Album, Track, Release, SpoofableEntity, SpoofableType, FckCensorSpoofData } from "@/types";
 import { AlertButtons, ActionButton, createScrimAlert, closeAlert } from "@/ui/components/alerts/alerts";
 import { httpsify, isEmptyObject, localizeSpoofableType } from "@/utils/common";
 import { debug, error, log } from "@/utils/logger";
@@ -12,6 +12,9 @@ import styles from "@/styles.module.scss"
 import { restoreOriginalValues } from "@/utils/music";
 import { CoverProps } from "../spoof-alert";
 import { SpoofAlertCoverField } from "./SpoofAlertCoverField";
+import { localSource } from "@/api/db-api";
+import { report } from "@/api/reports-api";
+import { ReportCensorActionButton } from "./ReportCensorActionButton";
 
 export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity> {
     get artist() {
@@ -55,6 +58,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
     }
 
     protected constructor(entity: T, type: SpoofableType, alertTitle: string, sourceNode?: HTMLElement, scrim?: HTMLElement) {
+        debug(entity)
         this.entity = entity;
         this.scrim = scrim;
         this.sourceNode = sourceNode;
@@ -127,10 +131,14 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
     }
 
     getOriginalValue(propertyName: string) {
-        return this.entity.__fckCensor?.originalValues && propertyName in this.entity.__fckCensor.originalValues ? this.entity.__fckCensor?.originalValues?.[propertyName] : (this.entity as any)[propertyName];
+        return this.__fckCensor?.originalValues && propertyName in this.__fckCensor.originalValues ? this.__fckCensor?.originalValues?.[propertyName] : (this.entity as any)[propertyName];
     }
 
-    protected getAdditionalButtons(): JSX.Child { return [] }
+    private ___fckCensor?: FckCensorSpoofData | null;
+
+    get __fckCensor(): FckCensorSpoofData | null { return this.___fckCensor ?? (this.___fckCensor = sources.getTrackSpoof(this.id)?.__fckCensor ?? null) }
+
+    protected getAdditionalButtons(): JSX.Child { return new ReportCensorActionButton({ id: this.id, type: this.type }).element }
 
     protected onApplyInternal() {
         closeAlert(this.spoofAlert);
@@ -157,11 +165,12 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
     }
 
     private getSpoofData(): T | null {
-        const spoofData: T | null = null;
+        let spoofData: T | null = null;
         for (const field of this.fields) {
             if (!field.propertyName) continue;
             const prop = field.getValue();
             if (field.hasDiffs(prop)) {
+                spoofData ??= {} as T;
                 (spoofData as any)[field.propertyName] = prop;
             }
         }
@@ -170,6 +179,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
             log("Applying spoof to", this.type, spoofData)
             const l = localizeSpoofableType(this.type);
             window.pulsesyncApi?.showNotification?.(`${l[0].toUpperCase() + l.slice(1)} подменен успешно! Для применения изменений может потребоваться перезаход.`, "info", { coverUrl: this.entity.coverUri && httpsify(this.entity.coverUri).replace('%%', '100x100') })
+            report(this.id, this.type, true);
             return spoofData;
         }
         else {

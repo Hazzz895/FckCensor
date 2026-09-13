@@ -1,8 +1,8 @@
 import { debug, log } from "@/utils/logger";
 import Source from "./dto/sources/source";
-import { Track, Album, Artist } from "@/types";
+import { Track, Album, Artist, SpoofableType, SpoofableEntity } from "@/types";
 import TrackReplacement from "./dto/track-replacement";
-import { list, postProcessingInsertions } from "./remote-api";
+import { list, postProcessing } from "./remote-api";
 import { sources } from "./main-api";
 import { getTrackAvaiableSpoof, reloadPlayer } from "@/utils/music";
 import { ArtistInsertions } from "./dto/artist-insertion";
@@ -12,6 +12,7 @@ let dbPromise: Promise<IDBDatabase> | null = null;
 const TRACKS = "tracks"
 const REMOTE_EXCEPTIONS = "remote_exceptions"
 const REPORTED_TRACKS = "reported_tracks"
+const REPORTED_ENTITIES = "reported_entities"
 const TRACK_SPOOFS = "track_spoofs"
 const ALBUM_SPOOFS = "album_spoofs"
 const ARTIST_SPOOFS = "artists_spoofs"
@@ -26,14 +27,8 @@ export function getDb(): Promise<IDBDatabase> {
                 if (!event.target) return;
                 const db = (event.target as IDBOpenDBRequest).result;
 
-                if (event.oldVersion < 5 ) { // < 2.0.0
-                    if (db.objectStoreNames.contains(REMOTE_EXCEPTIONS)) {
-                        db.deleteObjectStore(REMOTE_EXCEPTIONS);
-                    }
-
-                    if (db.objectStoreNames.contains(REPORTED_TRACKS)) { // TODO: migrate
-                        // ...
-                    }
+                if (db.objectStoreNames.contains(REMOTE_EXCEPTIONS)) {
+                    db.deleteObjectStore(REMOTE_EXCEPTIONS);
                 }
 
                 const key = { keyPath: "id" };
@@ -47,12 +42,33 @@ export function getDb(): Promise<IDBDatabase> {
 
                 createIfNotExist(
                     TRACKS,
-                    REPORTED_TRACKS,
+                    REPORTED_ENTITIES,
                     TRACK_SPOOFS,
                     ALBUM_SPOOFS,
                     ARTIST_SPOOFS,
                     ARTIST_INSERTIONS
                 );
+
+                if (db.objectStoreNames.contains(REPORTED_TRACKS)) {
+                    const tx = (event.target as IDBOpenDBRequest).transaction;
+                    if (tx) {
+                        const oldStore = tx.objectStore(REPORTED_TRACKS);
+                        const newStore = tx.objectStore(REPORTED_ENTITIES);
+                        const oldKeysReq = oldStore.getAllKeys();
+
+                        oldKeysReq.onsuccess = () => {
+                            for (const trackId of oldKeysReq.result.map(String)) {
+                                newStore.put({ id: `track_${trackId}`, type: "track", entityId: trackId });
+                            }
+                            db.deleteObjectStore(REPORTED_TRACKS);
+                        };
+                        oldKeysReq.onerror = () => {
+                            debug("Failed to migrate reported_tracks:", oldKeysReq.error);
+                        };
+                    } else {
+                        db.deleteObjectStore(REPORTED_TRACKS);
+                    }
+                }
             };
 
             request.onsuccess = () => resolve(request.result);
@@ -66,7 +82,7 @@ export async function loadLocalDb() {
     try {
         const db = await getDb();
         const tx = db.transaction(
-            [TRACKS, TRACK_SPOOFS, ALBUM_SPOOFS, ARTIST_SPOOFS, ARTIST_INSERTIONS],
+            [TRACKS, TRACK_SPOOFS, ALBUM_SPOOFS, ARTIST_SPOOFS, ARTIST_INSERTIONS, REPORTED_ENTITIES],
             "readonly"
         );
 
@@ -75,12 +91,14 @@ export async function loadLocalDb() {
         const albumSpoofsStore = tx.objectStore(ALBUM_SPOOFS);
         const artistSpoofsStore = tx.objectStore(ARTIST_SPOOFS);
         const artistInsertionsStore = tx.objectStore(ARTIST_INSERTIONS);
+        const reportedEntitiesStore = tx.objectStore(REPORTED_ENTITIES);
 
         const tracksReq = tracksStore.getAllKeys();
         const trackSpoofsReq = trackSpoofsStore.getAll();
         const albumSpoofsReq = albumSpoofsStore.getAll();
         const artistSpoofsReq = artistSpoofsStore.getAll();
         const artistInsertionsReq = artistInsertionsStore.getAll();
+        const reportedEntitiesReq = reportedEntitiesStore.getAll();
 
         await new Promise<void>((resolve, reject) => {
             tx.oncomplete = () => resolve();
@@ -121,8 +139,12 @@ export async function loadLocalDb() {
             localSource.artistsInsertions[item.id] = item;
         }
 
-        postProcessingInsertions(localSource.artistsInsertions, localSource.trackSpoofs, localSource.albumSpoofs);
-        debug("POST PROCESSING", localSource.artistsInsertions, localSource.trackSpoofs, localSource.albumSpoofs);
+        localSource.reportedEntities = { track: [], album: [], artist: [] };
+        for (const item of reportedEntitiesReq.result as ({ type: SpoofableType, entityId: string } & { id: string })[]) {
+            localSource.reportedEntities[item.type].push(item.entityId);
+        }
+
+        postProcessing(localSource.artistsInsertions, localSource.trackSpoofs, localSource.albumSpoofs);
         sources.pushSource(localSource);
 
         log("Loaded local data:", {
@@ -146,6 +168,7 @@ export class LocalSource implements Source {
     public trackSpoofs: Record<string, Track> = {};
     public albumSpoofs: Record<string, Album> = {};
     public artistSpoofs: Record<string, Artist> = {};
+    public reportedEntities: Record<SpoofableType, string[]> = { track: [], album: [], artist: [] };
 
     async buildPlayerReplacement(trackId: string): Promise<TrackReplacement | null> {
         if (this.playerReplacementsCache.has(trackId)) {
@@ -213,10 +236,6 @@ export class LocalSource implements Source {
 
     getArtistInsertions(artistId: string): ArtistInsertions | null {
         return this.artistsInsertions[artistId];
-    }
-
-    isRemoteException(trackId: string): boolean {
-        return false;
     }
 
     pushTrackReplacement(trackId: string, file: File) {
@@ -306,7 +325,6 @@ export class LocalSource implements Source {
     }
 
     pushArtistInsertions(artistId: string, insertions: ArtistInsertions) {
-        debug("PUSHING", artistId, insertions)
         this.artistsInsertions[artistId] = insertions;
         return this.pushToDb(ARTIST_INSERTIONS, artistId, insertions);
     }
@@ -314,6 +332,16 @@ export class LocalSource implements Source {
     removeArtistInsertions(artistId: string) {
         delete this.artistsInsertions[artistId];
         return this.removeFromDb(ARTIST_INSERTIONS, artistId);
+    }
+
+    isReported(id: number, type: SpoofableType): boolean {
+        return this.reportedEntities[type].includes(String(id));
+    }
+
+    pushReported(id: number, type: SpoofableType) {
+        const strId = String(id);
+        this.reportedEntities[type].push(strId);
+        return this.pushToDb(REPORTED_ENTITIES, `${type}_${strId}`, { type, entityId: strId });
     }
 
     private async openStore(table_name: string, mode: IDBTransactionMode = "readwrite") {

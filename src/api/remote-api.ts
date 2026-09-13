@@ -1,14 +1,11 @@
-import { Album, Artist, OuterArtist, Release, RemoteList, RemoteSourceBase, Track, TrackReplacementStorageBase, TracksStorage } from "@/types";
-import { debug, error, log, warn } from "@/utils/logger";
-import addonConfig from '../../addon.config.mjs'
-import { AnyARecord } from "node:dns";
+import { Album, Artist, Release, RemoteList, RemoteSourceBase, Track, TracksStorage } from "@/types";
+import { debug, error, log } from "@/utils/logger";
 import { versionSatisfies } from "@/utils/version-utils";
+import addonConfig from '../../addon.config.mjs';
+import { ArtistInsertions } from "./dto/artist-insertion";
 import Source from "./dto/sources/source";
 import TrackReplacement from "./dto/track-replacement";
 import { sources } from "./main-api";
-import { LocalSource } from "./db-api";
-import { ArtistInsertions } from "./dto/artist-insertion";
-import { isBeta, isDev } from "@/dev/dev-utils";
 
 const BASE_URI = "https://raw.githubusercontent.com/Hazzz895/FckCensorData/refs/heads/main/list_v2.json"
 const OLD_BASE_URI = "https://raw.githubusercontent.com/Hazzz895/FckCensorData/refs/heads/main/list.json"
@@ -34,7 +31,7 @@ export async function loadRemoteList() {
     })))
 }
 
-export function postProcessingInsertions(insertions: Record<string, ArtistInsertions>, tracks: Record<string, Track>, albums: Record<string, Album>) {
+export function postProcessing(insertions: Record<string, ArtistInsertions>, tracks: Record<string, Track>, albums: Record<string, Album>) {
     for (const [i, entityRecord] of [tracks, albums].entries()) {
         const entityType = i === 0 ? "tracks" : "albums";
         for (const [id, t] of Object.entries(entityRecord) as [string, Track | Album][]) {
@@ -88,7 +85,7 @@ export class MinifiedRemoteSource implements RemoteSourceBase {
                 }
             }
 
-            postProcessingInsertions(this.artistsInsertions, this.tracks, this.albums)
+            postProcessing(this.artistsInsertions, this.tracks, this.albums)
         }
     }
 
@@ -135,24 +132,13 @@ export class RemoteSource implements Source {
         return list;
     }
 
-    private list
-    private dbSource: LocalSource | null = null
+    private list: MinifiedRemoteSource
 
     public constructor(list: MinifiedRemoteSource) {
         this.list = list;
     }
 
-    private findDbSource() {
-        if (this.dbSource) {
-            return this.dbSource
-        }
-        return this.dbSource = sources.getSource(LocalSource)
-    }
-
     async buildPlayerReplacement(trackId: string): Promise<TrackReplacement | null> {
-        if (this.findDbSource()?.isRemoteException(trackId)) {
-            return null;
-        }
         for (const storage of this.list.tracksStorages) {
             let url = null
             if (storage.trackIds && storage.urlTemplate && Number(trackId) in storage.trackIds) {
@@ -176,9 +162,6 @@ export class RemoteSource implements Source {
     }
 
     hasPlayerReplacement(trackId: string): boolean {
-        if (this.findDbSource()?.isRemoteException(trackId)) {
-            return false;
-        }
         for (const storage of this.list.tracksStorages) {
             if ((storage.tracks && trackId in storage.tracks) || (storage.trackIds && storage.urlTemplate && Number(trackId) in storage.trackIds)) {
                 return true;

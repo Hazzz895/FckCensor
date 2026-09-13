@@ -10,6 +10,7 @@ import { prepareOptions } from './hooks/ui/options';
 import { prepareDisabledTracksObserver } from './hooks/ui/disabled-tracks';
 import { hookResources } from './hooks/resources';
 import { hookPlayer } from './hooks/player';
+import "./api/reports-api";
 
 function prepareUiHooks() {
     prepareBadges()

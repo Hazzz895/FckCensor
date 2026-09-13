@@ -14,7 +14,7 @@ export class SpoofAlbumAlert extends SpoofEntityWithArtistsAlert<Album> {
 
     declare private spoofVolumesArtistsSwitch: SwitchField
 
-    protected getChildren(): HTMLElement {
+    protected getChildren() {
         const el = <div>
             {super.getChildren()}
             {(this.spoofVolumesArtistsSwitch = new SwitchField(this, "Подменить исполнителей для треков", undefined, !!this.album?.__fckCensor?.replaceArtistsInAlbumVolumes)).element}

@@ -1,10 +1,10 @@
 export default abstract class ElementWrap<T extends HTMLElement = HTMLElement> {
     protected _element: T = null!;
 
-    protected abstract createElement(): T
+    protected abstract createElement(): HTMLElement
 
     private initElement() {
-        return this._element = this.createElement();
+        return this._element = this.createElement() as T;
     }
 
     public reRenderElement() {
@@ -12,7 +12,7 @@ export default abstract class ElementWrap<T extends HTMLElement = HTMLElement> {
         if (this._element) {
             this._element.replaceWith(newElement);
         }
-        return this._element = newElement;
+        return this._element = newElement as T;
     }
 
     public get element() {
