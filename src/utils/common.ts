@@ -40,3 +40,16 @@ export function localizeSpoofableType(type: SpoofableType) {
         case "track": return "трек"
     }
 }
+
+export function isNumeric(str: string) {
+    return !Number.isNaN(Number(str));
+}
+
+export function getJsonValidationError(str: string) {
+    try {
+        JSON.parse(str);
+        return null;
+    } catch (e: any) {
+        return e.message as string;
+    }
+}

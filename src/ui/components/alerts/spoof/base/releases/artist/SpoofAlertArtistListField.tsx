@@ -12,10 +12,6 @@ import { Insertion } from "@/api/dto/artist-insertion";
 
 export class SpoofAlertArtistListField extends SpoofAlertReleasesListField<Insertion> {
     getValue(): Insertion[] {
-        return this.valueToProperty();
-    }
-
-    valueToProperty(): Insertion[] {
         return this.insertions ?? [];
     }
 

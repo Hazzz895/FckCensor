@@ -91,11 +91,6 @@ export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField<T
         this.reRenderElement();
     }
 
-    valueToProperty() {
-        debug(this.originalValue, this.getValue());
-        return this.getValue();
-    }
-
     hasDiffs(prop: Track[][]): boolean {
         return prop.map(d => d.map(t => t.id).join(',')).join('|') != (this.originalValue ?? [] as Track[][]).map(d => d.map(t => t.id).join(',')).join('|');
     }

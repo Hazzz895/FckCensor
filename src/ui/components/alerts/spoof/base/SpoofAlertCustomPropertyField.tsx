@@ -4,6 +4,7 @@ import { debug } from "@/utils/logger";
 import { SpoofAlertBase } from "./SpoofAlertBase";
 import styles from "@/styles.module.scss";
 import { JSX } from "@/jsx-runtime";
+import { getJsonValidationError, isNumeric } from "@/utils/common";
 
 export default class SpoofAlertCustomPropertyField extends SpoofAlertEntityPropertyField<any> {
     public constructor(alert: SpoofAlertBase) {
@@ -15,10 +16,10 @@ export default class SpoofAlertCustomPropertyField extends SpoofAlertEntityPrope
     private propertyTypeField: HTMLSelectElement = null!;
 
     createElement(): HTMLElement {
-        this.propertyNameField = <TextField list="FckCensorEntityPropertiesList" oninput={this.onPropertyNameTextChanged.bind(this)} placeholder="Название"/>;
+        this.propertyNameField = <TextField list="FckCensorEntityPropertiesList" oninput={this.onPropertyNameChanged.bind(this)} placeholder="Название"/>;
         
-        this.propertyValueField = <TextField placeholder="Значение"/>
-        this.propertyTypeField = <select onchange={this.onTypeChange.bind(this)} class={"EditContentModal_field__rexIL EditContentModal_input__8O8GH " + styles.i}>
+        this.propertyValueField = <TextField oninput={this.onValueChanged.bind(this)}  placeholder="Значение"/>
+        this.propertyTypeField = <select onchange={this.onTypeChanged.bind(this)} class={"EditContentModal_field__rexIL EditContentModal_input__8O8GH " + styles.i}>
                                     <option value="string">Строка</option>
                                     <option value="number">Число</option>
                                     <option value="boolean">Логическое</option>
@@ -44,12 +45,79 @@ export default class SpoofAlertCustomPropertyField extends SpoofAlertEntityPrope
         </div>;
     }
 
-    public getValue() {
+    public getInputValue() {
         return this.propertyValueField.querySelector<HTMLInputElement | HTMLTextAreaElement>('input, textarea')!.value;
     }
 
-    private onTypeChange(_: Event) {
+    private onTypeChanged(_: Event) {
+        this.validateType();
+    }
+
+    private onValueChanged(ev: InputEvent) {
+        this.validateType()
+    }
+
+    private getTypeConverter() {
+        switch (this.getType()) {
+            case "number":
+                return Number;
+            case "boolean":
+                return (s: string) => s == "true";
+            case "json": 
+                return JSON.parse
+            default:
+                return String
+        }
+    }   
+
+    public getValidationError() {
+        let error: string | null = null;
+
         const type = this.getType();
+
+        if (type !== "string") {
+            const value = this.getInputValue();
+            if (!["null", "undefined"].includes(value)) {
+                switch (type) {
+                    case "number":
+                        error = isNumeric(value) ? null :"Значение должно быть числом";
+                        break;
+                    case "boolean":
+                        error = ["true", "false"].includes(value) ? null : "Значение должно быть либо true, либо false";
+                        break;
+                    case "json":
+                        error = getJsonValidationError(value);
+                        break;
+                    default:
+                        error = null;
+                        break;
+                }
+            }
+        }
+
+        return error;
+    }
+
+    private validateType() {
+        const error = this.getValidationError();
+        const fits = !error;
+
+        debug(error)
+
+        const input = this.propertyValueField.querySelector<HTMLInputElement | HTMLTextAreaElement>('input, textarea')!
+        input.classList.toggle("EditContentModal_input_error__fxTOr", !fits);
+        input.classList.toggle("kAYDswAvA1AJoAzRV4rY", fits);
+
+        let errorLabel = this.propertyValueField.querySelector<HTMLElement>('[data-test-id="ERROR_LABEL"]');
+        if (!fits) {
+            if (!errorLabel) {
+                errorLabel = <div class="_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 _3_Mxw7Si7j2g4kWjlpR" data-test-id="ERROR_LABEL" style="color: var(--ym-message-color-error-text-enabled); margin-block-start: var(--ym-spacer-size-xs);"/>;
+                this.propertyValueField.appendChild(errorLabel);
+            }
+            errorLabel.textContent = error;
+        } else if (errorLabel) {
+            errorLabel.remove();
+        }
     }
 
     public setPropertyName(propertyName: string) {
@@ -88,7 +156,7 @@ export default class SpoofAlertCustomPropertyField extends SpoofAlertEntityPrope
                 this.propertyTypeField.value = typeValue;
             }
 
-            if (prop && !this.getValue()) {
+            if (prop && !this.getInputValue()) {
                 let strProp;
                 if (typeValue == "json") {
                     strProp = JSON.stringify(prop);
@@ -101,7 +169,7 @@ export default class SpoofAlertCustomPropertyField extends SpoofAlertEntityPrope
         }
     }
 
-    private onPropertyNameTextChanged(ev: InputEvent) {
+    private onPropertyNameChanged(ev: InputEvent) {
         this.setPropertyNameInternal(this.propertyName = (ev.currentTarget as HTMLTextAreaElement | HTMLInputElement).value.trim());
     }
 
@@ -125,28 +193,19 @@ export default class SpoofAlertCustomPropertyField extends SpoofAlertEntityPrope
         }
     }
 
-    valueToProperty() {
-        const value = this.getValue()
-        switch (this.getType()) {
-            case "number":
-                return Number(value);
-            case "boolean":
-                return value == "true";
-            case "json": 
-                switch (value) {
-                    case "undefined":
-                        return undefined 
-                    case "null":
-                        return null;
-                    default:
-                        return JSON.parse(value)
-                }
-            default:
-                return String(this.getValue())
-            }
-        }
-    }
+    getValue(): any {
+        const value = this.getInputValue()
 
+        switch (value) {
+            case "undefined":
+                return undefined 
+            case "null":
+                return null;
+        }
+
+        return this.getTypeConverter()(value);
+    }
+}
 
 export function AddSpoofAlertFieldButton({ children, ...props }: JSX.HTMLAttributes) {
     return <button {...props} class={`EditContentModal_input__8O8GH EditContentModal_field__rexIL ${styles.AddSpoofAlertFieldField}`}>{children ?? "Добавить поле"}</button>
