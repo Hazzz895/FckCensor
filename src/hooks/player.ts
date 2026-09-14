@@ -8,7 +8,6 @@ function hook(gfir: any) {
     hookMethods(gfir, async (idk: boolean, trackId: TrackId, quality: string) => {
         debug(trackId, "jio")
         if (sources.hasPlayerReplacement(String(trackId))) {
-            debug("true")
             return true;
         } 
     }, "isTrackDownloaded");

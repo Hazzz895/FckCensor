@@ -137,6 +137,27 @@ export class SourcesCollection {
     }
 }
 
+export function postProcessing(insertions: Record<string, ArtistInsertions>, tracks: Record<string, Track>, albums: Record<string, Album>) {
+    for (const [i, entityRecord] of [tracks, albums].entries()) {
+        const entityType = i === 0 ? "tracks" : "albums";
+        for (const [id, t] of Object.entries(entityRecord) as [string, Track | Album][]) {
+            if (!t.artists?.length || t.__fckCensor?.insertionIndex === null) continue;
+
+            const data = { 
+                releaseId: id, 
+                index: t.__fckCensor?.insertionIndex ?? undefined 
+            };
+
+            t.artists.forEach((a: Release) => {
+                if (!a.id) return;
+                if (!insertions[a.id]) insertions[a.id] = { tracks: [], albums: [] };
+                if (!insertions[a.id][entityType]) insertions[a.id][entityType] = [];
+                insertions[a.id][entityType]!.push(data)
+            }); 
+        }
+    }
+}
+
 export default class MainSource implements Source {
     private sourcesCollection = new SourcesCollection();
 

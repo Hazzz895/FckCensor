@@ -6,7 +6,7 @@ import { localizeSpoofableType } from "@/utils/common";
 import styles from "@/styles.module.scss";
 
 export class AddEntityToListField<T extends Release> extends Searchable<T> {
-    private searching = false;
+    public searching = false;
 
     protected createElement(): HTMLElement {
         if (!this.searching) {

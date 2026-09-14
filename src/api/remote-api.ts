@@ -5,7 +5,7 @@ import addonConfig from '../../addon.config.mjs';
 import { ArtistInsertions } from "./dto/artist-insertion";
 import Source from "./dto/sources/source";
 import TrackReplacement from "./dto/track-replacement";
-import { sources } from "./main-api";
+import { postProcessing, sources } from "./main-api";
 
 const BASE_URI = "https://raw.githubusercontent.com/Hazzz895/FckCensorData/refs/heads/main/list_v2.json"
 const OLD_BASE_URI = "https://raw.githubusercontent.com/Hazzz895/FckCensorData/refs/heads/main/list.json"
@@ -29,27 +29,6 @@ export async function loadRemoteList() {
             }
         ]
     })))
-}
-
-export function postProcessing(insertions: Record<string, ArtistInsertions>, tracks: Record<string, Track>, albums: Record<string, Album>) {
-    for (const [i, entityRecord] of [tracks, albums].entries()) {
-        const entityType = i === 0 ? "tracks" : "albums";
-        for (const [id, t] of Object.entries(entityRecord) as [string, Track | Album][]) {
-            if (!t.artists?.length) continue;
-
-            const data = { 
-                releaseId: id, 
-                index: t.__fckCensor?.insertionIndex ?? undefined 
-            };
-
-            t.artists.forEach((a: Release) => {
-                if (!a.id) return;
-                if (!insertions[a.id]) insertions[a.id] = { tracks: [], albums: [] };
-                if (!insertions[a.id][entityType]) insertions[a.id][entityType] = [];
-                insertions[a.id][entityType]!.push(data)
-            }); 
-        }
-    }
 }
 
 export class MinifiedRemoteSource implements RemoteSourceBase {
@@ -84,9 +63,9 @@ export class MinifiedRemoteSource implements RemoteSourceBase {
                     this.tracks[trackId] = { ...this.tracks[trackId], durationMs };
                 }
             }
-
-            postProcessing(this.artistsInsertions, this.tracks, this.albums)
         }
+
+        postProcessing(this.artistsInsertions, this.tracks, this.albums);
     }
 
     tracks: Record<string, Track> = {};

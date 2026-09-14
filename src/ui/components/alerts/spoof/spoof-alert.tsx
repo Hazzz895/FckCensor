@@ -1,12 +1,12 @@
 import { JSX } from "@/jsx-runtime";
-import { TrackMST, Artist, Album } from "@/types";
+import { TrackMST, Artist, Album, Track } from "@/types";
 import { getTrackFromNode } from "@/utils/ui-utils";
 import { debug } from "@/utils/logger";
 import { SpoofTrackAlert } from "./track/SpoofTrackAlert";
 import { SpoofArtistAlert } from "./artist/SpoofArtistAlert";
 import { SpoofAlbumAlert } from "./album/SpoofAlbumAlert";
 
-export function createTrackSpoofAlertFor(scrim: HTMLElement, trackNode: HTMLElement, trackData?: TrackMST) {
+export function createTrackSpoofAlertFor(scrim: HTMLElement, trackNode: HTMLElement, trackData?: Track) {
     if (!trackData) {
         trackData = getTrackFromNode(trackNode)!;
     }

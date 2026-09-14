@@ -2,8 +2,8 @@ import { debug, log } from "@/utils/logger";
 import Source from "./dto/sources/source";
 import { Track, Album, Artist, SpoofableType, SpoofableEntity } from "@/types";
 import TrackReplacement from "./dto/track-replacement";
-import { list, postProcessing } from "./remote-api";
-import { sources } from "./main-api";
+import { list } from "./remote-api";
+import { postProcessing, sources } from "./main-api";
 import { getTrackAvaiableSpoof, reloadPlayer } from "@/utils/music";
 import { ArtistInsertions } from "./dto/artist-insertion";
 
@@ -187,7 +187,7 @@ export class LocalSource implements Source {
                     if (this.playerReplacementsCache.size > MAX_TRACKS_CACHE_LENGTH) {
                         const oldestKey = this.playerReplacementsCache.keys().next().value!;
                         const oldestUrl = this.playerReplacementsCache.get(oldestKey);
-                        URL.revokeObjectURL(oldestUrl!.url);
+                        URL.revokeObjectURL(oldestUrl!.url!);
                         this.playerReplacementsCache.delete(oldestKey);
                     }
                     this.playerReplacementsCache.set(trackId, replacement);
@@ -250,7 +250,7 @@ export class LocalSource implements Source {
     removeTrackReplacement(trackId: string) {
         this.replacementsTrackIds = this.replacementsTrackIds.filter(x => x !== trackId);
         if (this.playerReplacementsCache.has(trackId)) {
-            URL.revokeObjectURL(this.playerReplacementsCache.get(trackId)!.url);
+            URL.revokeObjectURL(this.playerReplacementsCache.get(trackId)!.url!);
             this.playerReplacementsCache.delete(trackId);
             reloadPlayer(trackId);
         }

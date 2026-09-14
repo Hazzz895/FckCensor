@@ -2,7 +2,7 @@
     "$schema": "https://raw.githubusercontent.com/Hazzz895/FckCensor/refs/heads/v2/addon/Assets/list_v2.schema.json",
     "sources": [
         {
-            "supportedVersion": ">=0.0.0",
+            "supportedVersion": ">=2.0.0",
             "tracks": {
                 "63104735": {
                     "coverUri": "avatars.yandex.net/get-music-content/2358262/6e2a2403.a.10009371-1/%%"
@@ -30,7 +30,9 @@
                     "title": "В этой траве"
                 },
                 "142464338": {
-                    "title": "Лиза, настя"
+                    "title": "лиза, настя",
+                    "artists": [{ "id": 10946087, "name": "CUPSIZE" }],
+                    "coverUri": "avatars.yandex.net/get-music-content/15317937/6634021c.a.24720439-2/%%"
                 },
                 "138778164": {
                     "title": "Отчим"
@@ -91,22 +93,20 @@
                     "releaseDate": "2018-06-26T00:00:00+03:00"
                 }
             },
-            "artists": {
-                "644": {
-                    "name": "Ye"
-                }
-            },
-            "tracksStorages": [
-                {
-                    "urlTemplate": "raw.githubusercontent.com/Hazzz895/FckCensorData/refs/heads/main/tracks/%%",
-                    "trackIds": []
-                }
-            ],
             "artistsInsertions": {
                 "7081546": {
                     "tracks": [{ "releaseId": "63104735", "index": 0 }]
                 }
             }
+        },
+        {
+            "supportedVersion": ">0.0.0",
+            "tracksStorages": [
+                {
+                    "urlTemplate": "raw.githubusercontent.com/Hazzz895/FckCensorData/refs/heads/main/tracks/%%",
+                    "trackIds": []
+                }
+            ]
         }
     ]
 }

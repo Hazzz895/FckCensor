@@ -2,9 +2,9 @@ import { JSX } from "@/jsx-runtime";
 import { listenAddNodes } from "./observer";
 import { getAlbumFromNode, getArtistFromNode, getContextMenuSource, getTrackFromNode, walkFiber } from "@/utils/ui-utils";
 import { debug, error } from "@/utils/logger";
-import { Album, Artist, OuterArtist, TrackMST } from "@/types";
+import { Album, Artist, OuterArtist, Track, TrackMST } from "@/types";
 import { createAlbumSpoofAlertFor, createArtistSpoofAlertFor, createTrackSpoofAlertFor } from "@/ui/components/alerts/spoof/spoof-alert";
-import { Q_TRACK_ROOT } from "./constants";
+import { Q_TRACK_ROOT, Q_VIBE_CONTEXT_MENU } from "./constants";
 import { completeTutorial } from "./tutorial";
 
 export function prepareOptions() {
@@ -31,6 +31,13 @@ export function prepareOptions() {
             trackOptionsMenu.appendChild(option);
         }
     }, "track");
+
+    listenAddNodes((trackOptionsMenu) => {
+        const trackData = window.pulsesyncApi?.getCurrentTrack() as Track;
+        if (!trackData) return;
+        const option = <SpoofOption label="Подменить трек" onclick={(el: HTMLElement) => createTrackSpoofAlertFor(el, trackOptionsMenu, trackData)}/>;
+        trackOptionsMenu.appendChild(option);
+    }, `${Q_VIBE_CONTEXT_MENU}:not(:has([fckcensoroption]))`);
 
     listenAddOptionsMenu((artistOptionsMenu) => {
         const artistHeaderRoot = getContextMenuSource(artistOptionsMenu, '.ArtistPage_content__iZHVN');
