@@ -14,8 +14,7 @@ export class SpoofArtistAlert extends SpoofAlertBase<Artist> {
     }
 
     protected async onApply(spoofData: Artist){
-        debug("DOIJDJOIDJI")
-        if (!isEmptyObject(spoofData)) {
+        if (spoofData) {
             localSource.pushArtistSpoof(spoofData, this.id);
             runUnprotected(this.entity, () => {
                 sources.spoofArtist(this.entity)

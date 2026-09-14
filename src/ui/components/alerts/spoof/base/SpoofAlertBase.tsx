@@ -70,10 +70,6 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
             coverUri = httpsify(coverUri);
         }
         this.id = String(entity.id);
-        // entity здесь может быть уже MST-инстансом (см. getAlbumFromNode/getTrackFromNode/
-        // getArtistFromNode), у которого __fckCensor не сохраняется при конвертации из сырого
-        // JSON - поэтому логируем то, что реально лежит в реестре по id, а не entity.__fckCensor.
-        debug(entity, sources.getFckCensorData(type, this.id))
 
         this.hadSpoof =(this.type == "artist" && (sources.hasInsertions(this.id) || sources.hasArtistSpoof(this.id))) ||
                         (this.type == "album" && sources.hasAlbumSpoof(this.id)) ||

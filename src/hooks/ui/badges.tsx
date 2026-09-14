@@ -1,5 +1,5 @@
 import { JSX, legacyCreateElement } from "@/jsx-runtime";
-import { listenAddNodes, listenAddTrackNodes } from "./observer";
+import { listenAddNodes, listenAddTrackNodes, listenMutations, unlistenMutations } from "./observer";
 import addonConfig from "../../../addon.config.mjs";
 import { debug, error } from "@/utils/logger";
 import styles from "@/styles.module.scss";
@@ -18,11 +18,13 @@ export function prepareBadges() {
 
     listenAddNodes((el) => updateArtistBadge(el, String(getArtistFromNode(el.closest('.ArtistPage_content__iZHVN')!)?.id)), '.ArtistPage_header__tQnNe .PageHeaderTitle_stickyTitle__CL1m4')
 
-    listenAddNodes((el) => {
-        updatePlayerBarBadge(el);
-    }, PLAYERBAR_SELECTOR);
+    listenAddNodes(updatePlayerBarBadge, PLAYERBAR_SELECTOR);
 
-    updatePlayerBarBadge();
+    const playerBarMutationListener = listenMutations((mutation) => {
+        if (updatePlayerBarBadge(mutation.target as HTMLElement)) {
+            unlistenMutations(playerBarMutationListener);
+        }
+    });
 
     window.pulsesyncApi?._waitForPlayer(() => {
         updatePlayerBarBadge();
@@ -49,13 +51,13 @@ export function updatePlayerBarBadge(playerBar?: HTMLElement) {
     if (!playerBar) return;
     const track = window.pulsesyncApi?.getCurrentTrack();
     if (!track) return;
-    updateTrackBadge(playerBar, String(track.id));
+    return updateTrackBadge(playerBar, String(track.id));
 }
 
 export function updateTrackBadge(container: HTMLElement, trackId: string) {
     const title = closestInTree(container, Q_META_TITLE_CONTAINER);
 
-    if (!title) return;
+    if (!title) return false;
 
     title.querySelector<HTMLElement>(`.${styles.FckCensorBadge}`)?.remove();
 
@@ -67,6 +69,8 @@ export function updateTrackBadge(container: HTMLElement, trackId: string) {
             title.appendChild(<ReplacedBadge type="track"/>);
         }
     }
+
+    return true;
 }
 
 function updateAlbumOrArtistBadge(container: HTMLElement, hasSpoof: boolean) {

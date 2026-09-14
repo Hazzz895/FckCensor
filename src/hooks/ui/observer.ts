@@ -36,6 +36,10 @@ export function listenMutations(listener: (mutation: MutationRecord) => void) {
     return listener
 }
 
+export function unlistenMutations(listener: (mutation: MutationRecord) => void) {
+    mutationCallbacks = mutationCallbacks.filter(x => x !== listener)
+}
+
 export function listenAddNodes(listener: (el: HTMLElement) => void, selector?: string) {
     addedNodeCallbacks.push([listener, selector]);
     return listener
