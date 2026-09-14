@@ -9,7 +9,7 @@ import { Q_ALBUM_FIBER_ROOT, Q_META_TITLE_CONTAINER, Q_PLAYER_BAR } from "./cons
 import { closestInTree, getAlbumFromNode, getArtistFromNode, getTrackIdFromNode } from "@/utils/ui-utils";
 import { SpoofableType } from "@/types";
 
-const PLAYERBAR_SELECTOR = `:is(${Q_PLAYER_BAR}, .FullscreenPlayerDesktopContent_fullscreenContent__Nvety):has(${Q_META_TITLE_CONTAINER})`
+const PLAYERBAR_SELECTOR = `${Q_PLAYER_BAR}, [data-test-id="FULLSCREEN_PLAYER_FULLSCREEN_CONTENT"]`;
 
 export function prepareBadges() {
     listenAddTrackNodes((el) => updateTrackBadge(el, getTrackIdFromNode(el) ?? ""), `:has(${Q_META_TITLE_CONTAINER})`);
@@ -21,19 +21,30 @@ export function prepareBadges() {
     listenAddNodes((el) => {
         updatePlayerBarBadge(el);
     }, PLAYERBAR_SELECTOR);
+
     updatePlayerBarBadge();
-    window?.sonataState?.queueState?.currentEntity?.onChange?.(() => {
-        try {
-            updatePlayerBarBadge();
-        } catch (e) {
-            error(e);
-        }
+
+    window.pulsesyncApi?._waitForPlayer(() => {
+        updatePlayerBarBadge();
+        window?.sonataState?.queueState?.currentEntity?.onChange?.(() => {
+            try {
+                updatePlayerBarBadge();
+            } catch (e) {
+                error(e);
+            }
+        });
     });
 }
 
 export function updatePlayerBarBadge(playerBar?: HTMLElement) {
     if (!playerBar) {
-        playerBar = document.querySelector<HTMLElement>(PLAYERBAR_SELECTOR) ?? undefined;
+        const nodes = document.querySelectorAll<HTMLElement>(PLAYERBAR_SELECTOR) ?? undefined;
+        if (nodes && nodes.length > 0) {
+            for (const node of nodes) {
+                updatePlayerBarBadge(node);
+            }
+        }
+        return;
     }
     if (!playerBar) return;
     const track = window.pulsesyncApi?.getCurrentTrack();
@@ -72,7 +83,6 @@ function updateAlbumOrArtistBadge(container: HTMLElement, hasSpoof: boolean) {
 }
 
 export function updateAlbumBadge(container: HTMLElement, albumId: string) {
-    debug(container, albumId)
     updateAlbumOrArtistBadge(container, sources.hasAlbumSpoof(albumId))
 }
 

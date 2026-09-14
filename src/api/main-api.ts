@@ -202,20 +202,13 @@ export default class MainSource implements Source {
 
         const originalValues = data.__fckCensor.originalValues;
         for (const key of Object.keys(spoofData)) {
-            // __fckCensor - это метаданные аддона (флаги, insertionIndex и т.д.),
-            // а не подменяемое поле сущности, поэтому под "original value" его сохранять не нужно.
             if (key === "__fckCensor") continue;
             if (!(key in originalValues)) {
                 originalValues[key] = (data as Record<string, any>)[key];
             }
         }
 
-        // spoofData может нести собственный __fckCensor (например replaceArtistsInAlbumVolumes,
-        // сохранённый ранее из SpoofAlbumAlert.onApply). Раньше здесь было
-        // `Object.assign(data, spoofData)`, который полностью заменял data.__fckCensor
-        // объектом из spoofData - вместе с ним пропадали originalValues, собранные строчками
-        // выше. Поэтому спойф-метаданные нужно мержить в data.__fckCensor, а не перезатирать его.
-        const { __fckCensor: spoofMeta, ...spoofContent } = spoofData as T & { __fckCensor?: FckCensorSpoofData };
+        const { __fckCensor: spoofMeta, ...spoofContent } = spoofData as T;
         Object.assign(data, spoofContent);
 
         if (spoofMeta) {
@@ -321,7 +314,23 @@ export default class MainSource implements Source {
     }
 
     spoofAlbum(album: Album): Album | null {
-        return this.internalSpoof(album, this.getAlbumSpoof.bind(this), String(album.id), true, "album");
+        const albumSpoof = this.internalSpoof(album, this.getAlbumSpoof.bind(this), String(album.id), true, "album");
+
+        if (album.volumes?.length == 1 && album.volumes[0].length == 1) {
+            const track = album.volumes[0][0];
+            const trackSpoof = this.getTrackSpoof(track.id);
+            if (trackSpoof) {
+                const keys = ['coverUri', 'title', 'artists'];
+
+                keys.forEach(key => {
+                    if (key in trackSpoof) {
+                        (album as any)[key] = (trackSpoof as any)[key];
+                    }
+                });
+            }
+        }
+
+        return albumSpoof;
     }
 
     getArtistSpoof(artistId: string): Artist | null {
