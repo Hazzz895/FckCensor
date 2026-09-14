@@ -93,3 +93,7 @@ export function getAudioMetadata(audioFile: File): Promise<HTMLAudioElement> {
 export function getSpoof<T extends SpoofableEntity>(source: Source, type: SpoofableType, id: string): T | null {
     return (type == "album" ? source.getAlbumSpoof : type == "artist" ? source.getArtistSpoof : source.getTrackSpoof).bind(source)(id) as T
 }
+
+export function hasSpoof(source: Source, type: SpoofableType, id: string): boolean {
+    return !!getSpoof(source, type, id);
+}

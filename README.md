@@ -8,5 +8,7 @@
 
 Аддон позволяет легко подменить любую информацию альбомов, исполнителей и треков (включая аудиопоток), а также автоматически подменивает вышеперечисленную информацию, если такова есть в [удалённом списке](https://github.com/Hazzz895/FckCensorData/blob/main/README.md)
 
-<img alt="Пример подмены трека" src="https://github.com/user-attachments/assets/64d58d6e-43d7-42c9-8577-6e007375d2ac" />
-<img width="1005" height="696" alt="Меню подмены трека" src="https://github.com/user-attachments/assets/91553cfb-a1df-406f-9de5-b46b75b09813" />
+<img alt="Пример подмены трека" src="./images/spoof_track_option.png" />
+<img alt="Меню подмены трека" src="./images/spoof_track_menu.png" />
+<img alt="Меню подмены исполнителя с вставками треков и альбомов" src="./images/spoof_artist_menu.png" />
+<img alt="Меню подмены альбома с подменённым трек-листом" src="./images/spoof_album_menu.png" />
