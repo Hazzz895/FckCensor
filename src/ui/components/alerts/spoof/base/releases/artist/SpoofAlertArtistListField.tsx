@@ -30,7 +30,6 @@ export class SpoofAlertArtistListField extends SpoofAlertReleasesListField<Inser
 
     protected fillElements() {
         const t = sources.getArtistInsertions(this.alert.artist.id)?.[(this.type + "s") as "tracks" | "albums"];
-        debug(t);
 
         if (!t) {
             return [];

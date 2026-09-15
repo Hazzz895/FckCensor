@@ -1,4 +1,4 @@
-import { debug, log } from "@/utils/logger";
+import { error, log } from "@/utils/logger";
 import Source from "./dto/sources/source";
 import { Track, Album, Artist, SpoofableType, SpoofableEntity } from "@/types";
 import TrackReplacement from "./dto/track-replacement";
@@ -63,7 +63,7 @@ export function getDb(): Promise<IDBDatabase> {
                             db.deleteObjectStore(REPORTED_TRACKS);
                         };
                         oldKeysReq.onerror = () => {
-                            debug("Failed to migrate reported_tracks:", oldKeysReq.error);
+                            error("Failed to migrate reported_tracks:", oldKeysReq.error);
                         };
                     } else {
                         db.deleteObjectStore(REPORTED_TRACKS);

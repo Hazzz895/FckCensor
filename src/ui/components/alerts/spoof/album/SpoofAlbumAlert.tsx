@@ -34,7 +34,6 @@ export class SpoofAlbumAlert extends SpoofEntityWithArtistsAlert<Album> {
     }
 
     private onArtistAdd() {
-        debug("ADDED")
         this.updateSpoofVolumesArtistsSwitch();
     }
 
@@ -43,7 +42,6 @@ export class SpoofAlbumAlert extends SpoofEntityWithArtistsAlert<Album> {
     }
 
     protected async onApply(spoofData: Album) {
-        debug(this.spoofVolumesArtistsSwitch.value)
         if (this.spoofVolumesArtistsSwitch.value) {
             spoofData.__fckCensor ??= {};
             spoofData.__fckCensor.replaceArtistsInAlbumVolumes = true;

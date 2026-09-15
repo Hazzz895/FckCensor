@@ -102,8 +102,6 @@ export default class SpoofAlertCustomPropertyField extends SpoofAlertEntityPrope
         const error = this.getValidationError();
         const fits = !error;
 
-        debug(error)
-
         const input = this.propertyValueField.querySelector<HTMLInputElement | HTMLTextAreaElement>('input, textarea')!
         input.classList.toggle("EditContentModal_input_error__fxTOr", !fits);
         input.classList.toggle("kAYDswAvA1AJoAzRV4rY", fits);
@@ -146,7 +144,6 @@ export default class SpoofAlertCustomPropertyField extends SpoofAlertEntityPrope
             const type = typeof prop;
             if (["string", "boolean", "number"].includes(type)) {
                 typeValue = type;
-                debug(type, (this.alert.entity as any)[this.propertyName!], typeValue)
             }
             else {
                 typeValue = "json"

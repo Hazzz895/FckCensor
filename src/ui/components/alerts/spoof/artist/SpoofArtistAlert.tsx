@@ -23,7 +23,6 @@ export class SpoofArtistAlert extends SpoofAlertBase<Artist> {
         
         if (this.forceSpoof()) {
             const insertions = { tracks: this.trackListField.getValue(), albums: this.albumListField.getValue() };
-            debug("INSERTIONS", insertions)
             await localSource.pushArtistInsertions(this.id, insertions);
         }
     }

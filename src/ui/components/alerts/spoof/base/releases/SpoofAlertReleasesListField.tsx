@@ -18,7 +18,6 @@ export abstract class SpoofAlertReleasesListField<T> extends SpoofAlertEntityPro
     }
 
     public hasDiffs(prop: T[]) {
-        debug("diff", prop, this.originalValue);
         return super.hasDiffs(prop);
     }
 

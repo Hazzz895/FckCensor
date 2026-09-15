@@ -58,7 +58,6 @@ export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
     async onApply(spoofData: Track) {
         await localSource.pushTrackSpoof(spoofData, this.id)
         if (this.sourceNode) {
-            debug(this.sourceNode)
             spoofNode(this.sourceNode, this.entity)
         }
     }

@@ -170,7 +170,6 @@ async function addInsertionsToAlbumsList(albums: Album[], artistId: string) {
 
 function hookLandingResource(lr: any) {
     hookMethods(lr, async (block: any, info: { type?: "ARTIST_POPULAR_TRACKS" | "ARTIST_ALBUMS", source?: { uri?: string } }) => {
-        debug("\n\n\n\n\n",block, info)
         let _artistId: string | undefined | null;
         function getArtistId() {
             if (_artistId !== undefined) return _artistId;
@@ -201,13 +200,10 @@ function hookLandingResource(lr: any) {
             }
         }
 
-        debug(Array.isArray(block.items), info.type === "ARTIST_ALBUMS", getArtistId())
         if (Array.isArray(block.items)) {
             if (info.type === "ARTIST_ALBUMS" && getArtistId()) {
-                debug("DOIJDJODIOIJDOIJDJODIOIJDODIJOIJJOIDOIJDOIJD\n\n\n")
                 const albums: Album[] = [];
                 const insertions = await addInsertionsToAlbumsList(albums, _artistId!);
-                debug(albums, insertions)
                 insertions?.forEach((insertion, i) => {
                     const album = albums[i]
                     const data = {
@@ -218,7 +214,6 @@ function hookLandingResource(lr: any) {
                             "releaseDate": album.releaseDate
                         }
                     }
-                    debug(data)
                     insert(block.items, data, insertion.index);
                 })
             }

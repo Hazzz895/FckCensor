@@ -150,9 +150,6 @@ export class RemoteSource implements Source {
     }
 
     getTrackSpoof(trackId: string): Track | null {
-        if (trackId == "151855585") {
-            debug("JIODJIODODIJJODI", this.list.tracks[trackId], this.list);
-        }
         return this.list.tracks[trackId] ?? null;
     }
 
