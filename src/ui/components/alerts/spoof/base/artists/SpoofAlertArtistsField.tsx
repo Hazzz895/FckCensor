@@ -31,8 +31,8 @@ export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField<Artist
 
     getValue() {
         return this.artistNodes
-                .map(x => x.entity)
-                .filter(x => !!x);
+                .map(x => x.getArtist())
+                .filter(x => !!x); // FIXME не добавляются исполнители с кастомным именем
     }
 
     createElement(): HTMLElement {

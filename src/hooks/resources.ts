@@ -240,12 +240,11 @@ function hookLandingResource(lr: any) {
 }
 
 function hookSearchResource(sr: any) {
-    hookMethods(sr, async (response: SearchResponse) => { // FIXME
+    hookMethods(sr, async (response: SearchResponse) => { 
         for (const r of response.results) {
             if (r.album) sources.spoofAlbum(r.album);
             if (r.artist) sources.spoofAnyArtist(r.artist);
             if (r.track) sources.spoofTrack(r.track);
-            debug(r)
         }
     }, "getInstantMixedSearch")
 }

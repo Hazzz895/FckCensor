@@ -53,3 +53,20 @@ export function getJsonValidationError(str: string) {
         return e.message as string;
     }
 }
+
+export function cloneWithFiles<T>(value: T): T {
+    if (value === null || typeof value !== "object") {
+        return value;
+    }
+    if (value instanceof File || value instanceof Blob) {
+        return value;
+    }
+    if (Array.isArray(value)) {
+        return value.map(cloneWithFiles) as unknown as T;
+    }
+    const result: Record<string, unknown> = {};
+    for (const key of Object.keys(value as object)) {
+        result[key] = cloneWithFiles((value as Record<string, unknown>)[key]);
+    }
+    return result as T;
+}

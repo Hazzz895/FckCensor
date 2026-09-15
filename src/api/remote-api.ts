@@ -1,5 +1,5 @@
 import { Album, Artist, Release, RemoteList, RemoteSourceBase, Track, TracksStorage } from "@/types";
-import { debug, error, log } from "@/utils/logger";
+import { debug, error, log, warn } from "@/utils/logger";
 import { versionSatisfies } from "@/utils/version-utils";
 import addonConfig from '../../addon.config.mjs';
 import { ArtistInsertions } from "./dto/artist-insertion";
@@ -15,9 +15,9 @@ export let list: RemoteSource | null = null
 
 export async function loadRemoteList() {
     RemoteSource.load(BASE_URI)
-    RemoteSource.load(LOCAL_URI)
+    //RemoteSource.load(LOCAL_URI)
 
-    const old_tracks: Record<string, string> = (await (await fetch(OLD_BASE_URI)).json())["tracks"]
+    /*const old_tracks: Record<string, string> = (await (await fetch(OLD_BASE_URI)).json())["tracks"]
     sources.pushSource(new RemoteSource(new MinifiedRemoteSource({
         sources: [
             {
@@ -28,7 +28,7 @@ export async function loadRemoteList() {
                 ],
             }
         ]
-    })))
+    })))*/
 }
 
 export class MinifiedRemoteSource implements RemoteSourceBase {
@@ -120,10 +120,7 @@ export class RemoteSource implements Source {
     async buildPlayerReplacement(trackId: string): Promise<TrackReplacement | null> {
         for (const storage of this.list.tracksStorages) {
             let url = null
-            if (storage.trackIds && storage.urlTemplate && Number(trackId) in storage.trackIds) {
-                url = storage.urlTemplate.replace('%%', trackId);
-            }
-            else if (storage.tracks && trackId in storage.tracks) {
+            if (storage.tracks && trackId in storage.tracks) {
                 const o = storage.tracks[trackId]
                 if (typeof o === 'string') {
                     url = o
@@ -131,6 +128,9 @@ export class RemoteSource implements Source {
                 else {
                     url = o.url
                 }
+            }
+            else if (storage.trackIds && storage.urlTemplate && storage.trackIds.find(x => typeof x === "number" ? String(x) == trackId : String(x.id) == trackId)) {
+                url = storage.urlTemplate.replace('%%', trackId);
             }
 
             if (url) {
@@ -142,7 +142,7 @@ export class RemoteSource implements Source {
 
     hasPlayerReplacement(trackId: string): boolean {
         for (const storage of this.list.tracksStorages) {
-            if ((storage.tracks && trackId in storage.tracks) || (storage.trackIds && storage.urlTemplate && Number(trackId) in storage.trackIds)) {
+            if ((storage.tracks && trackId in storage.tracks) || (storage.trackIds && storage.urlTemplate && storage.trackIds.find(x => typeof x === "number" ? String(x) == trackId : String(x.id) == trackId))) {
                 return true;
             }
         }
@@ -150,6 +150,9 @@ export class RemoteSource implements Source {
     }
 
     getTrackSpoof(trackId: string): Track | null {
+        if (trackId == "151855585") {
+            debug("JIODJIODODIJJODI", this.list.tracks[trackId], this.list);
+        }
         return this.list.tracks[trackId] ?? null;
     }
 

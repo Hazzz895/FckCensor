@@ -21,6 +21,10 @@ export class TabbedArtist extends Searchable<Artist> {
         this.onChanged = onChanged;
     }
 
+    getArtist() {
+        return this.entity || (this.input?.value ? { "name": this.input.value } as Artist : null);
+    }
+
     createElement(): HTMLElement {
         let children: JSX.Child = [];
         if (this.entity) {

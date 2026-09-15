@@ -141,19 +141,32 @@ export function postProcessing(insertions: Record<string, ArtistInsertions>, tra
     for (const [i, entityRecord] of [tracks, albums].entries()) {
         const entityType = i === 0 ? "tracks" : "albums";
         for (const [id, t] of Object.entries(entityRecord) as [string, Track | Album][]) {
-            if (!t.artists?.length || t.__fckCensor?.insertionIndex === null) continue;
+            if (t.artists?.length && t.__fckCensor?.insertionIndex !== null) {
+                const data = { 
+                    releaseId: id, 
+                    index: t.__fckCensor?.insertionIndex ?? undefined 
+                };
 
-            const data = { 
-                releaseId: id, 
-                index: t.__fckCensor?.insertionIndex ?? undefined 
-            };
+                t.artists.forEach((a: Release) => {
+                    if (!a.id) return;
+                    if (!insertions[a.id]) insertions[a.id] = { tracks: [], albums: [] };
+                    if (!insertions[a.id][entityType]) insertions[a.id][entityType] = [];
+                    insertions[a.id][entityType]!.push(data)
+                }); 
+            }
 
-            t.artists.forEach((a: Release) => {
-                if (!a.id) return;
-                if (!insertions[a.id]) insertions[a.id] = { tracks: [], albums: [] };
-                if (!insertions[a.id][entityType]) insertions[a.id][entityType] = [];
-                insertions[a.id][entityType]!.push(data)
-            }); 
+            if ("volumes" in t && t.volumes) {
+                t.volumes.forEach(v => v.forEach(t => {
+                    let trackSpoof = tracks[t.id];
+                    if (!trackSpoof) {
+                        tracks[t.id] = trackSpoof = { } as any
+                    }
+                    
+                    if (!("albums" in trackSpoof)) {
+                        trackSpoof.albums = [{ id: Number(id), title: "Без имени" }] as any;
+                    }
+                }))
+            }
         }
     }
 }

@@ -16,10 +16,9 @@ function hook(gfir: any) {
 class LocalFileHook extends FunctionHook {
     public async before(originalMethod: Function, trackId: TrackId) {
         const strTrackId = String(trackId)
-        debug(strTrackId)
         if (sources.hasPlayerReplacement(strTrackId)) {
             const replacement = await sources.buildPlayerReplacement(strTrackId)
-            if (replacement) {
+            if (replacement && replacement.url) {
                 log("Replaced track", trackId, "with", replacement.url)
                 return replacement.toBatch(strTrackId)
             }

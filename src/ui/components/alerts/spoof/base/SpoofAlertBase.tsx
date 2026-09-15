@@ -2,7 +2,7 @@ import { sources } from "@/api/main-api";
 import { JSX } from "@/jsx-runtime";
 import { Artist, Album, Track, Release, SpoofableEntity, SpoofableType, FckCensorSpoofData } from "@/types";
 import { AlertButtons, ActionButton, createScrimAlert, closeAlert } from "@/ui/components/alerts/alerts";
-import { httpsify, isEmptyObject, localizeSpoofableType } from "@/utils/common";
+import { httpsify, isEmptyObject, localizeSpoofableType, cloneWithFiles } from "@/utils/common";
 import { debug, error, log } from "@/utils/logger";
 import { Cover } from "../../../Cover";
 import SpoofAlertCustomPropertyField, { AddSpoofAlertFieldButton } from "./SpoofAlertCustomPropertyField";
@@ -141,7 +141,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
 
         const spoofData = this.getSpoofData();
         if (spoofData) {
-            this.onApply(JSON.parse(JSON.stringify(spoofData)));
+            this.onApply(cloneWithFiles(spoofData));
         }
         else if (this.hadSpoof) {
             this.onSpoofRemove();

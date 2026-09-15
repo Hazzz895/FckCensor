@@ -1,3 +1,4 @@
+import { httpsify } from "@/utils/common";
 import Source from "./sources/source";
 
 export default class TrackReplacement {
@@ -10,7 +11,7 @@ export default class TrackReplacement {
         else {
             return {
                 trackId: trackId,
-                urls: [this.url],
+                urls: [httpsify(this.url)],
                 batchId: -1,
             }
         }

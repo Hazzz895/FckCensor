@@ -222,7 +222,7 @@ export function hookMethods(obj: any, hook: Hook, ...methodNames: [string, ...st
                 error(`Error while hooking method ${methodName}`, e);
             }
             finally {
-                return result;
+                return result === undefined ? await originalMethod.apply(this, args) : result;
             }
         }
     });

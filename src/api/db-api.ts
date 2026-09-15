@@ -127,8 +127,14 @@ export async function loadLocalDb() {
 
         localSource.artistSpoofs = {};
         for (const item of artistSpoofsReq.result as (Artist & { id: string })[]) {
-            if (item.cover?.uri && (item.cover.uri as any) instanceof Blob) {
-                item.cover.uri = URL.createObjectURL(item.cover.uri as any);
+            const rawCoverFile =
+                ((item.coverUri as any) instanceof Blob && (item.coverUri as any)) ||
+                ((item.cover?.uri as any) instanceof Blob && (item.cover!.uri as any)) ||
+                null;
+            if (rawCoverFile) {
+                const url = URL.createObjectURL(rawCoverFile);
+                item.coverUri = url;
+                item.cover = { ...item.cover, uri: url };
             }
             localSource.artistSpoofs[item.id] = item;
             delete (item as any).id;
@@ -308,10 +314,24 @@ export class LocalSource implements Source {
         if (oldArtist?.cover?.uri?.startsWith("blob:")) {
             URL.revokeObjectURL(oldArtist.cover.uri);
         }
+        if (oldArtist?.coverUri?.startsWith("blob:") && oldArtist.coverUri !== oldArtist.cover?.uri) {
+            URL.revokeObjectURL(oldArtist.coverUri);
+        }
 
         const dbArtist = { ...artist };
-        if (artist.cover?.uri && (artist.cover.uri as any) instanceof Blob) {
-            artist.cover.uri = URL.createObjectURL(artist.cover.uri as any);
+
+        // Поле обложки в SpoofAlertCoverField всегда пишется как "coverUri",
+        // даже для исполнителей, хотя обложка исполнителя рендерится из cover.uri.
+        // Поэтому File мог осесть в любом из двух мест — проверяем оба и
+        // синхронизируем их на один и тот же blob: URL.
+        const rawCoverFile =
+            ((artist.coverUri as any) instanceof Blob && (artist.coverUri as any)) ||
+            ((artist.cover?.uri as any) instanceof Blob && (artist.cover!.uri as any)) ||
+            null;
+        if (rawCoverFile) {
+            const url = URL.createObjectURL(rawCoverFile);
+            artist.coverUri = url;
+            artist.cover = { ...artist.cover, uri: url };
         }
 
         this.artistSpoofs[id] = artist;
