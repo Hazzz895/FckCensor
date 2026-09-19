@@ -147,3 +147,4 @@ vite.config.ts.timestamp-*
 localdev
 .artifacts
 src.zip
+.data

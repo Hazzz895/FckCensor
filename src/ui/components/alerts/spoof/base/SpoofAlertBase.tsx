@@ -15,6 +15,8 @@ import { SpoofAlertCoverField } from "./SpoofAlertCoverField";
 import { localSource } from "@/api/db-api";
 import { report } from "@/api/reports-api";
 import { ReportCensorActionButton } from "./ReportCensorActionButton";
+import { Badge } from "@/hooks/ui/badges";
+import { ADDON_FAQ_URI } from "@/hooks/ui/constants";
 
 export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity> {
     get artist() {
@@ -107,7 +109,14 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
             </div>
             {childrenNode}
             <details class="EditContentModal_field__rexIL">
-                <summary class="EditContentModal_field__rexIL">Дополнительные поля (продвинуто)</summary>
+                <summary class="EditContentModal_field__rexIL">
+                    <div style="display: inline-flex">
+                        Дополнительные поля (продвинуто)
+                        <a target="_blank" rel="noreferrer noopener" class="buOTZq_TKQOVyjMLrXvB Meta_root_withSecondaryColor___uENY" href={ADDON_FAQ_URI + "#%D0%B4%D0%BE%D0%BF%D0%BE%D0%BB%D0%BD%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D1%8B%D0%B5-%D0%BF%D0%BE%D0%BB%D1%8F-%D0%BF%D0%BE%D0%B4%D0%BC%D0%B5%D0%BD%D1%8B-%D0%BF%D1%80%D0%BE%D0%B4%D0%B2%D0%B8%D0%BD%D1%83%D1%82%D0%BE"}>
+                            <Badge icon="info_xxs" description="Нажмите, чтобы узнать как работать с дополнительными полями"/>
+                        </a>
+                    </div>
+                </summary>
                 {jsonStructure && <details>
                     <summary class="EditContentModal_field__rexIL">JSON-структура</summary>
                     <pre style="color: var(--ym-controls-color-secondary-text-enabled_variant)" class={"EditContentModal_input__8O8GH " + styles.i}>{JSON.stringify(jsonStructure, null, 4)}</pre>

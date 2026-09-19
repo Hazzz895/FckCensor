@@ -104,7 +104,7 @@ export function Badge({ icon, description, ...props }: BadgeProps) {
         <span aria-label={description} {...props} class={`Meta_explicitMarkContainer__BxMQg ${styles.FckCensorBadge}`} onmouseenter={eventHandlerForTooltip}>
             <svg class="ExplicitMarkIcon_explicitMark__0BPeQ Meta_explicitMark__ocnCV Rkdd2vKC_3xa1eUdRdHP" 
                  focusable="false" 
-                 data-test-id="REPLACE_METADATA_MARK_ICON"
+                 data-test-id="FCKCENSOR_BADGE_ICON"
                  aria-hidden="false">
                 <use xlink:href={`/icons/sprite.svg#${icon}`}></use>
             </svg>

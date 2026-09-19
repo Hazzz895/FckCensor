@@ -1,12 +1,21 @@
 import { sources } from "@/api/main-api";
-import { hookDi, hookMethods, HookMethod, findModule, appRequire } from "../utils/hook-utils";
+import { FunctionHook, hookDi, hookMethods, HookMethod, findModule, appRequire } from "../utils/hook-utils";
 import { debug, error } from "@/utils/logger";
 import { Album, OuterArtist, SearchResponse, Track } from "@/types";
 import { insert } from "@/utils/common";
 import { getAlbums, getTracks } from "@/utils/music";
 
-function hookTrackResource(tr: any) {
-    hookMethods(tr, async (tracks: Track) => {
+class GetTracksMetaHook extends FunctionHook {
+    public before(originalMethod: Function, request: { trackIds?: TrackId[] }) {
+        if (!Array.isArray(request?.trackIds)) {
+            return;
+        }
+
+        const uuidPPAlbumId = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}):(.*)$/;
+        request.trackIds = request.trackIds.map(trackId => typeof trackId === "string" ? trackId.match(uuidPPAlbumId)?.[1] ?? trackId : trackId);
+    }
+
+    public after(tracks: Track[]) {
         if (Array.isArray(tracks)) {
             for (const t of tracks) {
                 try {
@@ -16,10 +25,16 @@ function hookTrackResource(tr: any) {
                 }
             }
         }
-    }, "getTracksMeta")
+        else {
+            sources.spoofTrack(tracks);
+        }
+        return tracks;
+    }
+}
 
-    hookMethods(tr, async (info: any) => {
-        if (info) {
+class GetFullInfoTrackHook extends GetTracksMetaHook {
+    public after(info: any) {
+        if (info && "track" in info) {
             sources.spoofTrack(info.track);
             if (Array.isArray(info.similarTracks)) {
                 for (const st of info.similarTracks) {
@@ -31,7 +46,13 @@ function hookTrackResource(tr: any) {
                 }
             }
         }
-    }, "getFullInfoTrack", "getFullInfoTrackWithEtag");
+        return info
+    }
+}
+
+function hookTrackResource(tr: any) {
+    hookMethods(tr, new GetTracksMetaHook(), "getTracksMeta");
+    hookMethods(tr, new GetFullInfoTrackHook(), "getFullInfoTrack", "getFullInfoTrackWithEtag");
 } 
 
 function hookAlbumResource(ar: any) {

@@ -140,14 +140,14 @@ export class SourcesCollection {
 export function postProcessing(insertions: Record<string, ArtistInsertions>, tracks: Record<string, Track>, albums: Record<string, Album>) {
     for (const [i, entityRecord] of [tracks, albums].entries()) {
         const entityType = i === 0 ? "tracks" : "albums";
-        for (const [id, t] of Object.entries(entityRecord) as [string, Track | Album][]) {
-            if (t.artists?.length && t.__fckCensor?.insertionIndex !== null) {
+        for (const [id, entity] of Object.entries(entityRecord) as [string, Track | Album][]) {
+            if (entity.artists?.length && entity.__fckCensor?.insertionIndex !== null) {
                 const data = { 
                     releaseId: id, 
-                    index: t.__fckCensor?.insertionIndex ?? undefined 
+                    index: entity.__fckCensor?.insertionIndex ?? undefined 
                 };
 
-                t.artists.forEach((a: Release) => {
+                entity.artists.forEach((a: Release) => {
                     if (!a.id) return;
                     if (!insertions[a.id]) insertions[a.id] = { tracks: [], albums: [] };
                     if (!insertions[a.id][entityType]) insertions[a.id][entityType] = [];
@@ -155,15 +155,15 @@ export function postProcessing(insertions: Record<string, ArtistInsertions>, tra
                 }); 
             }
 
-            if ("volumes" in t && t.volumes) {
-                t.volumes.forEach(v => v.forEach(t => {
+            if (entityType === "albums" && "volumes" in entity && entity.volumes && entity.coverUri) {
+                entity.volumes.forEach(v => v.forEach(t => {
                     let trackSpoof = tracks[t.id];
                     if (!trackSpoof) {
                         tracks[t.id] = trackSpoof = { } as any
                     }
                     
-                    if (!("albums" in trackSpoof)) {
-                        trackSpoof.albums = [{ id: Number(id), title: "Без имени" }] as any;
+                    if (!("coverUri" in trackSpoof)) {
+                        tracks[t.id].coverUri = entity.coverUri;
                     }
                 }))
             }

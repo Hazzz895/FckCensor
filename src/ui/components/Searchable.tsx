@@ -67,7 +67,7 @@ export class Searchable<T extends SpoofableEntity> extends ElementWrap {
     private onTextChanged(ev: InputEvent) {
         clearTimeout(this.timeout);
         
-        const re = new RegExp(`.*/${this.type}\/(.+)`); // #FIXME чето добавляется пустой трек
+        const re = new RegExp(`.*${this.type}\\/([^?\\s]+)(?:\\?([^\\s?#]*))?`); // #FIXME чето добавляется пустой трек
         if (re.test(this.input?.value ?? "")) {
             const id = this.input?.value?.match(re)![1];
             if (!id) return;
