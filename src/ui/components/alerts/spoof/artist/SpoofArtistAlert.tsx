@@ -2,7 +2,7 @@ import { Artist } from "@/types";
 import { SpoofAlertBase } from "../base/SpoofAlertBase";
 import { sources } from "@/api/main-api";
 import { localSource } from "@/api/db-api";
-import { runUnprotected } from "@/utils/ui-utils";
+import { spoofAllNodesFor } from "@/utils/ui-utils";
 import { debug } from "@/utils/logger";
 import { SpoofAlertArtistListField } from "../base/releases/artist/SpoofAlertArtistListField";
 import { isEmptyObject } from "@/utils/common";
@@ -16,9 +16,7 @@ export class SpoofArtistAlert extends SpoofAlertBase<Artist> {
     protected async onApply(spoofData: Artist){
         if (spoofData) {
             localSource.pushArtistSpoof(spoofData, this.id);
-            runUnprotected(this.entity, () => {
-                sources.spoofArtist(this.entity)
-            })
+            spoofAllNodesFor("artist", this.id);
         }
         
         if (this.forceSpoof()) {

@@ -9,13 +9,13 @@ import SpoofAlertCustomPropertyField, { AddSpoofAlertFieldButton } from "./Spoof
 import { SpoofAlertEntityPropertyField } from "./SpoofAlertEntityPropertyField";
 import { SpoofAlertInputField } from "./SpoofAlertInputField";
 import styles from "@/styles.module.scss"
-import { getSpoof, restoreOriginalValues } from "@/utils/music";
+import { getSpoof, restoreAllNodesByType } from "@/utils/music";
 import { CoverProps } from "../spoof-alert";
 import { SpoofAlertCoverField } from "./SpoofAlertCoverField";
 import { localSource } from "@/api/db-api";
 import { report } from "@/api/reports-api";
 import { ReportCensorActionButton } from "./ReportCensorActionButton";
-import { Badge } from "@/hooks/ui/badges";
+import { Badge, updateBadgesByType } from "@/hooks/ui/badges";
 import { ADDON_FAQ_URI } from "@/hooks/ui/constants";
 
 export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity> {
@@ -145,12 +145,13 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
 
     protected getAdditionalButtons(): JSX.Child { return new ReportCensorActionButton({ id: this.id, type: this.type }).element }
 
-    protected onApplyInternal() {
+    protected async onApplyInternal() {
         closeAlert(this.spoofAlert);
 
         const spoofData = this.getSpoofData();
         if (spoofData) {
-            this.onApply(cloneWithFiles(spoofData));
+            await this.onApply(cloneWithFiles(spoofData));
+            updateBadgesByType(this.type, this.id);
         }
         else if (this.hadSpoof) {
             this.onSpoofRemove();
@@ -160,9 +161,10 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
     private onSpoofRemoveInternal() {
         closeAlert(this.spoofAlert);
         try {
-            restoreOriginalValues(this.entity, sources.getFckCensorData(this.type, this.id));
+            restoreAllNodesByType(this.type, this.id);
         } catch (e) { error(e) }
         sources.forgetFckCensorData(this.type, this.id);
+        updateBadgesByType(this.type, this.id);
 
         if (!getSpoof(localSource, this.type, this.id)) {
             localSource.pushSpoof({}, this.id, this.type);

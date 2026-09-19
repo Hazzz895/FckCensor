@@ -3,7 +3,7 @@ import { SpoofEntityWithArtistsAlert } from "../base/artists/SpoofEntityWithArti
 import { sources } from "@/api/main-api";
 import { localSource } from "@/api/db-api";
 import { debug } from "@/utils/logger";
-import { runUnprotected } from "@/utils/ui-utils";
+import { spoofAllNodesFor } from "@/utils/ui-utils";
 import { SpoofAlertAlbumTrackListField } from "../base/releases/album/SpoofAlertAlbumTrackListField";
 import { SwitchField } from "@/ui/components/SwitchField";
 
@@ -47,9 +47,7 @@ export class SpoofAlbumAlert extends SpoofEntityWithArtistsAlert<Album> {
             spoofData.__fckCensor.replaceArtistsInAlbumVolumes = true;
         }
         localSource.pushAlbumSpoof(spoofData, this.id)
-        runUnprotected(this.entity, () => {
-            sources.spoofAlbum(this.entity)
-        })
+        spoofAllNodesFor("album", this.id);
     }
 
     protected async onSpoofRemove() {

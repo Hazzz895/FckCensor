@@ -5,6 +5,8 @@ export const Q_PLAYER_BAR = '.CommonLayout_playerBar__zXRxq'
 export const Q_ALBUM_FIBER_ROOT = '.CommonPageHeader_controls__c27E_'
 export const Q_ARTIST_FIBER_ROOT = '.ArtistPage_content__iZHVN'
 export const Q_VIBE_CONTEXT_MENU = '[data-test-id="VIBE_CONTEXT_MENU"]'
+export const Q_ALBUM_STICKY_TITLE = '.CommonAlbumPage_header__jS_be .PageHeaderTitle_stickyTitle__CL1m4'
+export const Q_ARTIST_STICKY_TITLE = '.ArtistPage_header__tQnNe .PageHeaderTitle_stickyTitle__CL1m4'
 
 export const ADDON_GITHUB_URI = "https://github.com/Hazzz895/FckCensor"
 

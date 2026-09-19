@@ -5,8 +5,8 @@ import { debug, error } from "@/utils/logger";
 import styles from "@/styles.module.scss";
 import { eventHandlerForTooltip } from "@/ui/tooltips";
 import { sources } from "@/api/main-api";
-import { Q_ALBUM_FIBER_ROOT, Q_META_TITLE_CONTAINER, Q_PLAYER_BAR } from "./constants";
-import { closestInTree, getAlbumFromNode, getArtistFromNode, getTrackIdFromNode } from "@/utils/ui-utils";
+import { Q_ALBUM_FIBER_ROOT, Q_ALBUM_STICKY_TITLE, Q_ARTIST_STICKY_TITLE, Q_META_TITLE_CONTAINER, Q_PLAYER_BAR } from "./constants";
+import { closestInTree, getAlbumFromNode, getAllTrackNodesById, getArtistFromNode, getTrackIdFromNode } from "@/utils/ui-utils";
 import { SpoofableType } from "@/types";
 
 const PLAYERBAR_SELECTOR = `${Q_PLAYER_BAR}, [data-test-id="FULLSCREEN_PLAYER_FULLSCREEN_CONTENT"]`;
@@ -14,9 +14,9 @@ const PLAYERBAR_SELECTOR = `${Q_PLAYER_BAR}, [data-test-id="FULLSCREEN_PLAYER_FU
 export function prepareBadges() {
     listenAddTrackNodes((el) => updateTrackBadge(el, getTrackIdFromNode(el) ?? ""), `:has(${Q_META_TITLE_CONTAINER})`);
 
-    listenAddNodes((el) => updateAlbumBadge(el, String(getAlbumFromNode(el.closest('.PageHeaderBase_content___DNyv')?.querySelector(Q_ALBUM_FIBER_ROOT)!)?.id)), '.CommonAlbumPage_header__jS_be .PageHeaderTitle_stickyTitle__CL1m4')
+    listenAddNodes((el) => updateAlbumBadge(el, String(getAlbumFromNode(el.closest('.PageHeaderBase_content___DNyv')?.querySelector(Q_ALBUM_FIBER_ROOT)!)?.id)), Q_ALBUM_STICKY_TITLE)
 
-    listenAddNodes((el) => updateArtistBadge(el, String(getArtistFromNode(el.closest('.ArtistPage_content__iZHVN')!)?.id)), '.ArtistPage_header__tQnNe .PageHeaderTitle_stickyTitle__CL1m4')
+    listenAddNodes((el) => updateArtistBadge(el, String(getArtistFromNode(el.closest('.ArtistPage_content__iZHVN')!)?.id)), Q_ARTIST_STICKY_TITLE)
 
     listenAddNodes(updatePlayerBarBadge, PLAYERBAR_SELECTOR);
 
@@ -92,6 +92,20 @@ export function updateAlbumBadge(container: HTMLElement, albumId: string) {
 
 export function updateArtistBadge(container: HTMLElement, artistId: string) {
     updateAlbumOrArtistBadge(container, sources.hasArtistSpoof(artistId))
+}
+
+export function updateBadgesByType(type: SpoofableType, id: string) {
+    switch (type) {
+        case "track":
+            getAllTrackNodesById(id).forEach(node => updateTrackBadge(node, id));
+            break;
+        case "album":
+            document.querySelectorAll<HTMLElement>(Q_ALBUM_STICKY_TITLE).forEach(el => updateAlbumBadge(el, id));
+            break;
+        case "artist":
+            document.querySelectorAll<HTMLElement>(Q_ARTIST_STICKY_TITLE).forEach(el => updateArtistBadge(el, id));
+            break;
+    }
 }
 
 export interface BadgeProps extends JSX.HTMLAttributes {

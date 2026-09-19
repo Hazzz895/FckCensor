@@ -109,6 +109,35 @@ export function spoofNode(node: HTMLElement, entity: SpoofableEntity | Spoofable
     });
 }
 
+export function getAllTrackNodesById(trackId: string): HTMLElement[] {
+    return Array.from(document.querySelectorAll<HTMLElement>(Q_TRACK_ROOT))
+        .filter(node => getTrackIdFromNode(node) === trackId);
+}
+
+export function getAllAlbumNodesById(albumId: string): HTMLElement[] {
+    return Array.from(document.querySelectorAll<HTMLElement>(Q_ALBUM_FIBER_ROOT))
+        .filter(node => String(getAlbumFromNode(node)?.id) === albumId);
+}
+
+export function getAllArtistNodesById(artistId: string): HTMLElement[] {
+    return Array.from(document.querySelectorAll<HTMLElement>(Q_ARTIST_FIBER_ROOT))
+        .filter(node => String(getArtistFromNode(node)?.id) === artistId);
+}
+
+export function getEntityNodesById(type: SpoofableType, id: string): HTMLElement[] {
+    switch (type) {
+        case "track": return getAllTrackNodesById(id);
+        case "album": return getAllAlbumNodesById(id);
+        case "artist": return getAllArtistNodesById(id);
+    }
+}
+
+export function spoofAllNodesFor(type: SpoofableType, id: string) {
+    for (const node of getEntityNodesById(type, id)) {
+        spoofNode(node, type);
+    }
+}
+
 export const [LEFT, TOP, RIGHT, BOTTOM, CENTER] = createFlags(5)
 const anchorToString = {
     [LEFT]: "left",

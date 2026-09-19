@@ -1,8 +1,9 @@
 import { Album, Artist, FckCensorSpoofData, OuterArtist, SearchResponse, SearchType, Spoofable, SpoofableEntity, SpoofableType, Track } from "@/types";
 import { debug, error, log } from "./logger";
 import { findModule, getDiResource, hookDi } from "./hook-utils";
-import { runUnprotected } from "./ui-utils";
+import { getAlbumFromNode, getArtistFromNode, getEntityNodesById, getTrackFromNode, runUnprotected } from "./ui-utils";
 import Source from "@/api/dto/sources/source";
+import { sources } from "@/api/main-api";
 
 export function reloadPlayer(trackId?: string) {
     const e = window.sonataState?.queueState?.currentEntity?.value?.entity;
@@ -32,6 +33,20 @@ export function restoreOriginalValues(data: Spoofable, fckCensorData?: FckCensor
     delete source.originalValues;
     if (data.__fckCensor && data.__fckCensor !== source) {
         delete data.__fckCensor.originalValues;
+    }
+}
+
+export function restoreAllNodesByType(type: SpoofableType, id: string) {
+    const originalValues = sources.getFckCensorData(type, id)?.originalValues;
+    if (!originalValues) return;
+
+    for (const node of getEntityNodesById(type, id)) {
+        const entity = type === "track" ? getTrackFromNode(node)
+                      : type === "album" ? getAlbumFromNode(node)
+                      : getArtistFromNode(node);
+        if (entity) {
+            restoreOriginalValues(entity, { originalValues });
+        }
     }
 }
 

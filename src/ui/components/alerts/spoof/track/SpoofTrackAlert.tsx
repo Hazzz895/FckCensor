@@ -5,7 +5,7 @@ import { debug } from "@/utils/logger";
 import { SpoofEntityWithArtistsAlert } from "../base/artists/SpoofEntityWithArtistsAlert";
 import { SpoofAudioField } from "./SpoofAudioField";
 import { sources } from "@/api/main-api";
-import { spoofNode } from "@/utils/ui-utils";
+import { spoofAllNodesFor } from "@/utils/ui-utils";
 import { ActionButton } from "../../alerts";
 
 export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
@@ -52,14 +52,12 @@ export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
                 await localSource.removeTrackReplacement(this.id);
             }
         }
-        super.onApplyInternal();
+        await super.onApplyInternal();
     }
 
     async onApply(spoofData: Track) {
         await localSource.pushTrackSpoof(spoofData, this.id)
-        if (this.sourceNode) {
-            spoofNode(this.sourceNode, this.entity)
-        }
+        spoofAllNodesFor("track", this.id);
     }
 
     protected async onSpoofRemove() {
