@@ -1,7 +1,7 @@
 import { sources } from "@/api/main-api";
 import { FunctionHook, hookDi, hookMethods, HookMethod, findModule, appRequire } from "../utils/hook-utils";
 import { debug, error } from "@/utils/logger";
-import { Album, OuterArtist, SearchResponse, Track } from "@/types";
+import { Album, OuterArtist, Playlist, SearchResponse, Track } from "@/types";
 import { insert } from "@/utils/common";
 import { getAlbums, getTracks } from "@/utils/music";
 
@@ -265,12 +265,25 @@ function hookSearchResource(sr: any) {
     }, "getInstantMixedSearch")
 }
 
+function hookChartResource(cr: any) {
+    hookMethods(cr, async (chart: { chart: Playlist }) => {
+        debug(chart, Array.isArray(chart?.chart?.tracks))
+        if (Array.isArray(chart?.chart?.tracks)) {
+            for (const t of chart.chart.tracks) {
+                if (!t.track) continue;
+                sources.spoofTrack(t.track);
+            }
+        }
+    }, "getChart");
+}
+
 export function hookResources() { 
     hookDi({
         "TracksResource": hookTrackResource,
         "AlbumResource": hookAlbumResource,
         "ArtistsResource": hookArtistResource,
         "LandingResource": hookLandingResource,
+        "Landing3Resource": hookChartResource,
         "SearchResource": hookSearchResource
     })
 } 

@@ -221,4 +221,50 @@ export interface Track extends Spoofable {
 export interface TrackMST extends Track {
     isAvailable: boolean
 }
+
+export interface PlaylistTrack {
+    id?:        number;
+    track?:     Track;
+    timestamp?: Date;
+    playCount?: number;
+    chart?:     Chart;
+    recent?:    boolean;
+}
+
+export interface Playlist {
+    owner?:                any;
+    playlistUuid?:         string;
+    available?:            boolean;
+    uid?:                  number;
+    kind?:                 number;
+    title?:                string;
+    revision?:             number;
+    snapshot?:             number;
+    trackCount?:           number;
+    visibility?:           string;
+    collective?:           boolean;
+    created?:              Date;
+    modified?:             Date;
+    isBanner?:             boolean;
+    isPremiere?:           boolean;
+    durationMs?:           number;
+    cover?:                Cover;
+    ogImage?:              string;
+    tracks?:               PlaylistTrack[];
+    tags?:                 any[];
+    likesCount?:           number;
+    trailer?:              any;
+    similarPlaylists?:     Playlist[];
+    backgroundVideoUrl?:   string;
+    backgroundVideoId?:    string;
+    backgroundImageUrl?:   string;
+    description?:          string;
+    descriptionFormatted?: string;
+    backgroundColor?:      string;
+    textColor?:            string;
+    image?:                string;
+    customWave?:           any;
+}
+
 //#endregion
+

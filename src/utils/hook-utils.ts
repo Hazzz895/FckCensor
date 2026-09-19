@@ -229,16 +229,19 @@ export function hookMethods(obj: any, hook: Hook, ...methodNames: [string, ...st
     return true;
 }
 
-export function getCurrentTraceLine() {
+export function getCurrentTraceLine(): number {
     const originalFunc = Error.prepareStackTrace;
   
     Error.prepareStackTrace = (_, stack) => stack;
     
     const err = new Error();
-    const stack = err.stack;
+    const stack = err.stack as NodeJS.CallSite[] | undefined;
 
-    if (!stack) return -1;
-    
     Error.prepareStackTrace = originalFunc; 
-    return (stack[2] as any).getLineNumber(); 
+
+    if (!stack || stack.length < 3) return -1;
+    
+    const callSite = stack[2]; 
+    
+    return (callSite.getLineNumber() ?? 0) * 1e6 + (callSite.getColumnNumber() ?? 0); 
 }
