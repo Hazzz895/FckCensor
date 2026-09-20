@@ -53,11 +53,11 @@ export function walkFiber<T>(node: HTMLElement | null, callback: (obj: any, dept
     return result;
 }
 
-putToBundle("walkFiber", getTrackFromNode);
-
 export function getTrackFromNode(node: HTMLElement): TrackMST | null {
     return walkFiber(closestInTree(node, Q_TRACK_FIBER_ROOT), (obj) => obj?.props?.track);
 }
+
+putToBundle("walkFiber", walkFiber);
 
 export function getAlbumFromNode(node: HTMLElement): Album | null {
     return walkFiber(closestInTree(node, Q_ALBUM_FIBER_ROOT), (obj) => obj?.props?.album)

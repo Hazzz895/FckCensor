@@ -1,7 +1,8 @@
 export const Q_DISABLED_TRACK = '.CommonTrack_root_disabled__vDyCm';
 export const Q_TRACK_ROOT = '.CommonTrack_root__i6shE';
 export const Q_FULLSCREEN_CONTENT_INFO = '.FullscreenPlayerDesktopContent_info__Dq69p'
-export const Q_TRACK_FIBER_ROOT = Q_TRACK_ROOT + ', ' + Q_FULLSCREEN_CONTENT_INFO
+export const Q_PLAYERBAR_FIBER_ROOT = '.PlayerBarDesktopWithBackgroundProgressBar_description__5jHke'
+export const Q_TRACK_FIBER_ROOT = Q_TRACK_ROOT + ', ' + Q_FULLSCREEN_CONTENT_INFO + ', ' + Q_PLAYERBAR_FIBER_ROOT
 export const Q_META_TITLE_CONTAINER = '.Meta_titleContainer__gDuXr'
 export const Q_PLAYER_BAR = '.CommonLayout_playerBar__zXRxq'
 export const Q_ALBUM_FIBER_ROOT = '.CommonPageHeader_controls__c27E_'

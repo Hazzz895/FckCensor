@@ -139,13 +139,13 @@ export class RemoteSource implements Source {
         return null;
     }
 
-    hasPlayerReplacement(trackId: string): boolean {
+    hasPlayerReplacement(trackId: string): boolean | null {
         for (const storage of this.list.tracksStorages) {
             if ((storage.tracks && trackId in storage.tracks) || (storage.trackIds && storage.urlTemplate && storage.trackIds.find(x => typeof x === "number" ? String(x) == trackId : String(x.id) == trackId))) {
                 return true;
             }
         }
-        return false;
+        return null;
     }
 
     getTrackSpoof(trackId: string): Track | null {

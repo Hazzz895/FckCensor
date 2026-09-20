@@ -9,7 +9,8 @@ import SpoofAlertCustomPropertyField, { AddSpoofAlertFieldButton } from "./Spoof
 import { SpoofAlertEntityPropertyField } from "./SpoofAlertEntityPropertyField";
 import { SpoofAlertInputField } from "./SpoofAlertInputField";
 import styles from "@/styles.module.scss"
-import { getSpoof, restoreAllNodesByType } from "@/utils/music";
+import { restoreAllNodesByType } from "@/utils/music";
+import { spoofAllNodesFor } from "@/utils/ui-utils";
 import { CoverProps } from "../spoof-alert";
 import { SpoofAlertCoverField } from "./SpoofAlertCoverField";
 import { localSource } from "@/api/db-api";
@@ -17,6 +18,8 @@ import { report } from "@/api/reports-api";
 import { ReportCensorActionButton } from "./ReportCensorActionButton";
 import { Badge, updateBadgesByType } from "@/hooks/ui/badges";
 import { ADDON_FAQ_URI } from "@/hooks/ui/constants";
+
+export type SpoofRemoveAction = "remove" | "cancel" | "restore";
 
 export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity> {
     get artist() {
@@ -49,6 +52,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
     protected readonly scrim;
     private fields: SpoofAlertEntityPropertyField[] = [];
     protected readonly hadSpoof;
+    protected readonly removeAction: SpoofRemoveAction | null;
 
     addPropertyField(field: SpoofAlertEntityPropertyField) {
         this.fields.push(field);
@@ -76,6 +80,8 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         this.hadSpoof =(this.type == "artist" && (sources.hasInsertions(this.id) || sources.hasArtistSpoof(this.id))) ||
                         (this.type == "album" && sources.hasAlbumSpoof(this.id)) ||
                         (this.type == "track" && sources.hasTrackSpoof(this.id));
+
+        this.removeAction = this.getSpoofRemoveAction();
 
         const addPropButton = <AddSpoofAlertFieldButton onclick={(ev: MouseEvent) => onAddPropButtonClick(this, ev)}>Добавить поле</AddSpoofAlertFieldButton>
 
@@ -129,7 +135,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
                     {this.getAdditionalButtons()}
                 </div>
                 <div style="display: flex; gap: 8px">
-                    <ActionButton onclick={this.onSpoofRemoveInternal.bind(this)} {...(!this.hadSpoof ? { disabled: true } : {})}>Удалить подмену</ActionButton> {/**#TODO реализовать отмену автоматической подмены добавляя в локальные подмены {} */}
+                    <ActionButton onclick={this.onSpoofRemoveInternal.bind(this)} {...(!this.removeAction ? { disabled: true } : {})}>{this.removeAction === "restore" ? "Вернуть подмену" : "Удалить подмену"}</ActionButton>
                     <ActionButton onclick={this.onApplyInternal.bind(this)}>Применить</ActionButton>
                 </div>
             </div>
@@ -158,20 +164,42 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         }
     }
 
-    private onSpoofRemoveInternal() {
+    private getSpoofRemoveAction(): SpoofRemoveAction | null {
+        switch (localSource.getSpoofState(this.type, this.id)) {
+            case "own": return "remove";
+            case "exception": return "restore";
+            default: return sources.hasAutomaticSpoof(this.type, this.id) ? "cancel" : null;
+        }
+    }
+
+    private async onSpoofRemoveInternal() {
+        if (!this.removeAction) return;
+
         closeAlert(this.spoofAlert);
         try {
             restoreAllNodesByType(this.type, this.id);
         } catch (e) { error(e) }
         sources.forgetFckCensorData(this.type, this.id);
-        updateBadgesByType(this.type, this.id);
 
-        if (!getSpoof(localSource, this.type, this.id)) {
-            localSource.pushSpoof({}, this.id, this.type);
+        switch (this.removeAction) {
+            case "remove": await this.onSpoofRemove(); break;
+            case "cancel": await this.onSpoofCancel(); break;
+            case "restore": await this.onSpoofRestore(); break;
         }
-        else {
-            this.onSpoofRemove();
-        }
+
+        try {
+            spoofAllNodesFor(this.type, this.id);
+        } catch (e) { error(e) }
+
+        updateBadgesByType(this.type, this.id);
+    }
+
+    protected async onSpoofCancel(): Promise<void> {
+        await localSource.pushSpoof({}, this.id, this.type);
+    }
+
+    protected async onSpoofRestore(): Promise<void> {
+        await this.onSpoofRemove();
     }
 
     protected forceSpoof() {
@@ -179,17 +207,19 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
     }
 
     private getSpoofData(): T | null {
-        let spoofData: T | null = null;
+        let changedData: Partial<T> = {};
         for (const field of this.fields) {
             if (!field.propertyName) continue;
             const prop = field.getValue();
             if (field.hasDiffs(prop)) {
-                spoofData ??= {} as T;
-                (spoofData as any)[field.propertyName] = prop;
+                (changedData as any)[field.propertyName] = prop;
             }
         }
 
-        if (this.forceSpoof() || !!spoofData) {
+        const forceSpoof = this.forceSpoof();
+        if (forceSpoof || Object.keys(changedData).length > 0) {
+            const previousSpoof = this.getPrevSpoofedData();
+            const spoofData = { ...(previousSpoof ?? {}), ...changedData } as T;
             log("Applying spoof to", this.type, spoofData)
             const l = localizeSpoofableType(this.type);
             window.pulsesyncApi?.showNotification?.(`${l[0].toUpperCase() + l.slice(1)} подменен успешно! Для применения изменений может потребоваться перезаход.`, "info", { coverUrl: this.entity.coverUri && httpsify(this.entity.coverUri).replace('%%', '100x100') })

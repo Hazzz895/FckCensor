@@ -44,14 +44,7 @@ export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
     }
 
     protected async onApplyInternal() {
-        if (this.spoofAudioField.hasChanges) {
-            if (this.spoofAudioField.file) {
-                await localSource.pushTrackReplacement(this.id, this.spoofAudioField.file)
-            }
-            else {
-                await localSource.removeTrackReplacement(this.id);
-            }
-        }
+        await this.spoofAudioField.onApply();
         await super.onApplyInternal();
     }
 
@@ -63,6 +56,14 @@ export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
     protected async onSpoofRemove() {
         await localSource.removeTrackSpoof(this.id);
         await localSource.removeTrackReplacement(this.id);
+    }
+
+    protected async onSpoofCancel() {
+        await super.onSpoofCancel();
+
+        if (sources.hasPlayerReplacement(this.id)) {
+            await localSource.pushTrackReplacementException(this.id);
+        }
     }
 
     protected getPrevSpoofedData() {

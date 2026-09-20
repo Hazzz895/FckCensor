@@ -11,7 +11,7 @@ import { localSource } from "@/api/db-api";
 
 export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | undefined> {
     private _file?: File;
-    private _hasChanges: boolean = false;
+    private displayValue?: boolean
     private durationMs?: number;
 
     public get file() {
@@ -19,12 +19,12 @@ export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | unde
     }
 
     private set file(value) {
-        this._hasChanges = true;
+        this.displayValue = this._file !== value ? !!value : this.displayValue;
         this._file = value;
     }
 
     public get hasChanges() {
-        return this._hasChanges;
+        return this.displayValue !== undefined;
     }
 
     constructor(alert: SpoofTrackAlert) {
@@ -32,24 +32,53 @@ export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | unde
     }
 
     protected createElement(): HTMLElement {
+        const hasSpoof = !!(this.displayValue !== undefined ? this.displayValue : sources.hasPlayerReplacement(this.alert.id));
         return <div class={"EditContentModal_field__rexIL " + styles.i} style="display: grid; align-items: center; grid-template-columns: 1fr 1fr; gap: 24px">
-                <ActionButton onclick={this.onReplaceButtonClick.bind(this)} style="width: 100%">{this._file || sources.hasPlayerReplacement(this.alert.id) ? "Удалить подмену аудио" : "Подменить аудио"}</ActionButton>
+                <ActionButton onclick={this.onReplaceButtonClick.bind(this)} style="width: 100%">{hasSpoof ? "Удалить подмену аудио" : "Подменить аудио"}</ActionButton>
                 <div style="text-align: center">
-                    <span>{!!((this.hasChanges && this._file) || sources.hasPlayerReplacement(this.alert.id)) ? "Аудио подменено" : "Аудио не подменивается."}</span>
+                    <span>{hasSpoof ? "Аудио подменено" : "Аудио не подменивается."}</span>
                 </div>
         </div>
     }
 
-    private onReplaceButtonClick(ev: MouseEvent) {
+    private async onReplaceButtonClick(ev: MouseEvent) {
         if (this._file) {
-            this._file = undefined;
+            this.file = undefined;
+            this.reRenderElement();
+        }
+        else if (this.hasChanges) {
+            this.displayValue = undefined;
             this.reRenderElement();
         }
         else if (sources.hasPlayerReplacement(this.alert.id)) {
-            // #TODO: remove track replacement
+            this.displayValue = false;
+            this.reRenderElement();
+        }
+        else if (!this.hasChanges && localSource.hasPlayerReplacementException(this.alert.id)) {
+            this.displayValue = true;
+            this.reRenderElement();
         }
         else {
             this.openFilePicker();
+        }
+    }
+
+    public async onApply() {
+        if (this.displayValue === undefined) return;
+
+        if (this.file) {
+            await localSource.pushTrackReplacement(this.alert.id, this.file);
+        }
+        else if (!this.displayValue) {
+            if (localSource.hasPlayerReplacement(this.alert.id) === true) {
+                await localSource.removeTrackReplacement(this.alert.id);
+            }
+            else if (sources.hasPlayerReplacement(this.alert.id)) {
+                await localSource.pushTrackReplacementException(this.alert.id);
+            }
+        }
+        else if (localSource.hasPlayerReplacementException(this.alert.id)) {
+            await localSource.removeTrackReplacement(this.alert.id);
         }
     }
 
@@ -83,6 +112,6 @@ export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | unde
     }
 
     hasDiffs(prop: any): boolean {
-        return !!this._file && this.hasChanges;
+        return !!this._file && this.displayValue !== undefined;
     }
 }

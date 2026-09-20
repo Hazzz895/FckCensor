@@ -46,24 +46,28 @@ export class SourcesCollection {
         return null;
     }
 
-    public reduce<T>(
-        initial: T,
-        callback: (acc: T, source: Source) => T,
-        matches: (acc: T) => boolean
+    public get automaticSources(): Source[] { return this.nonLocalSources }
+
+    public collect<T>(
+        acc: T,
+        collector: (acc: T, source: Source) => boolean
     ): T {
-        let acc = initial;
+        let foundLocal = false;
 
         for (const source of this.localSources) {
-            acc = callback(acc, source);
+            if (collector(acc, source)) {
+                foundLocal = true;
+            }
         }
 
-        if (matches(acc)) {
+        if (foundLocal) {
             return acc;
         }
 
         for (const source of this.nonLocalSources) {
-            acc = callback(acc, source);
+            collector(acc, source);
         }
+
         return acc;
     }
 
@@ -207,7 +211,14 @@ export default class MainSource implements Source {
     }
 
     hasPlayerReplacement(trackId: string): boolean {
-        return this.sourcesCollection.first(source => source.hasPlayerReplacement(trackId)) ?? false;
+        for (const source of this.sourcesCollection.sources) {
+            const replacementState = source.hasPlayerReplacement(trackId);
+            if (replacementState !== null) {
+                return replacementState;
+            }
+        }
+
+        return false;
     }
 
     private internalSpoof<T extends SpoofableEntity>(
@@ -391,21 +402,23 @@ export default class MainSource implements Source {
     }
 
     getArtistInsertions(artistId: string): ArtistInsertions | null {
-        const insertions = this.sourcesCollection.reduce<Required<ArtistInsertions>>(
+        const insertions = this.sourcesCollection.collect<Required<ArtistInsertions>>(
             { tracks: [], albums: [] },
             (acc, source) => {
                 const data = source.getArtistInsertions(artistId);
-                if (data) {
-                    if (data.tracks) {
-                        acc.tracks.push(...data.tracks);
-                    }
-                    if (data.albums) {
-                        acc.albums.push(...data.albums);
-                    }
+                if (!data) {
+                    return false;
                 }
-                return acc;
-            },
-            (acc) => acc.tracks.length > 0 || acc.albums.length > 0
+
+                if (data.tracks) {
+                    acc.tracks.push(...data.tracks);
+                }
+                if (data.albums) {
+                    acc.albums.push(...data.albums);
+                }
+
+                return true;
+            }
         );
 
         if (insertions.tracks.length === 0 && insertions.albums.length === 0) {
@@ -439,6 +452,35 @@ export default class MainSource implements Source {
 
     pushSource(source: Source) {
         this.sourcesCollection.push(source)
+    }
+
+    private static getSourceSpoof(source: Source, type: SpoofableType, id: string): SpoofableEntity | null {
+        switch (type) {
+            case "album": return source.getAlbumSpoof(id);
+            case "artist": return source.getArtistSpoof(id);
+            case "track": return source.getTrackSpoof(id);
+        }
+    }
+
+    hasAutomaticSpoof(type: SpoofableType, id: string): boolean {
+        for (const source of this.sourcesCollection.automaticSources) {
+            if (!isEmptyObject(MainSource.getSourceSpoof(source, type, id))) {
+                return true;
+            }
+
+            if (type === "track" && source.hasPlayerReplacement(id) === true) {
+                return true;
+            }
+
+            if (type === "artist") {
+                const insertions = source.getArtistInsertions(id);
+                if (insertions?.tracks?.length || insertions?.albums?.length) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     hasTrackSpoof(trackId: string): boolean {

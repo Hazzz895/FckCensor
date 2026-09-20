@@ -6,6 +6,9 @@ import { list } from "./remote-api";
 import { postProcessing, sources } from "./main-api";
 import { getTrackAvaiableSpoof, reloadPlayer } from "@/utils/music";
 import { ArtistInsertions } from "./dto/artist-insertion";
+import { isEmptyObject } from "@/utils/common";
+
+export type LocalSpoofState = "none" | "own" | "exception";
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -93,7 +96,7 @@ export async function loadLocalDb() {
         const artistInsertionsStore = tx.objectStore(ARTIST_INSERTIONS);
         const reportedEntitiesStore = tx.objectStore(REPORTED_ENTITIES);
 
-        const tracksReq = tracksStore.getAllKeys();
+        const tracksReq = tracksStore.getAll();
         const trackSpoofsReq = trackSpoofsStore.getAll();
         const albumSpoofsReq = albumSpoofsStore.getAll();
         const artistSpoofsReq = artistSpoofsStore.getAll();
@@ -105,7 +108,11 @@ export async function loadLocalDb() {
             tx.onerror = () => reject(tx.error);
         });
 
-        localSource.replacementsTrackIds = tracksReq.result.map(String);
+        localSource.replacementsTrackIds = [];
+        localSource.replacementExceptionsTrackIds = [];
+        for (const item of tracksReq.result as { id: string, data?: Blob | null }[]) {
+            (item.data ? localSource.replacementsTrackIds : localSource.replacementExceptionsTrackIds).push(String(item.id));
+        }
 
         localSource.trackSpoofs = {};
         for (const item of trackSpoofsReq.result as (Track & { id: string })[]) {
@@ -170,6 +177,7 @@ export class LocalSource implements Source {
     private readonly playerReplacementsCache: Map<string, TrackReplacement> = new Map<string, TrackReplacement>();
     
     public replacementsTrackIds: string[] = [];
+    public replacementExceptionsTrackIds: string[] = [];
     public artistsInsertions: Record<string, ArtistInsertions> = {};
     public trackSpoofs: Record<string, Track> = {};
     public albumSpoofs: Record<string, Album> = {};
@@ -177,6 +185,9 @@ export class LocalSource implements Source {
     public reportedEntities: Record<SpoofableType, string[]> = { track: [], album: [], artist: [] };
 
     async buildPlayerReplacement(trackId: string): Promise<TrackReplacement | null> {
+        if (this.hasPlayerReplacementException(trackId)) {
+            return new TrackReplacement(this, null);
+        }
         if (this.playerReplacementsCache.has(trackId)) {
             return this.playerReplacementsCache.get(trackId)!;
         }
@@ -206,8 +217,19 @@ export class LocalSource implements Source {
         });
     }
 
-    hasPlayerReplacement(trackId: string): boolean {
-        return this.replacementsTrackIds.includes(String(trackId)) || this.playerReplacementsCache.has(trackId);
+    hasPlayerReplacement(trackId: string): boolean | null {
+        const id = String(trackId);
+        if (this.replacementsTrackIds.includes(id) || this.playerReplacementsCache.has(id)) {
+            return true;
+        }
+        if (this.hasPlayerReplacementException(id)) {
+            return false;
+        }
+        return null;
+    }
+
+    hasPlayerReplacementException(trackId: string): boolean {
+        return this.replacementExceptionsTrackIds.includes(String(trackId));
     }
 
     getTrackSpoof(trackId: string): Track | null {
@@ -244,23 +266,39 @@ export class LocalSource implements Source {
     }
 
     pushTrackReplacement(trackId: string, file: File | null) {
-        if (file && !this.replacementsTrackIds.includes(trackId)) {
-            this.replacementsTrackIds.push(trackId);
-        }
+        const id = String(trackId);
 
-        reloadPlayer(trackId);
-        return this.pushToDb(TRACKS, trackId, { data: file });
-        //await this.buildPlayerReplacement(strId);
+        this.forgetTrackReplacement(id);
+        (file ? this.replacementsTrackIds : this.replacementExceptionsTrackIds).push(id);
+
+        reloadPlayer(id);
+        return this.pushToDb(TRACKS, id, { data: file });
+    }
+
+    pushTrackReplacementException(trackId: string) {
+        return this.pushTrackReplacement(trackId, null);
     }
 
     removeTrackReplacement(trackId: string) {
+        const id = String(trackId);
+
+        this.forgetTrackReplacement(id);
+
+        reloadPlayer(id);
+        return this.removeFromDb(TRACKS, id);
+    }
+
+    private forgetTrackReplacement(trackId: string) {
         this.replacementsTrackIds = this.replacementsTrackIds.filter(x => x !== trackId);
-        if (this.playerReplacementsCache.has(trackId)) {
-            URL.revokeObjectURL(this.playerReplacementsCache.get(trackId)!.url!);
+        this.replacementExceptionsTrackIds = this.replacementExceptionsTrackIds.filter(x => x !== trackId);
+
+        const cached = this.playerReplacementsCache.get(trackId);
+        if (cached) {
+            if (cached.url) {
+                URL.revokeObjectURL(cached.url);
+            }
             this.playerReplacementsCache.delete(trackId);
-            reloadPlayer(trackId);
         }
-        return this.removeFromDb(TRACKS, trackId);
     }
 
     pushTrackSpoof(track: Track, trackId?: string) {
@@ -361,6 +399,60 @@ export class LocalSource implements Source {
 
     pushSpoof(spoof: any, id: string, type: SpoofableType) {
         return (type == "album" ? this.pushAlbumSpoof : type == "artist" ? this.pushArtistSpoof : this.pushTrackSpoof).bind(this)(spoof, id);
+    }
+
+    private getSpoofs(type: SpoofableType): Record<string, SpoofableEntity> {
+        switch (type) {
+            case "album": return this.albumSpoofs;
+            case "artist": return this.artistSpoofs;
+            case "track": return this.trackSpoofs;
+        }
+    }
+
+    getRawSpoof(type: SpoofableType, id: string): SpoofableEntity | undefined {
+        return this.getSpoofs(type)[String(id)];
+    }
+
+    hasOwnArtistInsertions(artistId: string): boolean {
+        const insertions = this.artistsInsertions[String(artistId)];
+        return !!(insertions?.tracks?.length || insertions?.albums?.length);
+    }
+
+    hasArtistInsertionsException(artistId: string): boolean {
+        const insertions = this.artistsInsertions[String(artistId)];
+        return !!insertions && !this.hasOwnArtistInsertions(artistId);
+    }
+
+    getSpoofState(type: SpoofableType, id: string): LocalSpoofState {
+        const strId = String(id);
+        const spoof = this.getRawSpoof(type, strId);
+        let hasException = false;
+
+        if (spoof) {
+            if (!isEmptyObject(spoof)) {
+                return "own";
+            }
+            hasException = true;
+        }
+
+        if (type == "track") {
+            if (this.hasPlayerReplacement(strId) === true) {
+                return "own";
+            }
+            if (this.hasPlayerReplacementException(strId)) {
+                hasException = true;
+            }
+        }
+        else if (type == "artist") {
+            if (this.hasOwnArtistInsertions(strId)) {
+                return "own";
+            }
+            if (this.hasArtistInsertionsException(strId)) {
+                hasException = true;
+            }
+        }
+
+        return hasException ? "exception" : "none";
     }
 
     private async openStore(table_name: string, mode: IDBTransactionMode = "readwrite") {

@@ -5,7 +5,7 @@ import { ArtistInsertions } from "../artist-insertion";
 export default interface Source {
     buildPlayerReplacement(trackId: string): Promise<TrackReplacement | null>
 
-    hasPlayerReplacement(trackId: string): boolean
+    hasPlayerReplacement(trackId: string): boolean | null
 
     getTrackSpoof(trackId: string): Track | null
 

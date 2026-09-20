@@ -34,6 +34,14 @@ export class SpoofArtistAlert extends SpoofAlertBase<Artist> {
         localSource.removeArtistInsertions(this.id)
     }
 
+    protected async onSpoofCancel() {
+        await super.onSpoofCancel();
+
+        if (sources.hasInsertions(this.id)) {
+            await localSource.pushArtistInsertions(this.id, { tracks: [], albums: [] });
+        }
+    }
+
     declare private trackListField: SpoofAlertArtistListField
     declare private albumListField: SpoofAlertArtistListField
 
