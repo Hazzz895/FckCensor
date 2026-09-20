@@ -1,6 +1,7 @@
 import { debug, error, log, warn } from "@/utils/logger";
 import addonConfig from "../../addon.config.mjs";
 import { isDev, putToBundle } from "@/dev/dev-utils";
+import { DiResource as DiResourceName } from "@/types";
 
 type AppRequire = Function & {
   m: number[]
@@ -124,11 +125,11 @@ function initDiModule(): Di | null {
 }
 
 let originalDiGet: diGetType | null = null;
-let pendingHooks: Record<string, Function[]> = {}
+let pendingHooks: Record<string, ((dimodule: any) => any)[]> = {}
 let di: Di | null = null;
 
 export function getDiResource(resource: string) {
-    return di?.get(resource) || null;
+    return resource === undefined ? di : di?.get(resource) || null;
 }
 
 function diGet(ts: Di, args: any, key: string): any {
@@ -150,17 +151,18 @@ function diGet(ts: Di, args: any, key: string): any {
     return result;
 }
 
-export function hookDi(values: Record<string, (dimodule: any) => any>): boolean {
+export function hookDi(values: Partial<Record<DiResourceName, (dimodule: any) => any>>): boolean {
     initDiModule();
     if (!diClass) {
         return false;
     }
 
     for (const key in values) {
+        const value = values[key as DiResourceName]!;
         if (!pendingHooks[key]) {
-            pendingHooks[key] = [values[key]];
+            pendingHooks[key] = [value];
         } else {
-            pendingHooks[key].push(values[key]);
+            pendingHooks[key].push(value);
         }
     }
 

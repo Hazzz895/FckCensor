@@ -6,19 +6,17 @@ import { ArtistInsertions } from "./dto/artist-insertion";
 import Source from "./dto/sources/source";
 import TrackReplacement from "./dto/track-replacement";
 import { postProcessing, sources } from "./main-api";
-import { ADDON_FAQ_URI } from "@/hooks/ui/constants";
+import { ADDON_FAQ_URI, DATA_LIST_URI } from "@/hooks/ui/constants";
 
-const BASE_URI = "https://raw.githubusercontent.com/Hazzz895/FckCensorData/refs/heads/main/list_v2.json"
-const OLD_BASE_URI = "https://raw.githubusercontent.com/Hazzz895/FckCensorData/refs/heads/main/list.json"
 const LOCAL_URI = `http://localhost:2007/assets/list_v2.json?name=${addonConfig.id}` 
 
 export let list: RemoteSource | null = null
 
 export async function loadRemoteList() {
-    RemoteSource.load(BASE_URI)
-    //RemoteSource.load(LOCAL_URI)
+    //RemoteSource.load(DATA_LIST_URI)
+    RemoteSource.load(LOCAL_URI)
 
-    /*const old_tracks: Record<string, string> = (await (await fetch(OLD_BASE_URI)).json())["tracks"]
+    /*const old_tracks: Record<string, string> = (await (await fetch(DATA_LIST_V1_URI)).json())["tracks"]
     sources.pushSource(new RemoteSource(new MinifiedRemoteSource({
         sources: [
             {
@@ -84,7 +82,7 @@ export class RemoteSource implements Source {
             }
             const response = await fetch(url);
             if (!response.ok) {
-                if (url === BASE_URI) {
+                if (url === DATA_LIST_URI) {
                     error("Failed list fetching: " + response.statusText + `(${response.status})`);
                     window.pulsesyncApi?.showNotification?.("Не удалось загрузить список автоматических подмен. Применяются только пользовательские подмены.", "error", {
                         link: {

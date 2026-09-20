@@ -243,8 +243,8 @@ export class LocalSource implements Source {
         return this.artistsInsertions[artistId];
     }
 
-    pushTrackReplacement(trackId: string, file: File) {
-        if (!this.replacementsTrackIds.includes(trackId)) {
+    pushTrackReplacement(trackId: string, file: File | null) {
+        if (file && !this.replacementsTrackIds.includes(trackId)) {
             this.replacementsTrackIds.push(trackId);
         }
 
@@ -320,10 +320,6 @@ export class LocalSource implements Source {
 
         const dbArtist = { ...artist };
 
-        // Поле обложки в SpoofAlertCoverField всегда пишется как "coverUri",
-        // даже для исполнителей, хотя обложка исполнителя рендерится из cover.uri.
-        // Поэтому File мог осесть в любом из двух мест — проверяем оба и
-        // синхронизируем их на один и тот же blob: URL.
         const rawCoverFile =
             ((artist.coverUri as any) instanceof Blob && (artist.coverUri as any)) ||
             ((artist.cover?.uri as any) instanceof Blob && (artist.cover!.uri as any)) ||

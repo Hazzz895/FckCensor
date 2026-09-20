@@ -8,6 +8,8 @@ import { LocalSource } from '@/api/db-api';
 import { ArtistInsertions } from "./dto/artist-insertion";
 import Source from "./dto/sources/source";
 import TrackReplacement from "./dto/track-replacement";
+import { putToBundle } from "@/dev/dev-utils";
+import { RKN_BLOCKED_DISCLAIMER_ID } from "@/hooks/ui/constants";
 
 type Constructor<T> = new (...args: any[]) => T;
 
@@ -159,11 +161,11 @@ export function postProcessing(insertions: Record<string, ArtistInsertions>, tra
                 entity.volumes.forEach(v => v.forEach(t => {
                     let trackSpoof = tracks[t.id];
                     if (!trackSpoof) {
-                        tracks[t.id] = trackSpoof = { } as any
+                        return; // обложка из альбома подтягивается только для треков которые имеют спуф чтобы не подменивать обложки для треков которые уже были в альбоме
                     }
                     
                     if (!("coverUri" in trackSpoof)) {
-                        tracks[t.id].coverUri = entity.coverUri;
+                        trackSpoof.coverUri = entity.coverUri;
                     }
                 }))
             }
@@ -303,6 +305,10 @@ export default class MainSource implements Source {
             }
         }
 
+        if (!isEmptyObject(spoof) && track.available) {
+            track.disclaimers = track.disclaimers?.filter(d => !d.includes(RKN_BLOCKED_DISCLAIMER_ID));
+        }
+
         return spoof
     } 
 
@@ -436,15 +442,15 @@ export default class MainSource implements Source {
     }
 
     hasTrackSpoof(trackId: string): boolean {
-        return !!this.getTrackSpoof(trackId)
+        return !isEmptyObject(this.getTrackSpoof(trackId))
     }
 
     hasAlbumSpoof(albumId: string): boolean {
-        return !!this.getAlbumSpoof(albumId)
+        return !isEmptyObject(this.getAlbumSpoof(albumId))
     }
 
     hasArtistSpoof(artistId: string): boolean {
-        return !!this.getArtistSpoof(artistId)
+        return !isEmptyObject(this.getArtistSpoof(artistId))
     }
 
     hasInsertions(artistId: string): boolean {
@@ -453,3 +459,4 @@ export default class MainSource implements Source {
 }
 
 export const sources = new MainSource();
+putToBundle("sources", sources);

@@ -3,13 +3,14 @@ import { createFlags, flagsToStrings } from "./flags";
 import { debug } from "./logger";
 import { sources } from "@/api/main-api";
 import { randomString } from "./common";
-import { Q_ARTIST_FIBER_ROOT, Q_ALBUM_FIBER_ROOT, Q_TRACK_ROOT } from "@/hooks/ui/constants";
+import { Q_ARTIST_FIBER_ROOT, Q_ALBUM_FIBER_ROOT, Q_TRACK_ROOT, Q_TRACK_FIBER_ROOT } from "@/hooks/ui/constants";
+import { putToBundle } from "@/dev/dev-utils";
 
 export function getTrackIdFromNode(node: HTMLElement): string | null {
     return String(getTrackFromNode(node)?.id) ?? null;
 }
 
-export function walkFiber<T>(node: HTMLElement | null, callback: (obj: any) => any | null, maxDepth: number = 4): T | null {
+export function walkFiber<T>(node: HTMLElement | null, callback: (obj: any, depth: number) => any | null, maxDepth: number = 4): T | null {
     if (!node) return null;
     let result = null;
     const reactFiberProp = Object.keys(node).find(key => key.startsWith("__reactFiber"));
@@ -20,7 +21,7 @@ export function walkFiber<T>(node: HTMLElement | null, callback: (obj: any) => a
             const walk = (fiberNode: any, currentDepth: number): T | null => {
                 if (!fiberNode || currentDepth >= maxDepth) return null;
                 
-                const result = callback(fiberNode)
+                const result = callback(fiberNode, currentDepth);
                 if (result !== undefined) {
                     return result;
                 }
@@ -52,8 +53,10 @@ export function walkFiber<T>(node: HTMLElement | null, callback: (obj: any) => a
     return result;
 }
 
+putToBundle("walkFiber", getTrackFromNode);
+
 export function getTrackFromNode(node: HTMLElement): TrackMST | null {
-    return walkFiber(closestInTree(node, Q_TRACK_ROOT), (obj) => obj?.props?.track);
+    return walkFiber(closestInTree(node, Q_TRACK_FIBER_ROOT), (obj) => obj?.props?.track);
 }
 
 export function getAlbumFromNode(node: HTMLElement): Album | null {
@@ -110,7 +113,7 @@ export function spoofNode(node: HTMLElement, entity: SpoofableEntity | Spoofable
 }
 
 export function getAllTrackNodesById(trackId: string): HTMLElement[] {
-    return Array.from(document.querySelectorAll<HTMLElement>(Q_TRACK_ROOT))
+    return Array.from(document.querySelectorAll<HTMLElement>(Q_TRACK_FIBER_ROOT))
         .filter(node => getTrackIdFromNode(node) === trackId);
 }
 

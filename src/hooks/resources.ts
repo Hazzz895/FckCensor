@@ -4,6 +4,7 @@ import { debug, error } from "@/utils/logger";
 import { Album, OuterArtist, Playlist, SearchResponse, Track } from "@/types";
 import { insert } from "@/utils/common";
 import { getAlbums, getTracks } from "@/utils/music";
+import addonConfig from "../../addon.config.mjs";
 
 class GetTracksMetaHook extends FunctionHook {
     public before(originalMethod: Function, request: { trackIds?: TrackId[] }) {
@@ -277,6 +278,16 @@ function hookChartResource(cr: any) {
     }, "getChart");
 }
 
+function hookDisclaimersResource(dr: any) {
+    hookMethods(dr, async (disclaimers: { id: string, type: string, title: string }[]) => {
+        disclaimers.push({
+            id: addonConfig.id,
+            type: 'informational',
+            title: 'Трек был подменён'
+        })
+    }, "getDisclaimers")
+}
+
 export function hookResources() { 
     hookDi({
         "TracksResource": hookTrackResource,
@@ -284,6 +295,7 @@ export function hookResources() {
         "ArtistsResource": hookArtistResource,
         "LandingResource": hookLandingResource,
         "Landing3Resource": hookChartResource,
-        "SearchResource": hookSearchResource
+        "SearchResource": hookSearchResource,
+        //"DisclaimersResource": hookDisclaimersResource,
     })
 } 
