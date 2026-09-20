@@ -258,6 +258,12 @@ function hookLandingResource(lr: any) {
 
 function hookSearchResource(sr: any) {
     hookMethods(sr, async (response: SearchResponse) => { 
+        for (const best of response.bestResults) {
+            if (best.best_result_track) sources.spoofTrack(best.best_result_track);
+            if (best.best_result_album) sources.spoofAlbum(best.best_result_album);
+            if (best.best_result_artist) sources.spoofAnyArtist(best.best_result_artist);
+        }
+        
         for (const r of response.results) {
             if (r.album) sources.spoofAlbum(r.album);
             if (r.artist) sources.spoofAnyArtist(r.artist);

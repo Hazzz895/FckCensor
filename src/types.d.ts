@@ -69,15 +69,19 @@ export interface SearchResponse {
   perPage: number
   results: SearchResult[]
   responseType: string
+  bestResults: SearchResult[]
 }
 
 export type SearchType = "all" | SpoofableType
 
 export interface SearchResult {
-  type: SearchType
+  type: SearchType | "best_result_track" | "best_result_album" | "best_result_artist"
   artist: Artist // | ...
   track: Track;
-  album: Album
+  album: Album;
+  best_result_track: Track;
+  best_result_album: Album;
+  best_result_artist: Artist
 }
 
 export interface Album extends Spoofable {
