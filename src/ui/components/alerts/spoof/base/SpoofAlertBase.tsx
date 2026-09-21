@@ -155,13 +155,24 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         closeAlert(this.spoofAlert);
 
         const spoofData = this.getSpoofData();
+        log("Applying spoof to", this.type, spoofData)
         if (spoofData) {
             await this.onApply(cloneWithFiles(spoofData));
             updateBadgesByType(this.type, this.id);
         }
         else if (this.hadSpoof) {
-            this.onSpoofRemove();
+            await this.onSpoofRemove();
         }
+
+        const l = localizeSpoofableType(this.type);
+        const coverUrl = this.entity.coverUri && httpsify(this.entity.coverUri).replace('%%', '100x100');
+
+        try {
+            await this.afterSpoofChanged();
+        } catch (e) { error(e) }
+
+        window.pulsesyncApi?.showNotification?.(`${l[0].toUpperCase() + l.slice(1)} подменен успешно! Для применения изменений может потребоваться перезаход.`, "info", { coverUrl })
+        report(this.id, this.type, true);
     }
 
     private getSpoofRemoveAction(): SpoofRemoveAction | null {
@@ -192,6 +203,14 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         } catch (e) { error(e) }
 
         updateBadgesByType(this.type, this.id);
+
+        const coverUrl = this.entity.coverUri && httpsify(this.entity.coverUri).replace('%%', '100x100');
+
+        try {
+            await this.afterSpoofChanged();
+        } catch (e) { error(e) }
+
+        window.pulsesyncApi?.showNotification?.(`Подмена была ${this.removeAction === "restore" ? "восстановлена" : "отменена"}! Для применения изменений может потребоваться перезаход.`, "info", { coverUrl })
     }
 
     protected async onSpoofCancel(): Promise<void> {
@@ -205,6 +224,8 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
     protected forceSpoof() {
         return false;
     }
+
+    protected async afterSpoofChanged(): Promise<void> {}
 
     private getSpoofData(): T | null {
         let changedData: Partial<T> = {};
@@ -220,10 +241,6 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         if (forceSpoof || Object.keys(changedData).length > 0) {
             const previousSpoof = this.getPrevSpoofedData();
             const spoofData = { ...(previousSpoof ?? {}), ...changedData } as T;
-            log("Applying spoof to", this.type, spoofData)
-            const l = localizeSpoofableType(this.type);
-            window.pulsesyncApi?.showNotification?.(`${l[0].toUpperCase() + l.slice(1)} подменен успешно! Для применения изменений может потребоваться перезаход.`, "info", { coverUrl: this.entity.coverUri && httpsify(this.entity.coverUri).replace('%%', '100x100') })
-            report(this.id, this.type, true);
             return spoofData;
         }
         else {

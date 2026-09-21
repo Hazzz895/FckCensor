@@ -7,14 +7,15 @@ import Source from "./dto/sources/source";
 import TrackReplacement from "./dto/track-replacement";
 import { postProcessing, sources } from "./main-api";
 import { ADDON_FAQ_URI, DATA_LIST_URI } from "@/hooks/ui/constants";
+import { showNotificationSafe } from "@/utils/ui-utils";
 
 const LOCAL_URI = `http://localhost:2007/assets/list_v2.json?name=${addonConfig.id}` 
 
 export let list: RemoteSource | null = null
 
 export async function loadRemoteList() {
-    //RemoteSource.load(DATA_LIST_URI)
-    RemoteSource.load(LOCAL_URI)
+    RemoteSource.load(DATA_LIST_URI)
+    //RemoteSource.load(LOCAL_URI)
 
     /*const old_tracks: Record<string, string> = (await (await fetch(DATA_LIST_V1_URI)).json())["tracks"]
     sources.pushSource(new RemoteSource(new MinifiedRemoteSource({
@@ -82,17 +83,7 @@ export class RemoteSource implements Source {
             }
             const response = await fetch(url);
             if (!response.ok) {
-                if (url === DATA_LIST_URI) {
-                    error("Failed list fetching: " + response.statusText + `(${response.status})`);
-                    window.pulsesyncApi?.showNotification?.("Не удалось загрузить список автоматических подмен. Применяются только пользовательские подмены.", "error", {
-                        link: {
-                            label: "Нажмите, чтобы исправить",
-                            href: ADDON_FAQ_URI + "#%D0%BD%D0%B5-%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D0%B0%D0%B5%D1%82-%D0%B0%D0%B2%D1%82%D0%BE%D0%BC%D0%B0%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B0%D1%8F-%D0%BF%D0%BE%D0%B4%D0%BC%D0%B5%D0%BD%D0%B0--%D0%BF%D0%BE%D0%B4%D0%BC%D0%B5%D0%BD%D1%91%D0%BD%D0%BD%D1%8B%D0%B9-%D1%82%D1%80%D0%B5%D0%BA-%D0%BD%D0%B5-%D0%B2%D0%BE%D1%81%D0%BF%D1%80%D0%BE%D0%B8%D0%B7%D0%B2%D0%BE%D0%B4%D0%B8%D1%82%D1%81%D1%8F",
-                        },
-                        durationMs: 6e4
-                    })
-                }
-                return null;
+                throw new Error("Fetch failed with status " + response.status + ": " + response.statusText);
             }
             const json = await response.json();
             if (json) {
@@ -106,6 +97,16 @@ export class RemoteSource implements Source {
         }
         catch (e) {
             error("Error loading remote list", e)
+            if (url === DATA_LIST_URI) {
+                showNotificationSafe("Не удалось загрузить список автоматических подмен. Применяются только пользовательские подмены. Включите VPN или Zapret.", "error", {
+                    link: {
+                        label: "[ Подробнее ]",
+                        href: ADDON_FAQ_URI + "#%D0%BD%D0%B5-%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D0%B0%D0%B5%D1%82-%D0%B0%D0%B2%D1%82%D0%BE%D0%BC%D0%B0%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B0%D1%8F-%D0%BF%D0%BE%D0%B4%D0%BC%D0%B5%D0%BD%D0%B0--%D0%BF%D0%BE%D0%B4%D0%BC%D0%B5%D0%BD%D1%91%D0%BD%D0%BD%D1%8B%D0%B9-%D1%82%D1%80%D0%B5%D0%BA-%D0%BD%D0%B5-%D0%B2%D0%BE%D1%81%D0%BF%D1%80%D0%BE%D0%B8%D0%B7%D0%B2%D0%BE%D0%B4%D0%B8%D1%82%D1%81%D1%8F",
+                    },
+                    durationMs: 6e4
+                })
+            }
+            return null;
         }
         return list;
     }

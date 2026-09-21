@@ -6,6 +6,7 @@ declare global {
         webpackChunk_N_E: any[] | undefined
         showOpenFilePicker: (args: any) => Promise<FileSystemFileHandle[]>
         __fckCensorDevBundle?: Record<string, object>
+        __pulsesyncBridgeInitialized?: boolean
     }
     type TrackId = number | string
 } 

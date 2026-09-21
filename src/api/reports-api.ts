@@ -38,7 +38,7 @@ export async function report(id: TrackId, type: SpoofableType, replaced: boolean
         window.pulsesyncApi?.showNotification?.("Не удалось сообщить о цензуре.", "error", {});
         return false;
     }
-    else if (request.ok) {
+    else if (!replaced && request.ok) {
         window.pulsesyncApi?.showNotification?.("Спасибо! В скором времени этот " + localizeSpoofableType(type) + " будет добавлен в список автоматически подменяемых.", "info", {})
         localSource.pushReported(numId, type);
         return true;

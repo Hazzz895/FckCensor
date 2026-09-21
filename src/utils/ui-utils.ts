@@ -1,6 +1,6 @@
 import { Album, Artist, OuterArtist, SpoofableEntity, SpoofableType, Track, TrackMST } from "@/types";
 import { createFlags, flagsToStrings } from "./flags";
-import { debug } from "./logger";
+import { debug, error } from "./logger";
 import { sources } from "@/api/main-api";
 import { randomString } from "./common";
 import { Q_ARTIST_FIBER_ROOT, Q_ALBUM_FIBER_ROOT, Q_TRACK_ROOT, Q_TRACK_FIBER_ROOT } from "@/hooks/ui/constants";
@@ -141,6 +141,48 @@ export function spoofAllNodesFor(type: SpoofableType, id: string) {
     }
 }
 
+export interface MstNode {
+    storedValue?: any;
+    parent?: MstNode | null;
+    root?: MstNode;
+    environment?: Record<string, any>;
+    type?: { name?: string };
+}
+
+export function getMstNode(target: any): MstNode | null {
+    if (!target || typeof target !== "object") return null;
+    return (target as Record<string, any>).$treenode ?? null;
+}
+
+export function findMstAncestor<T = any>(target: any, predicate: (value: any, node: MstNode) => boolean): T | null {
+    let node = getMstNode(target);
+    while (node) {
+        try {
+            if (node.storedValue !== undefined && predicate(node.storedValue, node)) {
+                return node.storedValue as T;
+            }
+        } catch (e) {
+            error(e);
+        }
+        node = node.parent ?? null;
+    }
+    return null;
+}
+
+export function getMstRootStore<T = any>(target: any): T | null {
+    const node = getMstNode(target);
+    if (!node) return null;
+
+    const rootNode = node.root ?? node;
+    const root = rootNode.storedValue;
+
+    if (root?.isRootModel === true) {
+        return root as T;
+    }
+
+    return (rootNode.environment?.rootStore as T) ?? (root as T) ?? null;
+}
+
 export const [LEFT, TOP, RIGHT, BOTTOM, CENTER] = createFlags(5)
 const anchorToString = {
     [LEFT]: "left",
@@ -215,3 +257,22 @@ export function getContextMenuSource(menu: HTMLElement, targetQ: string) {
 }
 
 export const DUMMY_ELEMENT = document.createElement("div");
+
+export async function showNotificationSafe(message: string, kind: "info" | "error", data?: { icon?: any, coverUrl?: string, link?: { href: string, label: string }, durationMs?: number }, attempt = 1): Promise<void> {
+    if (window.__pulsesyncBridgeInitialized) {
+        try {
+            await window.pulsesyncApi?.showNotification?.(message, kind, data);
+        } catch (e) {
+            if (attempt < 3 && e instanceof Error && e.message === `Native notification containers are not mounted`) {
+                setTimeout(() => showNotificationSafe(message, kind, data, attempt + 1), attempt * 1250);
+            }
+        }
+    }
+    else {
+        document.addEventListener(
+            "pulsesync:runtime-ready", 
+            () => showNotificationSafe(message, kind, data, attempt), 
+            { once: true }
+        );
+    }
+}

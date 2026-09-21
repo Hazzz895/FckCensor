@@ -1,11 +1,12 @@
-import { Album } from "@/types";
+import { Album, Track } from "@/types";
 import { SpoofEntityWithArtistsAlert } from "../base/artists/SpoofEntityWithArtistsAlert";
 import { sources } from "@/api/main-api";
 import { localSource } from "@/api/db-api";
-import { debug } from "@/utils/logger";
+import { debug, error } from "@/utils/logger";
 import { spoofAllNodesFor } from "@/utils/ui-utils";
 import { SpoofAlertAlbumTrackListField } from "../base/releases/album/SpoofAlertAlbumTrackListField";
 import { SwitchField } from "@/ui/components/SwitchField";
+import { reloadAlbumPage } from "@/utils/music";
 
 export class SpoofAlbumAlert extends SpoofEntityWithArtistsAlert<Album> {
     public constructor(data: Album, scrim: HTMLElement, albumNode: HTMLElement) {
@@ -13,6 +14,8 @@ export class SpoofAlbumAlert extends SpoofEntityWithArtistsAlert<Album> {
     }
 
     declare private spoofVolumesArtistsSwitch: SwitchField
+
+    private originalVolumesId?: string;
 
     protected getChildren() {
         const fckCensorData = sources.getFckCensorData("album", this.id);
@@ -42,6 +45,7 @@ export class SpoofAlbumAlert extends SpoofEntityWithArtistsAlert<Album> {
     }
 
     protected async onApply(spoofData: Album) {
+        this.originalVolumesId = this.getVolumesId();
         if (this.spoofVolumesArtistsSwitch.value) {
             spoofData.__fckCensor ??= {};
             spoofData.__fckCensor.replaceArtistsInAlbumVolumes = true;
@@ -51,7 +55,27 @@ export class SpoofAlbumAlert extends SpoofEntityWithArtistsAlert<Album> {
     }
 
     protected async onSpoofRemove() {
+        this.originalVolumesId = this.getVolumesId();
         localSource.removeAlbumSpoof(this.id);
+    }
+
+    protected async afterSpoofChanged() {
+        const before = this.originalVolumesId ?? "";
+        const after = this.getVolumesId();
+
+        if (before === after) return;
+
+        try {
+            await reloadAlbumPage(this.id);
+        } catch (e) {
+            error(e);
+        }
+    }
+
+    private getVolumesId(volumes?: Track[][] | null): string {
+        volumes ??= sources.getAlbumSpoof(this.id)?.volumes;
+        if (!volumes || volumes.length === 0) return "";
+        return volumes.map(disk => disk.map(t => String(t.id)).join(",")).join("|");
     }
 
     protected getPrevSpoofedData() {

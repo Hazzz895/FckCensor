@@ -1,7 +1,8 @@
 import { Album, Artist, FckCensorSpoofData, OuterArtist, SearchResponse, SearchType, Spoofable, SpoofableEntity, SpoofableType, Track } from "@/types";
-import { debug, error, log } from "./logger";
+import { debug, error, log, warn } from "./logger";
 import { findModule, getDiResource, hookDi } from "./hook-utils";
-import { getAlbumFromNode, getArtistFromNode, getEntityNodesById, getTrackFromNode, runUnprotected } from "./ui-utils";
+import { findMstAncestor, getAlbumFromNode, getArtistFromNode, getEntityNodesById, getMstNode, getMstRootStore, getTrackFromNode, runUnprotected } from "./ui-utils";
+import { Q_ALBUM_FIBER_ROOT, Q_ARTIST_FIBER_ROOT, Q_TRACK_FIBER_ROOT } from "@/hooks/ui/constants";
 import Source from "@/api/dto/sources/source";
 import { sources } from "@/api/main-api";
 
@@ -11,6 +12,64 @@ export function reloadPlayer(trackId?: string) {
     if (e && mediaPlayer && (!trackId || String(e.entityData?.meta?.id) == trackId)) {
         mediaPlayer.reload(e);
         log("Player reloaded");
+    }
+}
+
+export function getAlbumPageStore(albumId: TrackId): any | null {
+    const id = String(albumId);
+
+    for (const node of document.querySelectorAll<HTMLElement>(Q_ALBUM_FIBER_ROOT)) {
+        let album: Album | null = null;
+        try {
+            album = getAlbumFromNode(node);
+        } catch (e) {
+            error(e);
+            continue;
+        }
+        if (!album) continue;
+
+        const store = findMstAncestor(album, store => store?.getData && store?.makeFlatVolumeItems && String(store.id) === id);
+        if (store) return store;
+    }
+
+    return null;
+}
+
+export async function reloadAlbumPage(albumId: TrackId): Promise<boolean> {
+    const id = String(albumId);
+    const store = getAlbumPageStore(id);
+
+    if (!store) {
+        return false;
+    }
+
+    const albumResource = getDiResource("AlbumResource");
+    if (!albumResource) {
+        return false;
+    }
+
+    try {
+        const raw: Album | null = await albumResource.getAlbumWithTracksIds({ albumId: Number(id), resumeStream: false });
+
+        if (!raw || !Array.isArray(raw.volumes)) {
+            warn("Failed to fetch album tracks for reload", id, raw);
+            return false;
+        }
+
+        const { initialTrackIds, unloadedEntitiesData } = store.makeFlatVolumeItems(raw);
+
+        const sonataState = getMstRootStore<any>(store)?.sonataState;
+        if (sonataState?.setUnloadedEntitiesData) {
+            sonataState.setUnloadedEntitiesData(unloadedEntitiesData);
+        }
+
+        await store.getTracks({ trackIds: initialTrackIds });
+
+        log("Album tracks reloaded", id);
+        return true;
+    } catch (e) {
+        error("Failed to reload album tracks", e);
+        return false;
     }
 }
 
