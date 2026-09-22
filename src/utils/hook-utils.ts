@@ -1,6 +1,6 @@
 import { debug, error, log, warn } from "@/utils/logger";
 import addonConfig from "../../addon.config.mjs";
-import { isDev, putToBundle } from "@/dev/dev-utils";
+import { isUserDev, putToBundle } from "@/dev/dev-utils";
 import { DiResource as DiResourceName } from "@/types";
 
 type AppRequire = Function & {
