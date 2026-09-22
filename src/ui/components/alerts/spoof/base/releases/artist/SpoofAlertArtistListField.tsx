@@ -31,12 +31,8 @@ export class SpoofAlertArtistListField extends SpoofAlertReleasesListField<Inser
     protected fillElements() {
         const t = sources.getArtistInsertions(this.alert.artist.id)?.[(this.type + "s") as "tracks" | "albums"];
 
-        if (!t) {
-            return [];
-        }
-
         if (!this.insertions) {
-            this.insertions = t.map(x => ({ releaseId: x.releaseId, index: x.index }));
+            this.insertions = t?.map(x => ({ releaseId: x.releaseId, index: x.index })) ?? [];
         }
 
         const missingIds = this.insertions
@@ -61,8 +57,10 @@ export class SpoofAlertArtistListField extends SpoofAlertReleasesListField<Inser
     }
 
     protected onReleaseAdd(release: Release): void {
-        this.insertions?.push({ releaseId: String(release.id), index: -1 });
-        this.releases?.push(release);
+        this.insertions ??= [];
+        this.releases ??= [];
+        this.insertions.push({ releaseId: String(release.id), index: -1 });
+        this.releases.push(release);
     }
 }
 

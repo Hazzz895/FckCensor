@@ -135,7 +135,7 @@ export function getTracks(...trackIds: string[]): Promise<Track[]> {
 
 export function getAlbums(...albumIds: TrackId[]): Promise<Album[]> {
     return getDiResource("AlbumResource")?.getAlbums({
-        albumIds: albumIds.map(Number)
+        albumIds: albumIds.map(Number).filter(x => !isNaN(x))
     });
 }
 

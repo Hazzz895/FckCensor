@@ -4,6 +4,7 @@ import styles from "@/styles.module.scss";
 import { getArtist, search } from "@/utils/music";
 import { Cover } from "./Cover";
 import { getAlbums, getTracks } from "@/utils/music";
+import { debug } from "@/utils/logger";
 
 export class Searchable<T extends SpoofableEntity> extends ElementWrap {
     public constructor(protected readonly type: SpoofableType, private readonly onSelected?: (entity: T) => void) { super() }
@@ -60,14 +61,14 @@ export class Searchable<T extends SpoofableEntity> extends ElementWrap {
         this.input?.remove();
         this.input = undefined;
         this.searchResults = undefined;
-        this.onSelected?.(entity);
         this.reRenderElement();
+        this.onSelected?.(entity);
     }
 
     private onTextChanged(ev: InputEvent) {
         clearTimeout(this.timeout);
         
-        const re = new RegExp(`.*${this.type}\\/([^?\\s]+)(?:\\?([^\\s?#]*))?`); // #FIXME чето добавляется пустой трек
+        const re = new RegExp(`.*${this.type}\\/([^?\\s/]+)(?:\\/[^?\\s]*)?(?:\\?[^\\s#]*)?`);
         if (re.test(this.input?.value ?? "")) {
             const id = this.input?.value?.match(re)![1];
             if (!id) return;
