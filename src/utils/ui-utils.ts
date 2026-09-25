@@ -2,7 +2,7 @@ import { Album, Artist, OuterArtist, SpoofableEntity, SpoofableType, Track, Trac
 import { createFlags, flagsToStrings } from "./flags";
 import { debug, error } from "./logger";
 import { sources } from "@/api/main-api";
-import { randomString } from "./common";
+import { httpsify, randomString } from "./common";
 import { Q_ARTIST_FIBER_ROOT, Q_ALBUM_FIBER_ROOT, Q_TRACK_ROOT, Q_TRACK_FIBER_ROOT } from "@/hooks/ui/constants";
 import { putToBundle } from "@/dev/dev-utils";
 
@@ -275,4 +275,12 @@ export async function showNotificationSafe(message: string, kind: "info" | "erro
             { once: true }
         );
     }
+}
+
+export async function showNotificationWithCover(entity: SpoofableEntity, message: string, kind: "info" | "error", data?: { icon?: any, coverUrl?: string, link?: { href: string, label: string }, durationMs?: number }) {
+    let coverUri = entity.coverUri ?? entity.ogImage;
+    if (!coverUri) return;
+    coverUri = httpsify(coverUri).replace('%%', '100x100');
+
+    await showNotificationSafe(message, kind, { ...data, coverUrl: coverUri });
 }

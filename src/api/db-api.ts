@@ -462,13 +462,20 @@ export class LocalSource implements Source {
     }
 
     private async removeFromDb(table_name: string, id: string) {
-        const store = await this.openStore(table_name);
-        store.delete(id);
+        return this.requestDb(table_name, (store) => store.delete(id));
     }
 
     private async pushToDb(table_name: string, id: string, value: any) {
-        const store = await this.openStore(table_name);
-        store.put({ ...value, id });
+        return this.requestDb(table_name, (store) => store.put({ ...value, id }));
+    }
+
+    private async requestDb<T>(table_name: string, callback: (store: IDBObjectStore) => IDBRequest<T>) {
+        return new Promise(async (resolve, reject) => {
+            const store = await this.openStore(table_name);
+            const request = callback(store);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        })
     }
 }
 

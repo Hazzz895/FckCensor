@@ -5,7 +5,7 @@ import { debug } from "@/utils/logger";
 import { SpoofEntityWithArtistsAlert } from "../base/artists/SpoofEntityWithArtistsAlert";
 import { SpoofAudioField } from "./SpoofAudioField";
 import { sources } from "@/api/main-api";
-import { spoofAllNodesFor } from "@/utils/ui-utils";
+import { showNotificationWithCover, spoofAllNodesFor } from "@/utils/ui-utils";
 import { ActionButton } from "../../alerts";
 
 export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
@@ -36,7 +36,7 @@ export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
         const BASE_URL = "fckcensor://track/";
         const url = BASE_URL + this.id;
         navigator.clipboard.writeText(url).then(() => {
-            window.pulsesyncApi?.showNotification?.(`Ссылка на локальный трек скопирована в буфер обмена. Вставьте ее в окно подмены альбома или исполнителя.`, "info", { 
+            showNotificationWithCover(this.entity, `Ссылка на локальный трек скопирована в буфер обмена. Вставьте ее в окно подмены альбома или исполнителя.`, "info", { 
                 durationMs: 4e3,
                 icon: 'share',
              });

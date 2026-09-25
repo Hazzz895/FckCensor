@@ -10,7 +10,7 @@ import { SpoofAlertEntityPropertyField } from "./SpoofAlertEntityPropertyField";
 import { SpoofAlertInputField } from "./SpoofAlertInputField";
 import styles from "@/styles.module.scss"
 import { restoreAllNodesByType } from "@/utils/music";
-import { spoofAllNodesFor } from "@/utils/ui-utils";
+import { showNotificationWithCover, spoofAllNodesFor } from "@/utils/ui-utils";
 import { CoverProps } from "../spoof-alert";
 import { SpoofAlertCoverField } from "./SpoofAlertCoverField";
 import { localSource } from "@/api/db-api";
@@ -23,22 +23,22 @@ export type SpoofRemoveAction = "remove" | "cancel" | "restore";
 
 export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity> {
     get artist() {
-        if (this.type != "artist") new Error("Tried to get artist from non-artist alert");
+        if (this.type != "artist") throw new Error("Tried to get artist from non-artist alert");
         return this.entity as Artist
     }
 
     get release() {
-        if (["album", "track"].indexOf(this.type) == -1) new Error("Tried to get release from non-release alert");
+        if (["album", "track"].indexOf(this.type) == -1) throw new Error("Tried to get release from non-release alert");
         return this.entity as Release
     }
 
     get album() {
-        if (this.type != "album") new Error("Tried to get album from non-album alert");
+        if (this.type != "album") throw new Error("Tried to get album from non-album alert");
         return this.entity as Album
     }
 
     get track(): Track {
-        if (this.type != "track") new Error("Tried to get track from non-track alert");
+        if (this.type != "track") throw new Error("Tried to get track from non-track alert");
         return this.entity as Track;
     }
 
@@ -163,15 +163,14 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         else if (this.hadSpoof) {
             await this.onSpoofRemove();
         }
-
-        const l = localizeSpoofableType(this.type);
-        const coverUrl = this.entity.coverUri && httpsify(this.entity.coverUri).replace('%%', '100x100');
-
+        
         try {
             await this.afterSpoofChanged();
         } catch (e) { error(e) }
 
-        window.pulsesyncApi?.showNotification?.(`${l[0].toUpperCase() + l.slice(1)} подменен успешно! Для применения изменений может потребоваться перезаход.`, "info", { coverUrl })
+        const l = localizeSpoofableType(this.type);
+        showNotificationWithCover(this.entity, `${l[0].toUpperCase() + l.slice(1)} подменен успешно! Для применения изменений может потребоваться перезаход.`, "info")
+
         report(this.id, this.type, true);
     }
 
@@ -204,13 +203,11 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
 
         updateBadgesByType(this.type, this.id);
 
-        const coverUrl = this.entity.coverUri && httpsify(this.entity.coverUri).replace('%%', '100x100');
-
         try {
             await this.afterSpoofChanged();
         } catch (e) { error(e) }
 
-        window.pulsesyncApi?.showNotification?.(`Подмена была ${this.removeAction === "restore" ? "восстановлена" : "отменена"}! Для применения изменений может потребоваться перезаход.`, "info", { coverUrl })
+        showNotificationWithCover(this.entity, `Подмена была ${this.removeAction === "restore" ? "восстановлена" : "отменена"}! Для применения изменений может потребоваться перезаход.`, "info");
     }
 
     protected async onSpoofCancel(): Promise<void> {
