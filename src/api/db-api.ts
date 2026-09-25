@@ -319,6 +319,9 @@ export class LocalSource implements Source {
     }
 
     removeTrackSpoof(trackId: string) {
+        if (typeof this.trackSpoofs[trackId]?.coverUri === "string" && this.trackSpoofs[trackId]?.coverUri?.startsWith("blob:")) {
+            URL.revokeObjectURL(this.trackSpoofs[trackId].coverUri);
+        }
         delete this.trackSpoofs[trackId];
         return this.removeFromDb(TRACK_SPOOFS, trackId);
     }
