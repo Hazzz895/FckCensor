@@ -271,7 +271,6 @@ export class LocalSource implements Source {
         this.forgetTrackReplacement(id);
         (file ? this.replacementsTrackIds : this.replacementExceptionsTrackIds).push(id);
 
-        reloadPlayer(id);
         return this.pushToDb(TRACKS, id, { data: file });
     }
 

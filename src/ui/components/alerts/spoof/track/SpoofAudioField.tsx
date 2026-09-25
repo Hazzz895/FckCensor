@@ -6,7 +6,7 @@ import styles from "@/styles.module.scss";
 import { sources } from "@/api/main-api";
 import { ReplacedBadge } from "@/hooks/ui/badges";
 import { SpoofAlertEntityPropertyField } from "../base/SpoofAlertEntityPropertyField";
-import { getAudioMetadata } from "@/utils/music";
+import { getAudioMetadata, reloadPlayer } from "@/utils/music";
 import { localSource } from "@/api/db-api";
 
 export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | undefined> {
@@ -80,6 +80,7 @@ export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | unde
         else if (localSource.hasPlayerReplacementException(this.alert.id)) {
             await localSource.removeTrackReplacement(this.alert.id);
         }
+        reloadPlayer(this.alert.id);
     }
 
     private openFilePicker() {
