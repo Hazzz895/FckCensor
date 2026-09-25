@@ -171,7 +171,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         const l = localizeSpoofableType(this.type);
         showNotificationWithCover(this.entity, `${l[0].toUpperCase() + l.slice(1)} подменен успешно! Для применения изменений может потребоваться перезаход.`, "info")
 
-        report(this.id, this.type, true);
+        await report(this.id, this.type, true);
     }
 
     private getSpoofRemoveAction(): SpoofRemoveAction | null {

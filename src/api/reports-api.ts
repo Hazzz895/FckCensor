@@ -34,15 +34,18 @@ export async function report(id: TrackId, type: SpoofableType, replaced: boolean
 
     const request = await post(REPORTED_TRACKS, body);
 
-    if (!replaced && !request.ok) {
-        window.pulsesyncApi?.showNotification?.("Не удалось сообщить о цензуре.", "error", {});
-        return false;
-    }
-    else if (!replaced && request.ok) {
-        window.pulsesyncApi?.showNotification?.("Спасибо! В скором времени этот " + localizeSpoofableType(type) + " будет добавлен в список автоматически подменяемых.", "info", {})
+    if (request.ok) {
         localSource.pushReported(numId, type);
-        return true;
     }
 
-    return false;
+    if (!replaced) {
+        if (!request.ok) {
+            window.pulsesyncApi?.showNotification?.("Не удалось сообщить о цензуре.", "error", {});
+        }
+        else {
+            window.pulsesyncApi?.showNotification?.("Спасибо! В скором времени этот " + localizeSpoofableType(type) + " будет добавлен в список автоматически подменяемых.", "info", {})
+        }
+    }
+
+    return request.ok;
 }
