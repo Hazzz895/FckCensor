@@ -471,7 +471,7 @@ export class LocalSource implements Source {
         return this.requestDb(table_name, (store) => store.put({ ...value, id }));
     }
 
-    private async requestDb<T>(table_name: string, callback: (store: IDBObjectStore) => IDBRequest<T>) {
+    private async requestDb<T>(table_name: string, callback: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
         return new Promise(async (resolve, reject) => {
             const store = await this.openStore(table_name);
             const request = callback(store);
