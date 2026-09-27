@@ -188,6 +188,7 @@ export function createScrimAlert(
         if (ev.target !== scrimNode || ev.propertyName !== 'transform') return;
         if (scrimNode.getAttribute('data-open') === 'true') return;
         document.removeEventListener('keydown', onKeyDown);
+        window.removeEventListener('wheel', onWheel, true);
         scrimNode.removeEventListener('transitionend', onTransitionEnd);
         container.remove();
         if (onClose) {
@@ -199,9 +200,16 @@ export function createScrimAlert(
         if (ev.key === 'Escape') close();
     };
 
+    const onWheel = (ev: WheelEvent) => {
+        if (ev.target instanceof Node && scrimNode.contains(ev.target)) {
+            ev.stopPropagation();
+        }
+    };
+
     closeButton?.addEventListener('click', close);
     backdropNode?.addEventListener('click', close);
     document.addEventListener('keydown', onKeyDown);
+    window.addEventListener('wheel', onWheel, true);
     scrimNode.addEventListener('transitionend', onTransitionEnd);
 
     requestAnimationFrame(() => {

@@ -107,7 +107,7 @@ body:has(.DisabledTrack_TutorialTooltip) :global(.CommonTrack_root__i6shE.Common
     overflow-y: auto;
     min-height: 0;
     flex: 1 1 auto;
-    scrollbar-width: none;
+    scrollbar-color: var(--ym-controls-color-secondary-default-enabled) transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {
