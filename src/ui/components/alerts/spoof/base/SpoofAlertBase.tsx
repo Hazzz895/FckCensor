@@ -90,13 +90,14 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         }
 
         const titleField = this.addPropertyField(new SpoofAlertInputField(this, type === "artist" ? "name" : "title", type === "artist" ? "Имя исполнителя" : "Название", title));
+        const coverField = this.addPropertyField(new SpoofAlertCoverField(this));
         const childrenNode = this.getChildren();
 
         const prevSpoof = this.getPrevSpoofedData();
         let customFields = null
         if (prevSpoof) {
             customFields = []
-            for (const k of Object.keys(prevSpoof).filter(k => ["id"].indexOf(k) === -1 && this.fields.some(f => f.propertyName == k))) {
+            for (const k of Object.keys(prevSpoof).filter(k => ["id"].indexOf(k) === -1 && !this.fields.some(f => f.propertyName == k))) {
                 const field = new SpoofAlertCustomPropertyField(this);
                 const fieldElement = field.element;
                 field.setSavedValue(k, (prevSpoof as any)[k]);
@@ -110,7 +111,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
 
         const spoofAlert = (<div>
             <div class={"EditContentModal_field__rexIL " + styles.CoverAndTitleContainer}>
-                {this.addPropertyField(new SpoofAlertCoverField(this))}
+                {coverField}
                 {titleField}
             </div>
             {childrenNode}
