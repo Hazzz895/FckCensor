@@ -36,31 +36,51 @@ export class MinifiedRemoteSource implements RemoteSourceBase {
         for (const source of list.sources) {
             if (source.supported_version && !versionSatisfies(addonConfig.version, source.supported_version)) continue;
             
-            this.tracks = { ...source.tracks, ...this.tracks};
-            this.albums = { ...source.albums, ...this.albums};
-            this.artists = { ...source.artists, ...this.artists }
+            this.tracks = { ...source.tracks, ...this.tracks };
+            this.albums = { ...source.albums, ...this.albums };
+            this.artists = { ...source.artists, ...this.artists };
             this.artistsInsertions = { ...source.artistsInsertions, ...this.artistsInsertions };
+
             if (source.tracksStorages) {
-                this.tracksStorages = [ ...source.tracksStorages, ...this.tracksStorages ]
+                this.tracksStorages = [ ...source.tracksStorages, ...this.tracksStorages ];
             }
 
-            for (const storage of this.tracksStorages) {
-                const replacements = storage.trackIds ?? (storage.tracks ? Object.entries(storage.tracks) : []);
-                for (const replacement of replacements) {
-                    let trackId: string;
-                    let durationMs: number | undefined;
+            for (const storage of source.tracksStorages ?? []) {
+                const resolveUrl = (rawUrl: string | number): string | number => {
+                    return (typeof rawUrl === "number" || (typeof rawUrl === "string" && !rawUrl.includes("://"))) && storage.urlTemplate 
+                        ? storage.urlTemplate.replace("%%", String(rawUrl)) 
+                        : rawUrl;
+                };
 
-                    if (Array.isArray(replacement)) {
-                        trackId = replacement[0];
-                        durationMs = typeof replacement[1] === "string" ? undefined : replacement[1].durationMs;
-                    }
-                    else {
-                        trackId = String(typeof replacement === "number" ? replacement : replacement.id);
-                        durationMs = typeof replacement === "number" ? undefined : replacement.durationMs;
-                    }
+                if (storage.trackIds) {
+                    for (const item of storage.trackIds) {
+                        const trackId = String(typeof item === "number" ? item : item.id);
+                        const durationMs = typeof item === "number" ? undefined : item.durationMs;
 
-                    if (durationMs === undefined) continue;
-                    this.tracks[trackId] = { ...this.tracks[trackId], durationMs };
+                        if (durationMs !== undefined) {
+                            this.tracks[trackId] = { ...this.tracks[trackId], durationMs };
+                        }
+                    }
+                }
+
+                if (storage.tracks) {
+                    for (const [trackId, replacement] of Object.entries(storage.tracks)) {
+                        let durationMs: number | undefined;
+
+                        if (typeof replacement === "object" && replacement !== null) {
+                            storage.tracks[trackId] = {
+                                ...replacement,
+                                url: resolveUrl(replacement.url)
+                            };
+                            durationMs = replacement.durationMs;
+                        } else {
+                            storage.tracks[trackId] = resolveUrl(replacement);
+                        }
+
+                        if (durationMs !== undefined) {
+                            this.tracks[trackId] = { ...this.tracks[trackId], durationMs };
+                        }
+                    }
                 }
             }
         }
@@ -121,12 +141,16 @@ export class RemoteSource implements Source {
         for (const storage of this.list.tracksStorages) {
             let url = null
             if (storage.tracks && trackId in storage.tracks) {
-                const o = storage.tracks[trackId]
+                let o = storage.tracks[trackId]
+                if (typeof o === 'object') {
+                    o = o.url;
+                }
+                
                 if (typeof o === 'string') {
                     url = o
                 }
-                else {
-                    url = o.url
+                else if (typeof o === 'number') {
+                    url = storage.urlTemplate?.replace('%%', String(o));
                 }
             }
             else if (storage.trackIds && storage.urlTemplate && storage.trackIds.find(x => typeof x === "number" ? String(x) == trackId : String(x.id) == trackId)) {

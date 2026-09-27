@@ -24,8 +24,8 @@ export type TrackReplacementStorage = ({
 } & TrackReplacementStorageBase) | number
 
 export type TrackReplacementStorageTemplate = ({
-    url: string
-} & TrackReplacementStorageBase) | string
+    url: string | number
+} & TrackReplacementStorageBase) | string | number
 
 export interface TracksStorage {
     urlTemplate?: string;

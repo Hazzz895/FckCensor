@@ -36,7 +36,7 @@ export class TabbedArtist extends Searchable<Artist> {
             children = super.createElement();
         }
 
-        return <div aria-label="нажмит чтобы удалить" onmouseenter={eventHandlerForTooltip} class={styles.TabbedArtist}>
+        return <div aria-label="Нажмите чтобы удалить исполнителя" onmouseenter={eventHandlerForTooltip} class={styles.TabbedArtist}>
             {children}
              </div>
     }
