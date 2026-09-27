@@ -130,12 +130,18 @@ export function getAlbumTracks(albumId: TrackId, ...args: any): Promise<Album | 
 }
 
 export function getTracks(...trackIds: string[]): Promise<Track[]> {
+    if (!trackIds.length) return Promise.resolve([]);
+    
     return getDiResource("TracksResource")?.getTracksMeta({ trackIds });
 }
 
 export function getAlbums(...albumIds: TrackId[]): Promise<Album[]> {
+    albumIds = albumIds.map(Number).filter(x => !isNaN(x));
+
+    if (!albumIds.length) return Promise.resolve([]);
+
     return getDiResource("AlbumResource")?.getAlbums({
-        albumIds: albumIds.map(Number).filter(x => !isNaN(x))
+        albumIds: albumIds
     });
 }
 
