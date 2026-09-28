@@ -13,12 +13,14 @@ import { toggleLiteMode } from './hooks/resources';
 import "./api/reports-api";
 import "./utils/hook-utils";
 import { listenSettings, prepareSettings } from './utils/pulsesync';
+import { prepareSettingsOptions } from './hooks/ui/settings';
 
 function prepareUiHooks() {
-    prepareBadges()
-    prepareTutorials()
+    prepareBadges();
+    prepareTutorials();
     prepareOptions();
     prepareDisabledTracksObserver();
+    prepareSettingsOptions();
     //prepeareButtons();
 }
 

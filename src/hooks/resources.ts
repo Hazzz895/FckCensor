@@ -8,6 +8,7 @@ import addonConfig from "../../addon.config.mjs";
 import { isLiteMode, listenSettings } from "@/utils/pulsesync";
 import { h } from "@/jsx-runtime";
 import { showNotificationSafe } from "@/utils/ui-utils";
+import { toggleSettingsHook } from "./ui/settings";
 
 const heavyMethodsUnhooks: string[] = []
 
@@ -311,7 +312,7 @@ let toggledLiteModePreviously = false;
 export function toggleLiteMode(enabled: boolean) {
     if ((enabled && heavyMethodsUnhooks.length === 0) || (!enabled && heavyMethodsUnhooks.length > 0)) return
     debug((enabled ? "Enabling" : "Disabling") + " lite mode");
-    
+
     if (toggledLiteModePreviously) {
         showNotificationSafe("Упрощённый режим " + (enabled ? "включён" : "выключён"), "info", { icon: "settings"});
     }

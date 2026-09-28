@@ -7,10 +7,13 @@ import { postProcessing, sources } from "./main-api";
 import { getTrackAvaiableSpoof, reloadPlayer } from "@/utils/music";
 import { ArtistInsertions } from "./dto/artist-insertion";
 import { isEmptyObject } from "@/utils/common";
+import { putToBundle } from "@/dev/dev-utils";
 
 export type LocalSpoofState = "none" | "own" | "exception";
 
 let dbPromise: Promise<IDBDatabase> | null = null;
+
+const DATABASE_NAME = "FckCensor" + "Data" 
 
 const TRACKS = "tracks"
 const REMOTE_EXCEPTIONS = "remote_exceptions"
@@ -24,7 +27,7 @@ const ARTIST_INSERTIONS = "artists_insertions"
 export function getDb(): Promise<IDBDatabase> {
     if (!dbPromise) {
         dbPromise = new Promise((resolve, reject) => {
-            const request = indexedDB.open("FckCensor" + "Data", 5);
+            const request = indexedDB.open(DATABASE_NAME, 5);
 
             request.onupgradeneeded = (event) => {
                 if (!event.target) return;
@@ -80,6 +83,22 @@ export function getDb(): Promise<IDBDatabase> {
     }
     return dbPromise;
 }
+
+export function deleteDb() {
+    return new Promise(async (resolve, reject) => {
+        await getDb().then((db) => db.close());
+
+        const req = indexedDB.deleteDatabase(DATABASE_NAME);
+
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => reject(req.error);
+        req.onblocked = () => reject(req.error);
+
+        dbPromise = null
+    });
+}
+
+putToBundle("deleteDb", deleteDb)
 
 export async function loadLocalDb() {
     try {
@@ -478,6 +497,18 @@ export class LocalSource implements Source {
             request.onsuccess = () => resolve(request.result);
             request.onerror = () => reject(request.error);
         })
+    }
+
+    async deleteDb() {
+        const result = await deleteDb();
+        if (result) {
+            this.albumSpoofs = {};
+            this.artistSpoofs = {};
+            this.trackSpoofs = {};
+            this.artistsInsertions = {};
+            this.replacementsTrackIds = [];
+            this.replacementExceptionsTrackIds = [];
+        }
     }
 }
 
