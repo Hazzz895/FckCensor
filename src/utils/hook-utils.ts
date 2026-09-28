@@ -132,8 +132,9 @@ export function getDiResource(resource: string) {
     return resource === undefined ? di : di?.get(resource) || null;
 }
 
+putToBundle("getDiResource", getDiResource);
+
 function diGet(ts: Di, args: any, key: string): any {
-    putToBundle("getDiResource", getDiResource);
     di = ts;
     if (!originalDiGet) {
         return null;
@@ -144,7 +145,12 @@ function diGet(ts: Di, args: any, key: string): any {
     if (hook && result) {
         delete pendingHooks[key]; 
         for (const h of hook) {
-            h(result)
+            try {
+                h(result)
+            }
+            catch (e) {
+                error(e)
+            }
         }
     }
 
@@ -159,7 +165,10 @@ export function hookDi(values: Partial<Record<DiResourceName, (dimodule: any) =>
 
     for (const key in values) {
         const value = values[key as DiResourceName]!;
-        if (!pendingHooks[key]) {
+        if (diClass?.shared?.get(key)) {
+            value(diClass.shared.get(key));
+        }
+        else if (!pendingHooks[key]) {
             pendingHooks[key] = [value];
         } else {
             pendingHooks[key].push(value);
@@ -187,16 +196,25 @@ export class FunctionHook {
 }
 export type Hook = FunctionHook | HookMethod;
 
-export function hookMethods(obj: any, hook: Hook, ...methodNames: [string, ...string[]]): boolean {
+const unhooks: Record<string, [Function, any, string]> = {};
+
+export function hookMethods(obj: any, hook: Hook, ...methodNames: [string, ...string[]]): string[] | null {
     if (!obj || !methodNames || !hook) {
-        return false;
+        return null;
     }
+
+    const unhookKeys: string[] = []
     methodNames.forEach(methodName => {
         const originalMethod = obj[methodName];
         if (!originalMethod) {
             warn(`Method ${methodName} not found in`, obj)
             return
         }
+
+        const unhookKey = `${obj?.constructor?.name || Object.prototype.toString.call(obj)}.${methodName}`;
+        unhookKeys.push(unhookKey);
+        unhooks[unhookKey] = [originalMethod, obj, methodName];
+
         obj[methodName] = async function(...args: any) {
             let result: any | undefined = undefined;
             try {
@@ -228,19 +246,33 @@ export function hookMethods(obj: any, hook: Hook, ...methodNames: [string, ...st
             }
         }
     });
-    return true;
+    return unhookKeys;
+}
+
+export function unhook(...keys: string[]) {
+    for (const key of keys) {
+        if (!(key in unhooks)) continue;
+
+        const [originalMethod, obj, methodName] = unhooks[key];
+        obj[methodName] = originalMethod;
+        delete unhooks[key];
+    }
 }
 
 export function getCurrentTraceLine() {
     const originalFunc = Error.prepareStackTrace;
   
-    Error.prepareStackTrace = (_, stack) => stack;
-    
-    const err = new Error();
-    const stack = err.stack;
+    try {
+        Error.prepareStackTrace = (_, stack) => stack;
+        
+        const err = new Error();
+        const stack = err.stack;
 
-    if (!stack) return -1;
-    
-    Error.prepareStackTrace = originalFunc; 
-    return (stack[2] as any).getLineNumber(); 
+        if (!stack) return -1;
+        
+        return (stack[2] as any).getLineNumber(); 
+    }
+    finally {
+        Error.prepareStackTrace = originalFunc; 
+    }
 }

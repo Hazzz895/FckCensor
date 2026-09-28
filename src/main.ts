@@ -8,9 +8,11 @@ import { prepareBadges } from './hooks/ui/badges';
 import { prepareTutorials } from './hooks/ui/tutorial';
 import { prepareOptions } from './hooks/ui/options';
 import { prepareDisabledTracksObserver } from './hooks/ui/disabled-tracks';
-import { hookResources } from './hooks/resources';
 import { hookPlayer } from './hooks/player';
+import { toggleLiteMode } from './hooks/resources';
 import "./api/reports-api";
+import "./utils/hook-utils";
+import { listenSettings, prepareSettings } from './utils/pulsesync';
 
 function prepareUiHooks() {
     prepareBadges()
@@ -20,17 +22,14 @@ function prepareUiHooks() {
     //prepeareButtons();
 }
 
-function hookDiHooks() {
-    hookResources();
-    hookPlayer();
-}
-
 function prepareHooks() {
-    hookDiHooks();
+    hookPlayer();
     prepareUiHooks();
 }
 
 debug("Starting")
+listenSettings(toggleLiteMode, "lite_mode")
+prepareSettings();
 prepareHooks();
 loadSources().then(() => { 
     invokeAddNodesListeners();

@@ -1,10 +1,24 @@
 import { sources } from "@/api/main-api";
-import { FunctionHook, hookDi, hookMethods, HookMethod, findModule, appRequire } from "../utils/hook-utils";
+import { FunctionHook, hookDi, hookMethods, HookMethod, findModule, appRequire, Hook, unhook } from "../utils/hook-utils";
 import { debug, error } from "@/utils/logger";
 import { Album, OuterArtist, Playlist, SearchResponse, Track } from "@/types";
 import { insert } from "@/utils/common";
 import { getAlbums, getTracks } from "@/utils/music";
 import addonConfig from "../../addon.config.mjs";
+import { isLiteMode, listenSettings } from "@/utils/pulsesync";
+import { h } from "@/jsx-runtime";
+import { showNotificationSafe } from "@/utils/ui-utils";
+
+const heavyMethodsUnhooks: string[] = []
+
+/** хук методов, которые должны отключаться при включении упрощённого режима */
+function hookHeavyMethods(obj: any, hook: Hook, ...methodNames: [string, ...string[]]): string[] | null {
+    if (isLiteMode()) return null;
+
+    const unhooks = hookMethods(obj, hook, ...methodNames);
+    if (unhooks) heavyMethodsUnhooks.push(...unhooks);
+    return unhooks;
+}
 
 class GetTracksMetaHook extends FunctionHook {
     public before(originalMethod: Function, request: { trackIds?: TrackId[] }) {
@@ -52,12 +66,12 @@ class GetFullInfoTrackHook extends GetTracksMetaHook {
 }
 
 function hookTrackResource(tr: any) {
-    hookMethods(tr, new GetTracksMetaHook(), "getTracksMeta");
-    hookMethods(tr, new GetFullInfoTrackHook(), "getFullInfoTrack", "getFullInfoTrackWithEtag");
+    hookHeavyMethods(tr, new GetTracksMetaHook(), "getTracksMeta");
+    hookHeavyMethods(tr, new GetFullInfoTrackHook(), "getFullInfoTrack", "getFullInfoTrackWithEtag");
 } 
 
 function hookAlbumResource(ar: any) {
-    hookMethods(ar, async (albums: Album | Album[]) => {
+    hookHeavyMethods(ar, async (albums: Album | Album[]) => {
         if (Array.isArray(albums)) {
             for (const a of albums) {
                 try {
@@ -76,7 +90,7 @@ function hookAlbumResource(ar: any) {
         }
     }, "getAlbums", "getAlbumWithTracksIds", "getAlbumWithTracksIdsWithEtag");
 
-    hookMethods(ar, async (albums: Album | Album[]) => {
+    hookHeavyMethods(ar, async (albums: Album | Album[]) => {
         async function spoof(a: Album) {
             try {
                 const spoof = sources.spoofAlbum(a);
@@ -107,11 +121,11 @@ function hookAlbumResource(ar: any) {
 }
 
 function hookArtistResource(ar: any) {
-    hookMethods(ar, async (artist: OuterArtist) => {
+    hookHeavyMethods(ar, async (artist: OuterArtist) => {
         sources.spoofAnyArtist(artist)
     }, "getInfo", "getBriefInfo")
 
-    hookMethods(ar, async (familiar: any) => {
+    hookHeavyMethods(ar, async (familiar: any) => {
         function spoofTab(tab: any) {
             if (!tab) return;
 
@@ -134,7 +148,7 @@ function hookArtistResource(ar: any) {
 
     type ArtistId = { artistId: number }
 
-    hookMethods(ar, async (trackIds: string[], t: ArtistId) => {
+    hookHeavyMethods(ar, async (trackIds: string[], t: ArtistId) => {
         sources.getArtistInsertions(String(t.artistId))?.tracks?.forEach(insertion => {
             if (insertion.index !== undefined) {
                 trackIds.splice(insertion.index, 0, insertion.releaseId);
@@ -145,7 +159,7 @@ function hookArtistResource(ar: any) {
         });
     }, "getArtistTrackIds")
 
-    hookMethods(ar, async (result: { pager?: any; tracks?: Track[] } | Track[], t: ArtistId) => {
+    hookHeavyMethods(ar, async (result: { pager?: any; tracks?: Track[] } | Track[], t: ArtistId) => {
         const tracks = Array.isArray(result) ? result : result?.tracks;
         if (!tracks) return;
         try {
@@ -155,7 +169,7 @@ function hookArtistResource(ar: any) {
         }
     }, "getArtistTracks");
 
-    hookMethods(ar, async (result: { pager?: any; albums?: Album[] } | Album[], t: ArtistId) => {
+    hookHeavyMethods(ar, async (result: { pager?: any; albums?: Album[] } | Album[], t: ArtistId) => {
         const albums = Array.isArray(result) ? result : result?.albums;
         if (!albums) return;
         try {
@@ -163,7 +177,7 @@ function hookArtistResource(ar: any) {
         } catch (e) {
             error(e);
         }
-}, "getDirectAlbums");
+    }, "getDirectAlbums");
 }
 
 async function addInsertionsToTracksList(tracks: Track[], artistId: string) {
@@ -180,9 +194,7 @@ async function addInsertionsToTracksList(tracks: Track[], artistId: string) {
 async function addInsertionsToAlbumsList(albums: Album[], artistId: string) {
     const insertions = sources.getArtistInsertions(artistId)?.albums;
     if (insertions) {
-        console.error("GETTING", sources.getArtistInsertions(artistId));
         const insertionTracksMeta = await getAlbums(...insertions.map(x => x.releaseId));
-        console.error(insertionTracksMeta, insertions, albums);
         insertions.forEach((insertion, i) => {
             insert(albums, insertionTracksMeta[i], insertion.index);
         })
@@ -191,7 +203,7 @@ async function addInsertionsToAlbumsList(albums: Album[], artistId: string) {
 }
 
 function hookLandingResource(lr: any) {
-    hookMethods(lr, async (block: any, info: { type?: "ARTIST_POPULAR_TRACKS" | "ARTIST_ALBUMS", source?: { uri?: string } }) => {
+    hookHeavyMethods(lr, async (block: any, info: { type?: "ARTIST_POPULAR_TRACKS" | "ARTIST_ALBUMS", source?: { uri?: string } }) => {
         let _artistId: string | undefined | null;
         function getArtistId() {
             if (_artistId !== undefined) return _artistId;
@@ -257,7 +269,7 @@ function hookLandingResource(lr: any) {
 }
 
 function hookSearchResource(sr: any) {
-    hookMethods(sr, async (response: SearchResponse) => { 
+    hookHeavyMethods(sr, async (response: SearchResponse) => { 
         for (const best of response.bestResults) {
             if (best.best_result_track) sources.spoofTrack(best.best_result_track);
             if (best.best_result_album) sources.spoofAlbum(best.best_result_album);
@@ -273,7 +285,7 @@ function hookSearchResource(sr: any) {
 }
 
 function hookChartResource(cr: any) {
-    hookMethods(cr, async (chart: { chart: Playlist }) => {
+    hookHeavyMethods(cr, async (chart: { chart: Playlist }) => {
         debug(chart, Array.isArray(chart?.chart?.tracks))
         if (Array.isArray(chart?.chart?.tracks)) {
             for (const t of chart.chart.tracks) {
@@ -294,7 +306,31 @@ function hookDisclaimersResource(dr: any) {
     }, "getDisclaimers")
 }
 
+let toggledLiteModePreviously = false;
+
+export function toggleLiteMode(enabled: boolean) {
+    if ((enabled && heavyMethodsUnhooks.length === 0) || (!enabled && heavyMethodsUnhooks.length > 0)) return
+    debug((enabled ? "Enabling" : "Disabling") + " lite mode");
+    
+    if (toggledLiteModePreviously) {
+        showNotificationSafe("Упрощённый режим " + (enabled ? "включён" : "выключён"), "info", { icon: "settings"});
+    }
+    toggledLiteModePreviously = true;
+
+    if (enabled) {
+        debug("Unhooking heavy methods", heavyMethodsUnhooks);
+        unhook(...heavyMethodsUnhooks);
+        heavyMethodsUnhooks.length = 0;
+    }
+    else {
+        hookResources();
+    }
+}
+
+
 export function hookResources() { 
+    if (heavyMethodsUnhooks.length > 0 || isLiteMode()) return
+
     hookDi({
         "TracksResource": hookTrackResource,
         "AlbumResource": hookAlbumResource,

@@ -1,3 +1,5 @@
+import { AddonSettingValue } from "@pulsesync/yamusic-types"
+
 //#region FckCensor Types
 export interface RemoteList {
     sources: RemoteSource[]
@@ -56,6 +58,14 @@ export type SpoofableType = "album" | "artist" | "track"
 export type Release = Album | Track
 
 export type SpoofableEntity = Release | Artist
+
+type AddonSettingValueT<T> = AddonSettingValue<T> | T
+
+export type FckCensorAddonSettings = ({
+    "lite_mode": AddonSettingValueT<boolean>
+}) & Record<FckCensorAddonSettingKey, AddonSettingValueT<boolean | number | string>>
+
+export type FckCensorAddonSettingKey = "lite_mode"
 
 //#endregion
 

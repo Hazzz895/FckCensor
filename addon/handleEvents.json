@@ -1,23 +1,15 @@
 {
     "sections": [
         {
-            "title": "Template",
+            "title": "Упрощённый режим",
             "items": [
                 {
-                    "id": "enabled",
-                    "name": "Enable demo badge",
-                    "description": "Показывать демонстрационный бейдж шаблона.",
+                    "id": "lite_mode",
+                    "name": "Упрощённый режим",
+                    "description": "Переключает состояние Упрощённого Режима. Когда включено, подмениваются только аудиопотоки треков. Свойства сущностей (названия, обложки и др.) перестают подмениваться аддоном. Включите это если приложение не запускается или сильно нагружается. Подробнее читайте в FAQ.",
                     "type": "button",
-                    "bool": true,
-                    "defaultParameter": true
-                },
-                {
-                    "id": "accentColor",
-                    "name": "Accent color",
-                    "description": "Цвет рамки у плашки.",
-                    "type": "color",
-                    "input": "#4ade80",
-                    "defaultParameter": "#4ade80"
+                    "value": false,
+                    "defaultValue": false
                 }
             ]
         }
