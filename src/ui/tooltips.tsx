@@ -1,6 +1,4 @@
 import { CloseButton } from "./components/alerts/alerts";
-import { debug } from "@/utils/logger";
-import { anchorElement, BOTTOM, LEFT, RIGHT, TOP } from "@/utils/ui-utils";
 import styles from '@/styles.module.scss'
 
 const TOOLTIP_ID = (styles as any).FckCensorTooltip

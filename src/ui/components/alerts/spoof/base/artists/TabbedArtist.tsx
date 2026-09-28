@@ -5,8 +5,9 @@ import { searchArtists } from "@/utils/music";
 import { debug } from "@/utils/logger";
 import { Cover } from "../../../../Cover";
 import styles from "@/styles.module.scss";
-import { eventHandlerForTooltip } from "@/ui/tooltips";
+import { eventHandlerForTooltip, removeTooltip } from "@/ui/tooltips";
 import { Searchable } from "@/ui/components/Searchable";
+import { SpoofAlertArtistsField } from "./SpoofAlertArtistsField";
 
 export interface TabbedArtistProps extends JSX.HTMLAttributes {
     artist?: Artist
@@ -15,7 +16,7 @@ export interface TabbedArtistProps extends JSX.HTMLAttributes {
 export class TabbedArtist extends Searchable<Artist> {
     private readonly onChanged?: (removed: boolean) => void;
 
-    constructor(artist?: Artist, onChanged?: (removed: boolean) => void) {
+    constructor(private readonly field: SpoofAlertArtistsField, artist?: Artist, onChanged?: (removed: boolean) => void) {
         super("artist", () => onChanged?.(false));
         this.entity = artist;
         this.onChanged = onChanged;
@@ -33,10 +34,10 @@ export class TabbedArtist extends Searchable<Artist> {
                 this.entity.name]
         }
         else {
-            children = super.createElement();
+            children = super.createElement(); // FIXME невозможно удалить кастомного исполнителя
         }
 
-        return <div aria-label="Нажмите чтобы удалить исполнителя" onmouseenter={eventHandlerForTooltip} class={styles.TabbedArtist}>
+        return <div aria-label="Нажмите чтобы удалить исполнителя" onmouseenter={(ev: MouseEvent) => !this.input && eventHandlerForTooltip(ev)} class={styles.TabbedArtist}>
             {children}
              </div>
     }

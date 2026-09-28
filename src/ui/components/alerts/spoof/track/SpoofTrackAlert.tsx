@@ -29,7 +29,7 @@ export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
     protected getAdditionalButtons() {
         const isLocalTrack = !(this.track.hasTrackLink ?? true);
         return isLocalTrack ? <ActionButton onclick={this.onLocalTrackLinkCopy.bind(this)}>Скопировать ссылку</ActionButton> :
-                              super.getAdditionalButtons(); // #TODO 
+                              super.getAdditionalButtons();
     }
 
     private onLocalTrackLinkCopy() {

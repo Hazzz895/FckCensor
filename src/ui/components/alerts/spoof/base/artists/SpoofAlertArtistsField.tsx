@@ -6,6 +6,7 @@ import { SpoofAlertBase } from "../SpoofAlertBase";
 import { SpoofAlertEntityPropertyField } from "../SpoofAlertEntityPropertyField";
 import { TabbedArtist } from "./TabbedArtist";
 import { JSX } from "@/jsx-runtime";
+import { removeTooltip } from "@/ui/tooltips";
 
 export function AddButton({ ...props }: JSX.HTMLAttributes) {
     const addButton = <CloseButton {...props}/>
@@ -32,7 +33,7 @@ export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField<Artist
     getValue() {
         return this.artistNodes
                 .map(x => x.getArtist())
-                .filter(x => !!x); // FIXME не добавляются исполнители с кастомным именем
+                .filter(x => !!x);
     }
 
     createElement(): HTMLElement {
@@ -54,11 +55,12 @@ export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField<Artist
         this.artistNodes = [];
 
         for (const a of this.artists) {
-            const artistNode = new TabbedArtist(a, () => this.onChanged?.());
+            const artistNode = new TabbedArtist(this, a, () => this.onChanged?.());
             this.artistNodes.push(artistNode);
             artistNode.element.addEventListener("click", () => {
                 this.artistNodes = this.artistNodes.filter(x => x !== artistNode);
                 artistNode.element.remove();
+                removeTooltip();
                 this.onChanged?.();
             });
             container.appendChild(artistNode.element)
@@ -69,7 +71,7 @@ export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField<Artist
     }
 
     private onAdd(ev: MouseEvent) {
-        const $new = new TabbedArtist(undefined, (removed) => {
+        const $new = new TabbedArtist(this, undefined, (removed) => {
             if (removed) {
                 this.artistNodes = this.artistNodes.filter(x => x !== $new);
             }

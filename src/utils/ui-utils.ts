@@ -258,7 +258,7 @@ export function getContextMenuSource(menu: HTMLElement, targetQ: string) {
 
 export const DUMMY_ELEMENT = document.createElement("div");
 
-export async function showNotificationSafe(message: string, kind: "info" | "error", data?: { icon?: any, coverUrl?: string, link?: { href: string, label: string }, durationMs?: number }, attempt = 1): Promise<void> {
+export async function showNotificationSafe(message: string, kind: "info" | "error" = "info", data?: { icon?: any, coverUrl?: string, link?: { href: string, label: string }, durationMs?: number }, attempt = 1): Promise<void> {
     if (window.__pulsesyncBridgeInitialized) {
         try {
             await window.pulsesyncApi?.showNotification?.(message, kind, data);
