@@ -4,7 +4,7 @@
 </div>
 <div style="background: linear-gradient(to bottom, #000, #0000);">
     <h1 style="justify-content: center; align-items: center; display: flex; text-align: center">
-        <img style="height: 2rem; margin-right: 8px" src="https://github.com/Hazzz895/FckCensor/blob/v2/addon/image.png?raw=true"/>FckCensor (обход запикивания / цензуры)
+        <img style="height: 2rem; width: 2rem; display: inline; margin-right: 8px" src="https://github.com/Hazzz895/FckCensor/blob/v2/addon/image.png?raw=true"/>FckCensor (обход запикивания / цензуры)
     </h1>
 </div>
 <b>FckCensor</b> — аддон на Яндекс Музыку, позволяющий легко подменить любую информацию альбомов, исполнителей и треков (включая аудио), а также автоматически подменивает вышеперечисленную информацию, если такова есть в <a href="https://github.com/Hazzz895/FckCensorData/blob/main/README.md">удалённом списке</a>.
@@ -39,7 +39,7 @@
     </tr>
     <tr>
       <td>
-        <img alt="Альбом с удалёнными треками (аддон выключен)" src="https://github.com/Hazzz895/FckCensor/blob/v2/images/comparsion/album_tracks_list_0.png?raw=true">
+        <img alt="Альбом с удалёнными треками (аддон выключен)" src="https://github.com/Hazzz895/FckCensor/blob/v2/images/comparison/album_tracks_list_0.png?raw=true">
       </td>
       <td>
         <img alt="Альбом с удалёнными треками (аддон включен)" src="https://github.com/Hazzz895/FckCensor/blob/v2/images/comparison/album_tracks_list_1.png?raw=true">
