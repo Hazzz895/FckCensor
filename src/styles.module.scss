@@ -19,11 +19,11 @@
     position-visibility: anchors-visible;
     min-width: 15rem;
     transform: translateX(100%);
+}
 
-    .Content {
-        display: flex;
-        flex-direction: row;
-    }
+.Content {
+    display: flex;
+    flex-direction: row;
 }
 
 .DisabledTrack_TutorialTooltip {

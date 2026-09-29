@@ -70,3 +70,11 @@ export function cloneWithFiles<T>(value: T): T {
     }
     return result as T;
 }
+
+export function formatBytes(value: number) {
+    if ('number' != typeof value || value < 0) return '0 B';
+    let units = ['B', 'KB', 'MB', 'GB'],
+        unitIndex = 0;
+    for (;value >= 1024 && unitIndex < units.length - 1;) (value /= 1024), unitIndex++;
+    return ''.concat(value.toFixed(2), ' ').concat(units[unitIndex]);
+}

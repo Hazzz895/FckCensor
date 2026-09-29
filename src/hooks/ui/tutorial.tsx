@@ -5,26 +5,29 @@ import {
     unlistenAddNodes,
     unlistenRemovedNodes
 } from "./observer"
-import { createClosableTooltipInternal, removeTooltip } from "@/ui/tooltips"
+import { ClosableTooltip, removeTooltip } from "@/ui/tooltips"
 import styles from "@/styles.module.scss"
 import { Q_DISABLED_TRACK } from "./constants"
+import { JSX } from "@/jsx-runtime"
+import addonConfig from "../../../addon.config.mjs"
+import { debug } from "@/utils/logger"
 
 export const DISABLED_TRACK_TUTORIAL = "DISABLED_TRACK_TUTORIAL"
+export const LITE_MODE_WARNING = "LITE_MODE_WARNING"
 export const SPOOF_TUTORIAL = "SPOOF_TUTORIAL"
 
-export function createDisabledTrackTutorialTooltip(): HTMLElement {
-    const tooltip = createTutorialTooltip(
-        "Этот трек был удалён и стал недоступен для прослушивания. Нажмите на трек, чтобы запустить процесс его восстановления через аддон FckCensor",
-        DISABLED_TRACK_TUTORIAL
-    )
+export function createDisabledTrackTutorialTooltip() {
+    const tooltip = <TutorialTooltip id={DISABLED_TRACK_TUTORIAL}>{`Этот трек был удалён и стал недоступен для прослушивания. Нажмите на трек, чтобы запустить процесс его восстановления через аддон ${addonConfig.name}`}</TutorialTooltip>
+    
     if (styles.DisabledTrack_TutorialTooltip) {
         tooltip.classList.add(styles.DisabledTrack_TutorialTooltip)
     }
+    document.body.appendChild(tooltip)
     return tooltip
 }
 
-function createTutorialTooltip(description: string, key: string): HTMLElement {
-    return createClosableTooltipInternal(description, key, () => completeTutorial(key))
+export function TutorialTooltip({ children, id, ...props }: { children: JSX.Child, id: string } & JSX.HTMLAttributes) {
+    return <ClosableTooltip id={id} onclose={() => completeTutorial(id)} {...props}>{children}</ClosableTooltip>
 }
 
 export function prepareTutorials(): void {

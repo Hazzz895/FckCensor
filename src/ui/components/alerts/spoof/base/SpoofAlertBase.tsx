@@ -18,6 +18,8 @@ import { report } from "@/api/reports-api";
 import { ReportCensorActionButton } from "./ReportCensorActionButton";
 import { Badge, updateBadgesByType } from "@/hooks/ui/badges";
 import { ADDON_FAQ_URI } from "@/hooks/ui/constants";
+import { isLiteMode } from "@/utils/pulsesync";
+import { LITE_MODE_WARNING, shouldShowTutorial, TutorialTooltip } from "@/hooks/ui/tutorial";
 
 export type SpoofRemoveAction = "remove" | "cancel" | "restore";
 
@@ -109,7 +111,13 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         
         let jsonStructure = (this.entity as any)?.toJSON?.();
 
-        const spoofAlert = (<div>
+        let liteModeTooltip = null;
+        if (isLiteMode() && shouldShowTutorial(LITE_MODE_WARNING)) {
+            liteModeTooltip = <TutorialTooltip id={LITE_MODE_WARNING} class="QhR4J536RmNHBB5bZYwF EditContentModal_field__rexIL">Включен упрощённый режим. Изменения{this.type === "track" ? " (кроме аудиопотока) " : ""} не будут применены на {localizeSpoofableType(this.type)} до отключения.{this.type === "track" ? " Подмена аудиопотока будет применена." : ""}</TutorialTooltip>
+        }
+
+        const content = (<div>
+            {liteModeTooltip}
             <div class={"EditContentModal_field__rexIL " + styles.CoverAndTitleContainer}>
                 {coverField}
                 {titleField}
@@ -142,7 +150,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
             </div>
         </div>)
 
-        this.spoofAlert = createScrimAlert(scrim as JSX.Element, alertTitle, spoofAlert);
+        this.spoofAlert = createScrimAlert(scrim as JSX.Element, alertTitle, content);
     }
 
     getOriginalValue(propertyName: string) {

@@ -1,4 +1,4 @@
-import { error, log } from "@/utils/logger";
+import { debug, error, log } from "@/utils/logger";
 import Source from "./dto/sources/source";
 import { Track, Album, Artist, SpoofableType, SpoofableEntity } from "@/types";
 import TrackReplacement from "./dto/track-replacement";
@@ -13,6 +13,7 @@ export type LocalSpoofState = "none" | "own" | "exception";
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
+const TRACKS_AUDIO_SIZE = "FCK_CENSOR_TRACKS_AUDIO_SIZE"
 const DATABASE_NAME = "FckCensor" + "Data" 
 
 const TRACKS = "tracks"
@@ -86,6 +87,7 @@ export function getDb(): Promise<IDBDatabase> {
 
 export function deleteDb() {
     return new Promise(async (resolve, reject) => {
+        localStorage.removeItem(TRACKS_AUDIO_SIZE);
         await getDb().then((db) => db.close());
 
         const req = indexedDB.deleteDatabase(DATABASE_NAME);
@@ -278,26 +280,29 @@ export class LocalSource implements Source {
         return this.artistsInsertions.get(artistId) ?? null;
     }
 
-    pushTrackReplacement(trackId: string, file: File | null) {
+    async pushTrackReplacement(trackId: string, file: File | null) {
         const id = String(trackId);
 
         this.forgetTrackReplacement(id);
         (file ? this.replacementsTrackIds : this.replacementExceptionsTrackIds).push(id);
 
-        return this.pushToDb(TRACKS, id, { data: file });
+        await this.pushToDb(TRACKS, id, { data: file });
+        if (file) {
+            await this.calculateTracksAudioSize();
+        }
     }
 
     pushTrackReplacementException(trackId: string) {
         return this.pushTrackReplacement(trackId, null);
     }
 
-    removeTrackReplacement(trackId: string) {
+    async removeTrackReplacement(trackId: string) {
         const id = String(trackId);
 
         this.forgetTrackReplacement(id);
 
-        reloadPlayer(id);
-        return this.removeFromDb(TRACKS, id);
+        await this.removeFromDb(TRACKS, id);
+        await this.calculateTracksAudioSize();
     }
 
     private forgetTrackReplacement(trackId: string) {
@@ -504,6 +509,29 @@ export class LocalSource implements Source {
             this.replacementsTrackIds = [];
             this.replacementExceptionsTrackIds = [];
         }
+    }
+
+    private async calculateTracksAudioSize() {
+        const tracks: { data?: File, id: string }[] = await this.requestDb(TRACKS, (store) => store.getAll());
+
+        let result = 0;
+        for (const track of tracks) {
+            if (!track.data) continue;
+            result += track.data.size
+        }
+
+        localStorage.setItem(TRACKS_AUDIO_SIZE, String(result));
+
+        return result;
+    }
+
+    public getTracksAudioSize() {
+        const cached = localStorage.getItem(TRACKS_AUDIO_SIZE);
+        if (!cached) {
+            return 0;
+        }
+        const result = Number(cached);
+        return isNaN(result) ? 0 : result;
     }
 }
 
