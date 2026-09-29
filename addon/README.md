@@ -1,7 +1,75 @@
-# FckCensor (обход запикивания/цензуры)
 
-> [Инструкция к использованию аддона](https://github.com/Hazzz895/FckCensor/blob/v2/FAQ.md)
+<div style="background-color: black; width: 100%; justify-content: center; display: flex;">
+    <img style="object-fit: contain; max-height: 12rem" src="https://github.com/Hazzz895/FckCensor/blob/v2/addon/banner.png?raw=true"/>
+</div>
+<div style="background: linear-gradient(to bottom, #000, #0000);">
+    <h1 style="justify-content: center; align-items: center; display: flex; text-align: center">
+        <img style="height: 2rem; margin-right: 8px" src="https://github.com/Hazzz895/FckCensor/blob/v2/addon/image.png?raw=true"/>FckCensor (обход запикивания / цензуры)
+    </h1>
+</div>
+<b>FckCensor</b> — аддон на Яндекс Музыку, позволяющий легко подменить любую информацию альбомов, исполнителей и треков (включая аудио), а также автоматически подменивает вышеперечисленную информацию, если такова есть в <a href="https://github.com/Hazzz895/FckCensorData/blob/main/README.md">удалённом списке</a>.
 
-Аддон позволяет легко подменить любую информацию альбомов, исполнителей и треков (включая аудиопоток), а также автоматически подменивает вышеперечисленную информацию, если такова есть в [удалённом списке](https://github.com/Hazzz895/FckCensorData/blob/main/README.md)
+<div style="height: 24px"></div>
 
-<img alt="Пример подмены трека" src="https://github.com/user-attachments/assets/64d58d6e-43d7-42c9-8577-6e007375d2ac" />
+<a href="./FAQ.md">
+    <img style="height: 36px" src="https://img.shields.io/badge/%D0%A7%D0%B0%D1%81%D1%82%D0%BE%20%D0%B7%D0%B0%D0%B4%D0%B0%D0%B2%D0%B0%D0%BC%D1%8B%D0%B5%20%D0%B2%D0%BE%D0%BF%D1%80%D0%BE%D1%81%D1%8B%20%D0%B8%20%D0%B1%D1%8B%D1%81%D1%82%D1%80%D1%8B%D0%B9%20%D1%81%D1%82%D0%B0%D1%80%D1%82-FAQ-brightgreen?style=for-the-badge"/>
+</a>
+
+<h2 style="text-align: center">Демонстрация аддона FckCensor</h2>
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: center;">Без аддона</th>
+      <th  style="text-align: center;">С аддоном FckCensor</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        <img alt="Список треков (аддон выключен)" src="https://github.com/Hazzz895/FckCensor/blob/v2/images/comparison/tracks_list_0.png?raw=true">
+      </td>
+      <td>
+        <img alt="Список треков (аддон включен)" src="https://github.com/Hazzz895/FckCensor/blob/v2/images/comparison/tracks_list_1.png?raw=true">
+      </td>
+    </tr>
+    <tr>
+        <td colspan="2" style="font-style: italic; color: gray; text-align: center;">
+            Аддон может восстанавливать удалённые треки, соотносить перезаливы с настоящими исполнителями и убирать цензуру с названий и обложек
+        </td>
+    </tr>
+    <tr>
+      <td>
+        <img alt="Альбом с удалёнными треками (аддон выключен)" src="https://github.com/Hazzz895/FckCensor/blob/v2/images/comparsion/album_tracks_list_0.png?raw=true">
+      </td>
+      <td>
+        <img alt="Альбом с удалёнными треками (аддон включен)" src="https://github.com/Hazzz895/FckCensor/blob/v2/images/comparison/album_tracks_list_1.png?raw=true">
+      </td>
+    </tr>
+    <tr>
+        <td colspan="2" style="font-style: italic; color: gray; text-align: center;">
+            С помощью аддона возможно восстановить удалённые треки с альбома
+        </td>
+    </tr>
+    <tr>
+      <td>
+        <img alt="Зацензуренный трек (аддон выключен)" src="https://github.com/Hazzz895/FckCensor/blob/v2/images/comparison/censored_track_0.png?raw=true">
+      </td>
+      <td>
+        <img alt="Зацензуренный трек (аддон включен)" src="https://github.com/Hazzz895/FckCensor/blob/v2/images/comparison/censored_track_1.png?raw=true">
+      </td>
+    </tr>
+    <tr>
+        <td colspan="2" style="font-style: italic; color: gray; text-align: center;">
+            Запикивания и цензура во время прослушивания также полностью убирается через аддон
+            <br/>
+            * Аддон не убирает цензуру с текстов. Текст трека был визуально зацензурен для демонстрации функционала.
+        </td>
+    </tr>
+  </tbody>
+</table>
+
+## Скриншоты работы с аддоном
+
+<img alt="Меню подмены трека" src="https://github.com/Hazzz895/FckCensor/blob/v2/images/spoof_track_menu.png?raw=true" />
+<img alt="Меню подмены исполнителя с вставками треков и альбомов" src="https://github.com/Hazzz895/FckCensor/blob/v2/images/spoof_artist_menu.png?raw=true" />
+<img alt="Меню подмены альбома с подменённым трек-листом" src="https://github.com/Hazzz895/FckCensor/blob/v2/images/spoof_album_menu.png?raw=true?raw=true" />
