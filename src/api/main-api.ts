@@ -143,7 +143,8 @@ export class SourcesCollection {
     }
 }
 
-export function postProcessing(insertions: Record<string, ArtistInsertions>, tracks: Record<string, Track>, albums: Record<string, Album>) {
+
+export function postProcessing(insertions: Map<string, ArtistInsertions>, tracks: Map<string, Track>, albums: Map<string, Album>) {
     for (const [i, entityRecord] of [tracks, albums].entries()) {
         const entityType = i === 0 ? "tracks" : "albums";
         for (const [id, entity] of Object.entries(entityRecord) as [string, Track | Album][]) {
@@ -155,15 +156,16 @@ export function postProcessing(insertions: Record<string, ArtistInsertions>, tra
 
                 entity.artists.forEach((a: Release) => {
                     if (!a.id) return;
-                    if (!insertions[a.id]) insertions[a.id] = { tracks: [], albums: [] };
-                    if (!insertions[a.id][entityType]) insertions[a.id][entityType] = [];
-                    insertions[a.id][entityType]!.push(data)
+                    if (!insertions.has(String(a.id))) insertions.set(String(a.id),{ tracks: [], albums: [] });
+                    const insertion = insertions.get(String(a.id))!;
+                    if (!insertion[entityType]) insertion[entityType] = [];
+                    insertion[entityType]!.push(data)
                 }); 
             }
 
             if (entityType === "albums" && "volumes" in entity && entity.volumes && entity.coverUri) {
                 entity.volumes.forEach(v => v.forEach(t => {
-                    let trackSpoof = tracks[t.id];
+                    let trackSpoof = tracks.get(t.id);
                     if (!trackSpoof) {
                         return; // обложка из альбома подтягивается только для треков которые имеют спуф чтобы не подменивать обложки для треков которые уже были в альбоме
                     }

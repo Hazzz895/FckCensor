@@ -133,25 +133,25 @@ export async function loadLocalDb() {
             (item.data ? localSource.replacementsTrackIds : localSource.replacementExceptionsTrackIds).push(String(item.id));
         }
 
-        localSource.trackSpoofs = {};
+        localSource.trackSpoofs.clear();
         for (const item of trackSpoofsReq.result as (Track & { id: string })[]) {
             if (item.coverUri && (item.coverUri as any) instanceof Blob) {
                 item.coverUri = URL.createObjectURL(item.coverUri as any);
             }
-            localSource.trackSpoofs[item.id] = item;
+            localSource.trackSpoofs.set(item.id, item);
             delete (item as any).id;
         }
 
-        localSource.albumSpoofs = {};
+        localSource.albumSpoofs.clear();
         for (const item of albumSpoofsReq.result as (Album & { id: string })[]) {
             if (item.coverUri && (item.coverUri as any) instanceof Blob) {
                 item.coverUri = URL.createObjectURL(item.coverUri as any);
             }
-            localSource.albumSpoofs[item.id] = item;
+            localSource.albumSpoofs.set(item.id, item);
             delete (item as any).id;
         }
 
-        localSource.artistSpoofs = {};
+        localSource.artistSpoofs.clear();
         for (const item of artistSpoofsReq.result as (Artist & { id: string })[]) {
             const rawCoverFile =
                 ((item.coverUri as any) instanceof Blob && (item.coverUri as any)) ||
@@ -162,13 +162,13 @@ export async function loadLocalDb() {
                 item.coverUri = url;
                 item.cover = { ...item.cover, uri: url };
             }
-            localSource.artistSpoofs[item.id] = item;
+            localSource.artistSpoofs.set(item.id, item);
             delete (item as any).id;
         }
 
-        localSource.artistsInsertions = {};
+        localSource.artistsInsertions.clear();
         for (const item of artistInsertionsReq.result as (ArtistInsertions & { id: string })[]) {
-            localSource.artistsInsertions[item.id] = item;
+            localSource.artistsInsertions.set(item.id, item);
         }
 
         localSource.reportedEntities = { track: [], album: [], artist: [] };
@@ -197,10 +197,10 @@ export class LocalSource implements Source {
     
     public replacementsTrackIds: string[] = [];
     public replacementExceptionsTrackIds: string[] = [];
-    public artistsInsertions: Record<string, ArtistInsertions> = {};
-    public trackSpoofs: Record<string, Track> = {};
-    public albumSpoofs: Record<string, Album> = {};
-    public artistSpoofs: Record<string, Artist> = {};
+    public artistsInsertions: Map<string, ArtistInsertions> = new Map();
+    public trackSpoofs: Map<string, Track> = new Map();
+    public albumSpoofs: Map<string, Album> = new Map();
+    public artistSpoofs: Map<string, Artist> = new Map();
     public reportedEntities: Record<SpoofableType, string[]> = { track: [], album: [], artist: [] };
 
     async buildPlayerReplacement(trackId: string): Promise<TrackReplacement | null> {
@@ -256,8 +256,8 @@ export class LocalSource implements Source {
         if (this.hasPlayerReplacement(trackId)) {
             Object.assign(track, getTrackAvaiableSpoof());
         }
-        if (trackId in this.trackSpoofs) {
-            Object.assign(track, this.trackSpoofs[trackId]);
+        if (this.trackSpoofs.has(trackId)) {
+            Object.assign(track, this.trackSpoofs.get(trackId));
         }
         else {
             return null;
@@ -267,21 +267,15 @@ export class LocalSource implements Source {
     }
 
     getAlbumSpoof(albumId: string): Album | null {
-        if (albumId in this.albumSpoofs) {
-            return this.albumSpoofs[albumId];
-        }
-        return null;
+        return this.albumSpoofs.get(albumId) ?? null;
     }
 
     getArtistSpoof(artistId: string): Artist | null {
-        if (artistId in this.artistSpoofs) {
-            return this.artistSpoofs[artistId];
-        }
-        return null;
+        return this.artistSpoofs.get(artistId) ?? null;
     }
 
     getArtistInsertions(artistId: string): ArtistInsertions | null {
-        return this.artistsInsertions[artistId];
+        return this.artistsInsertions.get(artistId) ?? null;
     }
 
     pushTrackReplacement(trackId: string, file: File | null) {
@@ -322,7 +316,7 @@ export class LocalSource implements Source {
     pushTrackSpoof(track: Track, trackId?: string) {
         const id = String(trackId || track.id);
 
-        const oldTrack = this.trackSpoofs[id];
+        const oldTrack = this.trackSpoofs.get(id);
         if (oldTrack?.coverUri?.startsWith("blob:")) {
             URL.revokeObjectURL(oldTrack.coverUri);
         }
@@ -332,22 +326,23 @@ export class LocalSource implements Source {
             track.coverUri = URL.createObjectURL(track.coverUri as any);
         }
 
-        this.trackSpoofs[id] = track;
+        this.trackSpoofs.set(id, track);
         return this.pushToDb(TRACK_SPOOFS, id, dbTrack);
     }
 
     removeTrackSpoof(trackId: string) {
-        if (typeof this.trackSpoofs[trackId]?.coverUri === "string" && this.trackSpoofs[trackId]?.coverUri?.startsWith("blob:")) {
-            URL.revokeObjectURL(this.trackSpoofs[trackId].coverUri);
+        const spoof = this.trackSpoofs.get(trackId);
+        if (typeof spoof?.coverUri === "string" && spoof?.coverUri?.startsWith("blob:")) {
+            URL.revokeObjectURL(spoof.coverUri);
         }
-        delete this.trackSpoofs[trackId];
+        this.trackSpoofs.delete(trackId);
         return this.removeFromDb(TRACK_SPOOFS, trackId);
     }
 
     pushAlbumSpoof(album: Album, albumId?: string) {
         const id = String(albumId || album.id);
 
-        const oldAlbum = this.albumSpoofs[id];
+        const oldAlbum = this.albumSpoofs.get(id);
         if (oldAlbum?.coverUri?.startsWith("blob:")) {
             URL.revokeObjectURL(oldAlbum.coverUri);
         }
@@ -357,19 +352,19 @@ export class LocalSource implements Source {
             album.coverUri = URL.createObjectURL(album.coverUri as any);
         }
 
-        this.albumSpoofs[id] = album;
+        this.albumSpoofs.set(id, album);
         return this.pushToDb(ALBUM_SPOOFS, id, dbAlbum);
     }
 
     removeAlbumSpoof(albumId: string) {
-        delete this.albumSpoofs[albumId]
+        this.albumSpoofs.delete(albumId);
         return this.removeFromDb(ALBUM_SPOOFS, albumId);
     }
 
     pushArtistSpoof(artist: Artist, artistId?: string) {
         const id = String(artistId || artist.id);
 
-        const oldArtist = this.artistSpoofs[id];
+        const oldArtist = this.artistSpoofs.get(id);
         if (oldArtist?.cover?.uri?.startsWith("blob:")) {
             URL.revokeObjectURL(oldArtist.cover.uri);
         }
@@ -389,22 +384,22 @@ export class LocalSource implements Source {
             artist.cover = { ...artist.cover, uri: url };
         }
 
-        this.artistSpoofs[id] = artist;
+        this.artistSpoofs.set(id, artist);
         return this.pushToDb(ARTIST_SPOOFS, id, dbArtist);
     }
 
     removeArtistSpoof(artistId: string) {
-        delete this.artistSpoofs[artistId];
+        this.artistSpoofs.delete(artistId);
         return this.removeFromDb(ARTIST_SPOOFS, artistId);
     }
 
     pushArtistInsertions(artistId: string, insertions: ArtistInsertions) {
-        this.artistsInsertions[artistId] = insertions;
+        this.artistsInsertions.set(artistId, insertions);
         return this.pushToDb(ARTIST_INSERTIONS, artistId, insertions);
     }
 
     removeArtistInsertions(artistId: string) {
-        delete this.artistsInsertions[artistId];
+        this.artistsInsertions.delete(artistId);
         return this.removeFromDb(ARTIST_INSERTIONS, artistId);
     }
 
@@ -422,7 +417,7 @@ export class LocalSource implements Source {
         return (type == "album" ? this.pushAlbumSpoof : type == "artist" ? this.pushArtistSpoof : this.pushTrackSpoof).bind(this)(spoof, id);
     }
 
-    private getSpoofs(type: SpoofableType): Record<string, SpoofableEntity> {
+    private getSpoofs(type: SpoofableType): Map<string, SpoofableEntity> {
         switch (type) {
             case "album": return this.albumSpoofs;
             case "artist": return this.artistSpoofs;
@@ -431,16 +426,16 @@ export class LocalSource implements Source {
     }
 
     getRawSpoof(type: SpoofableType, id: string): SpoofableEntity | undefined {
-        return this.getSpoofs(type)[String(id)];
+        return this.getSpoofs(type).get(String(id));
     }
 
     hasOwnArtistInsertions(artistId: string): boolean {
-        const insertions = this.artistsInsertions[String(artistId)];
+        const insertions = this.artistsInsertions.get(String(artistId));
         return !!(insertions?.tracks?.length || insertions?.albums?.length);
     }
 
     hasArtistInsertionsException(artistId: string): boolean {
-        const insertions = this.artistsInsertions[String(artistId)];
+        const insertions = this.artistsInsertions.get(String(artistId));
         return !!insertions && !this.hasOwnArtistInsertions(artistId);
     }
 
@@ -502,10 +497,10 @@ export class LocalSource implements Source {
     async deleteDb() {
         const result = await deleteDb();
         if (result) {
-            this.albumSpoofs = {};
-            this.artistSpoofs = {};
-            this.trackSpoofs = {};
-            this.artistsInsertions = {};
+            this.albumSpoofs.clear();
+            this.artistSpoofs.clear();
+            this.trackSpoofs.clear()
+            this.artistsInsertions.clear()
             this.replacementsTrackIds = [];
             this.replacementExceptionsTrackIds = [];
         }
