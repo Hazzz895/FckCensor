@@ -107,6 +107,13 @@ export function restoreAllNodesByType(type: SpoofableType, id: string) {
             restoreOriginalValues(entity, { originalValues });
         }
     }
+
+    if (type === "track") {
+        const currentTrack = window?.pulsesyncApi?.getCurrentTrack?.() as Track | undefined;
+        if (currentTrack && String(currentTrack.id) === id) {
+            restoreOriginalValues(currentTrack, { originalValues });
+        }
+    }
 }
 
 export function search(text: string, type: SearchType = "all", page=0, args: Record<string, any> = {}): Promise<SearchResponse | null> {

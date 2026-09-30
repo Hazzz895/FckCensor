@@ -139,6 +139,13 @@ export function spoofAllNodesFor(type: SpoofableType, id: string) {
     for (const node of getEntityNodesById(type, id)) {
         spoofNode(node, type);
     }
+
+    if (type === "track") {
+        const currentTrack = window?.pulsesyncApi?.getCurrentTrack?.() as Track | undefined;
+        if (currentTrack && String(currentTrack.id) === id) {
+            sources.spoofTrack(currentTrack);
+        }
+    }
 }
 
 export interface MstNode {
