@@ -4,28 +4,36 @@ import { CoverProps } from "../spoof-alert";
 import { SpoofAlertBase } from "./SpoofAlertBase";
 import { error } from "@/utils/logger";
 import { Cover } from "@/ui/components/Cover";
+import { getSpoof } from "@/utils/music";
+import { sources } from "@/api/main-api";
+import { localSource } from "@/api/db-api";
 
 export class SpoofAlertCoverField extends SpoofAlertEntityPropertyField {
     public constructor(alert: SpoofAlertBase) {
         super(alert, "coverUri");
+        localSource.getCustomCover(this.alert.type, this.alert.id).then((cover) => {
+            if (cover) {
+                this.onCoverSelected(cover, this.alert.entity.coverUri);
+            }
+        })
     }
 
     private currentImageUrl?: string;
-    private file?: File;
+    private file?: Blob;
 
-    private onCoverSelected(file: File) {
+    private onCoverSelected(file: Blob, url?: string) {
         if (this.currentImageUrl) URL.revokeObjectURL(this.currentImageUrl);
         this.file = file;
-        this.currentImageUrl = URL.createObjectURL(file);
+        this.currentImageUrl = url ?? URL.createObjectURL(file);
         this.reRenderElement();
     }
 
     getValue() {
-        return this.file;
+        return this.file
     }
 
     hasDiffs(prop: any): boolean {
-        return this.currentImageUrl != null && prop !== this.alert.entity.coverUri;
+        return this.currentImageUrl != this.originalValue;
     }
 
     protected createElement(): HTMLElement {

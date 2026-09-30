@@ -72,9 +72,6 @@ export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
         const spoof = sources.getTrackSpoof(this.id);
         if (!spoof) return null;
         const { available, error, ...newSpoof } = spoof;
-        if ("durationMs" in newSpoof && this.spoofAudioField.hasChanges && this.spoofAudioField.dispayValue === false) {
-            delete newSpoof.durationMs;
-        }
         return newSpoof;
     }
 }

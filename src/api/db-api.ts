@@ -322,7 +322,7 @@ export class LocalSource implements Source {
         const id = String(trackId || track.id);
 
         const oldTrack = this.trackSpoofs.get(id);
-        if (oldTrack?.coverUri?.startsWith("blob:")) {
+        if (typeof oldTrack?.coverUri === "string" && oldTrack.coverUri.startsWith("blob:")) {
             URL.revokeObjectURL(oldTrack.coverUri);
         }
 
@@ -348,7 +348,7 @@ export class LocalSource implements Source {
         const id = String(albumId || album.id);
 
         const oldAlbum = this.albumSpoofs.get(id);
-        if (oldAlbum?.coverUri?.startsWith("blob:")) {
+        if (typeof oldAlbum?.coverUri === "string" && oldAlbum.coverUri.startsWith("blob:")) {
             URL.revokeObjectURL(oldAlbum.coverUri);
         }
 
@@ -370,10 +370,7 @@ export class LocalSource implements Source {
         const id = String(artistId || artist.id);
 
         const oldArtist = this.artistSpoofs.get(id);
-        if (oldArtist?.cover?.uri?.startsWith("blob:")) {
-            URL.revokeObjectURL(oldArtist.cover.uri);
-        }
-        if (oldArtist?.coverUri?.startsWith("blob:") && oldArtist.coverUri !== oldArtist.cover?.uri) {
+        if (typeof oldArtist?.coverUri === "string" && oldArtist.coverUri.startsWith("blob:")) {
             URL.revokeObjectURL(oldArtist.coverUri);
         }
 
@@ -490,6 +487,10 @@ export class LocalSource implements Source {
         return this.requestDb(table_name, (store) => store.put({ ...value, id }));
     }
 
+    private async getFromDb<T>(table_name: string, id: string) {
+        return this.requestDb<T>(table_name, (store) => store.get(id));
+    }
+
     private async requestDb<T>(table_name: string, callback: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
         return new Promise(async (resolve, reject) => {
             const store = await this.openStore(table_name);
@@ -532,6 +533,11 @@ export class LocalSource implements Source {
         }
         const result = Number(cached);
         return isNaN(result) ? 0 : result;
+    }
+
+    public async getCustomCover(type: SpoofableType, id: string): Promise<Blob | null> {
+        const coverUri = (await this.getFromDb<SpoofableEntity>(type == "album" ? ALBUM_SPOOFS : type == "artist" ? ARTIST_SPOOFS : TRACK_SPOOFS, id))?.coverUri as any;
+        return coverUri instanceof Blob ? coverUri : null;
     }
 }
 

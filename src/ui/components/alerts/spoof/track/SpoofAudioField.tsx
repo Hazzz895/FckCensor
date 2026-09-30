@@ -11,11 +11,11 @@ import { localSource } from "@/api/db-api";
 
 export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | undefined> {
     private _file?: File;
-    private _displayValue?: boolean
+    private _changedValue?: boolean
     private durationMs?: number;
 
     public get dispayValue() {
-        return this._displayValue;
+        return this._changedValue;
     }
 
     public get file() {
@@ -23,12 +23,16 @@ export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | unde
     }
 
     private set file(value) {
-        this._displayValue = this._file !== value ? !!value : this._displayValue;
+        this._changedValue = this._file !== value ? !!value : this._changedValue;
         this._file = value;
     }
 
     public get hasChanges() {
-        return this._displayValue !== undefined;
+        return this._changedValue !== undefined;
+    }
+
+    private get hasSpoof() {
+        return !!(this._changedValue !== undefined ? this._changedValue : sources.hasPlayerReplacement(this.alert.id));
     }
 
     constructor(alert: SpoofTrackAlert) {
@@ -36,11 +40,10 @@ export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | unde
     }
 
     protected createElement(): HTMLElement {
-        const hasSpoof = !!(this._displayValue !== undefined ? this._displayValue : sources.hasPlayerReplacement(this.alert.id));
         return <div class={"EditContentModal_field__rexIL " + styles.i} style="display: grid; align-items: center; grid-template-columns: 1fr 1fr; gap: 24px">
-                <ActionButton onclick={this.onReplaceButtonClick.bind(this)} style="width: 100%">{hasSpoof ? "Удалить подмену аудио" : "Подменить аудио"}</ActionButton>
+                <ActionButton onclick={this.onReplaceButtonClick.bind(this)} style="width: 100%">{this.hasSpoof ? "Удалить подмену аудио" : "Подменить аудио"}</ActionButton>
                 <div style="text-align: center">
-                    <span>{hasSpoof ? "Аудио подменено" : "Аудио не подменивается."}</span>
+                    <span>{this.hasSpoof ? "Аудио подменено" : "Аудио не подменивается."}</span>
                 </div>
         </div>
     }
@@ -51,15 +54,15 @@ export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | unde
             this.reRenderElement();
         }
         else if (this.hasChanges) {
-            this._displayValue = undefined;
+            this._changedValue = undefined;
             this.reRenderElement();
         }
         else if (sources.hasPlayerReplacement(this.alert.id)) {
-            this._displayValue = false;
+            this._changedValue = false;
             this.reRenderElement();
         }
         else if (!this.hasChanges && localSource.hasPlayerReplacementException(this.alert.id)) {
-            this._displayValue = true;
+            this._changedValue = true;
             this.reRenderElement();
         }
         else {
@@ -68,12 +71,12 @@ export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | unde
     }
 
     public async onApply() {
-        if (this._displayValue === undefined) return;
+        if (this._changedValue === undefined) return;
 
         if (this.file) {
             await localSource.pushTrackReplacement(this.alert.id, this.file);
         }
-        else if (!this._displayValue) {
+        else if (!this._changedValue) {
             if (localSource.hasPlayerReplacement(this.alert.id) === true) {
                 await localSource.removeTrackReplacement(this.alert.id);
             }
@@ -117,6 +120,6 @@ export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | unde
     }
 
     hasDiffs(prop: any): boolean {
-        return this._displayValue === true;
+        return this.hasSpoof;
     }
 }
