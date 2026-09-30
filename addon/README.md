@@ -7,7 +7,7 @@
         <img style="height: 2rem; width: 2rem; display: inline; margin-right: 8px" src="https://github.com/Hazzz895/FckCensor/blob/v2/addon/image.png?raw=true"/>FckCensor (обход запикивания / цензуры)
     </h1>
 </div>
-<b>FckCensor</b> — аддон на Яндекс Музыку, позволяющий легко подменить любую информацию альбомов, исполнителей и треков (включая аудио), а также автоматически подменивает вышеперечисленную информацию, если такова есть в <a href="https://github.com/Hazzz895/FckCensorData/blob/main/README.md">удалённом списке</a>.
+<b>FckCensor</b> — аддон, позволяющий легко подменить любую информацию альбомов, исполнителей и треков (включая аудио), а также автоматически подменивает вышеперечисленную информацию, если такова есть в <a href="https://github.com/Hazzz895/FckCensorData/blob/main/README.md">списке автомаметических замен</a>.
 
 <div style="height: 24px"></div>
 
@@ -15,7 +15,7 @@
     <img style="height: 36px" src="https://img.shields.io/badge/%D0%A7%D0%B0%D1%81%D1%82%D0%BE%20%D0%B7%D0%B0%D0%B4%D0%B0%D0%B2%D0%B0%D0%BC%D1%8B%D0%B5%20%D0%B2%D0%BE%D0%BF%D1%80%D0%BE%D1%81%D1%8B%20%D0%B8%20%D0%B1%D1%8B%D1%81%D1%82%D1%80%D1%8B%D0%B9%20%D1%81%D1%82%D0%B0%D1%80%D1%82-FAQ-brightgreen?style=for-the-badge"/>
 </a>
 
-<h2 style="text-align: center">Демонстрация аддона FckCensor</h2>
+<h2 style="text-align: center">Демонстрация аддона</h2>
 <table>
   <thead>
     <tr>
