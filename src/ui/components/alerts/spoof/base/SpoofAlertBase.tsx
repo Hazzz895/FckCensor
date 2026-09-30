@@ -2,14 +2,14 @@ import { sources } from "@/api/main-api";
 import { JSX } from "@/jsx-runtime";
 import { Artist, Album, Track, Release, SpoofableEntity, SpoofableType, FckCensorSpoofData } from "@/types";
 import { AlertButtons, ActionButton, createScrimAlert, closeAlert } from "@/ui/components/alerts/alerts";
-import { httpsify, isEmptyObject, localizeSpoofableType, cloneWithFiles } from "@/utils/common";
+import { httpsify, isEmptyObject, localizeSpoofableType, cloneEntity } from "@/utils/common";
 import { debug, error, log } from "@/utils/logger";
 import { Cover } from "../../../Cover";
 import SpoofAlertCustomPropertyField, { AddSpoofAlertFieldButton } from "./SpoofAlertCustomPropertyField";
 import { SpoofAlertEntityPropertyField } from "./SpoofAlertEntityPropertyField";
 import { SpoofAlertInputField } from "./SpoofAlertInputField";
 import styles from "@/styles.module.scss"
-import { restoreAllNodesByType } from "@/utils/music";
+import { restoreAllNodesByType, spoofEntity } from "@/utils/music";
 import { showNotificationWithCover, spoofAllNodesFor } from "@/utils/ui-utils";
 import { CoverProps } from "../spoof-alert";
 import { SpoofAlertCoverField } from "./SpoofAlertCoverField";
@@ -66,6 +66,10 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
     }
 
     protected constructor(entity: T, type: SpoofableType, alertTitle: string, sourceNode?: HTMLElement, scrim?: HTMLElement) {
+        entity = cloneEntity(entity);
+        if (isLiteMode()) {
+            spoofEntity(type, entity);
+        }
         this.entity = entity;
         this.scrim = scrim;
         this.sourceNode = sourceNode;
@@ -166,7 +170,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         const spoofData = this.getSpoofData();
         log("Applying spoof to", this.type, spoofData)
         if (spoofData) {
-            await this.onApply(cloneWithFiles(spoofData));
+            await this.onApply(cloneEntity(spoofData));
             updateBadgesByType(this.type, this.id);
         }
         else if (this.hadSpoof) {

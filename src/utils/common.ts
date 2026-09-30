@@ -54,7 +54,7 @@ export function getJsonValidationError(str: string) {
     }
 }
 
-export function cloneWithFiles<T>(value: T): T {
+export function cloneEntity<T>(value: T): T {
     if (value === null || typeof value !== "object") {
         return value;
     }
@@ -62,11 +62,11 @@ export function cloneWithFiles<T>(value: T): T {
         return value;
     }
     if (Array.isArray(value)) {
-        return value.map(cloneWithFiles) as unknown as T;
+        return value.map(cloneEntity) as unknown as T;
     }
     const result: Record<string, unknown> = {};
     for (const key of Object.keys(value as object)) {
-        result[key] = cloneWithFiles((value as Record<string, unknown>)[key]);
+        result[key] = cloneEntity((value as Record<string, unknown>)[key]);
     }
     return result as T;
 }
