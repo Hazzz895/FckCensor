@@ -307,6 +307,32 @@ function hookDisclaimersResource(dr: any) {
     }, "getDisclaimers")
 }
 
+export function hookRotorResource(doubleRR: any) {
+    hookHeavyMethods(doubleRR, async (session: { sequence: { track?: Track }[] }) => {
+        if (Array.isArray(session?.sequence)) {
+            for (const seq of session.sequence) {
+                if (!seq.track) return;
+                sources.spoofTrack(seq.track)
+            }
+        }
+    }, "sessionTracks")
+}
+
+export function hookResources() { 
+    if (heavyMethodsUnhooks.length > 0 || isLiteMode()) return
+
+    hookDi({
+        "TracksResource": hookTrackResource,
+        "AlbumResource": hookAlbumResource,
+        "ArtistsResource": hookArtistResource,
+        "LandingResource": hookLandingResource,
+        "Landing3Resource": hookChartResource,
+        "SearchResource": hookSearchResource,
+        "RotorResource": hookRotorResource,
+        //"DisclaimersResource": hookDisclaimersResource,
+    })
+} 
+
 let toggledLiteModePreviously = false;
 
 export function toggleLiteMode(enabled: boolean) {
@@ -327,18 +353,3 @@ export function toggleLiteMode(enabled: boolean) {
         hookResources();
     }
 }
-
-
-export function hookResources() { 
-    if (heavyMethodsUnhooks.length > 0 || isLiteMode()) return
-
-    hookDi({
-        "TracksResource": hookTrackResource,
-        "AlbumResource": hookAlbumResource,
-        "ArtistsResource": hookArtistResource,
-        "LandingResource": hookLandingResource,
-        "Landing3Resource": hookChartResource,
-        "SearchResource": hookSearchResource,
-        //"DisclaimersResource": hookDisclaimersResource,
-    })
-} 
