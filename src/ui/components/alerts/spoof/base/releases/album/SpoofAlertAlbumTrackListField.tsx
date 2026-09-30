@@ -11,7 +11,7 @@ import { AddSpoofAlertFieldButton } from "../../SpoofAlertCustomPropertyField";
 
 export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField<Track[]> {
     public constructor(alert: SpoofAlertBase) {
-        super(alert, "Треки альбома", "track", alert.album.volumes);
+        super(alert, "Треки альбома", "track");
     }
 
     public tracks?: Track[][] | null

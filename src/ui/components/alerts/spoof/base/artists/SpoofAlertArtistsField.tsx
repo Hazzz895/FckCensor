@@ -17,7 +17,7 @@ export function AddButton({ ...props }: JSX.HTMLAttributes) {
 
 export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField<Artist[]> {
     public constructor(alert: SpoofAlertBase) {
-        super(alert, "artists", alert.release.artists)
+        super(alert, "artists")
         this.artists = alert.release.artists!;
     }
 

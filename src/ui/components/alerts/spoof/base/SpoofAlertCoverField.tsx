@@ -7,7 +7,7 @@ import { Cover } from "@/ui/components/Cover";
 
 export class SpoofAlertCoverField extends SpoofAlertEntityPropertyField {
     public constructor(alert: SpoofAlertBase) {
-        super(alert, "coverUri", alert.entity.coverUri);
+        super(alert, "coverUri");
     }
 
     private currentImageUrl?: string;

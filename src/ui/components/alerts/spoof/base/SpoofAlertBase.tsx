@@ -103,7 +103,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         let customFields = null
         if (prevSpoof) {
             customFields = []
-            for (const k of Object.keys(prevSpoof).filter(k => ["id"].indexOf(k) === -1 && !this.fields.some(f => f.propertyName == k))) {
+            for (const k of Object.keys(prevSpoof).filter(k => ["id", "error", "available"].indexOf(k) === -1 && !this.fields.some(f => f.propertyName == k))) {
                 const field = new SpoofAlertCustomPropertyField(this);
                 const fieldElement = field.element;
                 field.setSavedValue(k, (prevSpoof as any)[k]);
@@ -174,7 +174,8 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
             updateBadgesByType(this.type, this.id);
         }
         else if (this.hadSpoof) {
-            await this.onSpoofRemove();
+            await this.onSpoofRemoveInternal();
+            return;
         }
         
         try {
@@ -248,9 +249,12 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         }
 
         const forceSpoof = this.forceSpoof();
-        if (forceSpoof || Object.keys(changedData).length > 0) {
+        if (forceSpoof || !isEmptyObject(changedData)) {
             const previousSpoof = this.getPrevSpoofedData();
             const spoofData = { ...(previousSpoof ?? {}), ...changedData } as T;
+            if (isEmptyObject(spoofData)) {
+                return null;
+            }
             return spoofData;
         }
         else {

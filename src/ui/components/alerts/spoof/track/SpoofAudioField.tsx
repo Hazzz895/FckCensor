@@ -11,20 +11,24 @@ import { localSource } from "@/api/db-api";
 
 export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | undefined> {
     private _file?: File;
-    private displayValue?: boolean
+    private _displayValue?: boolean
     private durationMs?: number;
+
+    public get dispayValue() {
+        return this._displayValue;
+    }
 
     public get file() {
         return this._file;
     }
 
     private set file(value) {
-        this.displayValue = this._file !== value ? !!value : this.displayValue;
+        this._displayValue = this._file !== value ? !!value : this._displayValue;
         this._file = value;
     }
 
     public get hasChanges() {
-        return this.displayValue !== undefined;
+        return this._displayValue !== undefined;
     }
 
     constructor(alert: SpoofTrackAlert) {
@@ -32,7 +36,7 @@ export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | unde
     }
 
     protected createElement(): HTMLElement {
-        const hasSpoof = !!(this.displayValue !== undefined ? this.displayValue : sources.hasPlayerReplacement(this.alert.id));
+        const hasSpoof = !!(this._displayValue !== undefined ? this._displayValue : sources.hasPlayerReplacement(this.alert.id));
         return <div class={"EditContentModal_field__rexIL " + styles.i} style="display: grid; align-items: center; grid-template-columns: 1fr 1fr; gap: 24px">
                 <ActionButton onclick={this.onReplaceButtonClick.bind(this)} style="width: 100%">{hasSpoof ? "Удалить подмену аудио" : "Подменить аудио"}</ActionButton>
                 <div style="text-align: center">
@@ -47,15 +51,15 @@ export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | unde
             this.reRenderElement();
         }
         else if (this.hasChanges) {
-            this.displayValue = undefined;
+            this._displayValue = undefined;
             this.reRenderElement();
         }
         else if (sources.hasPlayerReplacement(this.alert.id)) {
-            this.displayValue = false;
+            this._displayValue = false;
             this.reRenderElement();
         }
         else if (!this.hasChanges && localSource.hasPlayerReplacementException(this.alert.id)) {
-            this.displayValue = true;
+            this._displayValue = true;
             this.reRenderElement();
         }
         else {
@@ -64,12 +68,12 @@ export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | unde
     }
 
     public async onApply() {
-        if (this.displayValue === undefined) return;
+        if (this._displayValue === undefined) return;
 
         if (this.file) {
             await localSource.pushTrackReplacement(this.alert.id, this.file);
         }
-        else if (!this.displayValue) {
+        else if (!this._displayValue) {
             if (localSource.hasPlayerReplacement(this.alert.id) === true) {
                 await localSource.removeTrackReplacement(this.alert.id);
             }
@@ -113,6 +117,6 @@ export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | unde
     }
 
     hasDiffs(prop: any): boolean {
-        return !!this._file && this.displayValue !== undefined;
+        return this._displayValue === true;
     }
 }
