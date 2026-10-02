@@ -168,6 +168,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         closeAlert(this.spoofAlert);
 
         const spoofData = this.getSpoofData();
+        const prevSpoof = this.getPrevSpoofedData();
         log("Applying spoof to", this.type, spoofData)
         if (spoofData) {
             await this.onApply(cloneEntity(spoofData));
@@ -185,7 +186,9 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         const l = localizeSpoofableType(this.type);
         showNotificationWithCover(this.entity, `${l[0].toUpperCase() + l.slice(1)} подменен успешно! Для применения изменений может потребоваться перезаход.`, "info")
 
-        await report(this.id, this.type, true);
+        if (!prevSpoof) {
+            await report(this.id, this.type, true);
+        }
     }
 
     private getSpoofRemoveAction(): SpoofRemoveAction | null {

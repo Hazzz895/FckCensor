@@ -4,7 +4,7 @@ import { getDb, loadLocalDb } from "./db-api";
 import { Track, Album, OuterArtist, Artist, TrackMST, SpoofableEntity, Release, FckCensorSpoofData, SpoofableType } from '@/types'
 import { debug, log } from '@/utils/logger';
 import { isEmptyObject } from '@/utils/common';
-import { LocalSource } from '@/api/db-api';
+import { AutomaticLocalInsertionsSource, LocalSource } from '@/api/db-api';
 import { ArtistInsertions } from "./dto/artist-insertion";
 import Source from "./dto/sources/source";
 import TrackReplacement from "./dto/track-replacement";
@@ -144,10 +144,11 @@ export class SourcesCollection {
 }
 
 
-export function postProcessing(insertions: Map<string, ArtistInsertions>, tracks: Map<string, Track>, albums: Map<string, Album>) {
+
+export function collectAutoInsertions(insertions: Map<string, ArtistInsertions>, tracks: Map<string, Track>, albums: Map<string, Album>) {
     for (const [i, entityRecord] of [tracks, albums].entries()) {
         const entityType = i === 0 ? "tracks" : "albums";
-        for (const [id, entity] of Object.entries(entityRecord) as [string, Track | Album][]) {
+        for (const [id, entity] of entityRecord.entries()) {
             if (entity.artists?.length && entity.__fckCensor?.insertionIndex !== null) {
                 const data = { 
                     releaseId: id, 
@@ -162,21 +163,30 @@ export function postProcessing(insertions: Map<string, ArtistInsertions>, tracks
                     insertion[entityType]!.push(data)
                 }); 
             }
-
-            if (entityType === "albums" && "volumes" in entity && entity.volumes && entity.coverUri) {
-                entity.volumes.forEach(v => v.forEach(t => {
-                    let trackSpoof = tracks.get(t.id);
-                    if (!trackSpoof) {
-                        return; // обложка из альбома подтягивается только для треков которые имеют спуф чтобы не подменивать обложки для треков которые уже были в альбоме
-                    }
-                    
-                    if (!("coverUri" in trackSpoof)) {
-                        trackSpoof.coverUri = entity.coverUri;
-                    }
-                }))
-            }
         }
     }
+}
+
+export function inheritAlbumCovers(tracks: Map<string, Track>, albums: Map<string, Album>) {
+    for (const entity of albums.values()) {
+        if ("volumes" in entity && entity.volumes && entity.coverUri) {
+            entity.volumes.forEach(v => v.forEach(t => {
+                let trackSpoof = tracks.get(t.id);
+                if (!trackSpoof) {
+                    return; // обложка из альбома подтягивается только для треков которые имеют спуф чтобы не подменивать обложки для треков которые уже были в альбоме
+                }
+                
+                if (!("coverUri" in trackSpoof)) {
+                    trackSpoof.coverUri = entity.coverUri;
+                }
+            }))
+        }
+    }
+}
+
+export function postProcess(insertions: Map<string, ArtistInsertions>, tracks: Map<string, Track>, albums: Map<string, Album>) {
+    collectAutoInsertions(insertions, tracks, albums);
+    inheritAlbumCovers(tracks, albums);
 }
 
 export default class MainSource implements Source {
@@ -403,25 +413,41 @@ export default class MainSource implements Source {
         return this.internalSpoof(artist, this.getArtistSpoof.bind(this), String(artist.id), true, "artist")
     }
 
+    private static insertionsPriority(source: Source): number {
+        if (source instanceof LocalSource) return 0;
+        if (source instanceof AutomaticLocalInsertionsSource) return 1;
+        return 2;
+    }
+
     getArtistInsertions(artistId: string): ArtistInsertions | null {
-        const insertions = this.sourcesCollection.collect<Required<ArtistInsertions>>(
-            { tracks: [], albums: [] },
+        const layers = this.sourcesCollection.collect<{ source: Source, data: ArtistInsertions }[]>(
+            [],
             (acc, source) => {
                 const data = source.getArtistInsertions(artistId);
                 if (!data) {
                     return false;
                 }
 
-                if (data.tracks) {
-                    acc.tracks.push(...data.tracks);
-                }
-                if (data.albums) {
-                    acc.albums.push(...data.albums);
-                }
-
+                acc.push({ source, data });
                 return true;
             }
         );
+
+        layers.sort((a, b) => MainSource.insertionsPriority(a.source) - MainSource.insertionsPriority(b.source));
+
+        const insertions: Required<ArtistInsertions> = { tracks: [], albums: [] };
+        for (const key of ["tracks", "albums"] as const) {
+            const seen = new Set<string>();
+            for (const { data } of layers) {
+                for (const insertion of data[key] ?? []) {
+                    const releaseId = String(insertion.releaseId);
+                    if (seen.has(releaseId)) continue;
+
+                    seen.add(releaseId);
+                    insertions[key].push(insertion);
+                }
+            }
+        }
 
         if (insertions.tracks.length === 0 && insertions.albums.length === 0) {
             return null;
@@ -466,6 +492,10 @@ export default class MainSource implements Source {
 
     hasAutomaticSpoof(type: SpoofableType, id: string): boolean {
         for (const source of this.sourcesCollection.automaticSources) {
+            if (source instanceof AutomaticLocalInsertionsSource) {
+                continue;
+            }
+
             if (!isEmptyObject(MainSource.getSourceSpoof(source, type, id))) {
                 return true;
             }

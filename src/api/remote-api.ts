@@ -5,7 +5,7 @@ import addonConfig from '../../addon.config.mjs';
 import { ArtistInsertions } from "./dto/artist-insertion";
 import Source from "./dto/sources/source";
 import TrackReplacement from "./dto/track-replacement";
-import { postProcessing, sources } from "./main-api";
+import { postProcess, sources } from "./main-api";
 import { ADDON_FAQ_URI, DATA_LIST_URI } from "@/hooks/ui/constants";
 import { showNotificationSafe } from "@/utils/ui-utils";
 
@@ -90,7 +90,7 @@ export class MinifiedRemoteSource /*implements RemoteSourceBase*/ {
             }
         }
 
-        postProcessing(this.artistsInsertions, this.tracks, this.albums);
+        postProcess(this.artistsInsertions, this.tracks, this.albums);
     }
 }
 

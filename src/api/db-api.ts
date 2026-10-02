@@ -3,7 +3,7 @@ import Source from "./dto/sources/source";
 import { Track, Album, Artist, SpoofableType, SpoofableEntity } from "@/types";
 import TrackReplacement from "./dto/track-replacement";
 import { list } from "./remote-api";
-import { postProcessing, sources } from "./main-api";
+import { collectAutoInsertions, inheritAlbumCovers, sources } from "./main-api";
 import { getTrackAvaiableSpoof, reloadPlayer } from "@/utils/music";
 import { ArtistInsertions } from "./dto/artist-insertion";
 import { isEmptyObject } from "@/utils/common";
@@ -178,8 +178,10 @@ export async function loadLocalDb() {
             localSource.reportedEntities[item.type].push(item.entityId);
         }
 
-        postProcessing(localSource.artistsInsertions, localSource.trackSpoofs, localSource.albumSpoofs);
+        inheritAlbumCovers(localSource.trackSpoofs, localSource.albumSpoofs);
+        localSource.bumpSpoofs();
         sources.pushSource(localSource);
+        sources.pushSource(automaticLocalInsertionsSource);
 
         log("Loaded local data:", {
             tracks: localSource.replacementsTrackIds.length,
@@ -204,6 +206,10 @@ export class LocalSource implements Source {
     public albumSpoofs: Map<string, Album> = new Map();
     public artistSpoofs: Map<string, Artist> = new Map();
     public reportedEntities: Record<SpoofableType, string[]> = { track: [], album: [], artist: [] };
+
+    private _spoofsRevision = 0;
+    public get spoofsRevision(): number { return this._spoofsRevision }
+    public bumpSpoofs() { this._spoofsRevision++ }
 
     async buildPlayerReplacement(trackId: string): Promise<TrackReplacement | null> {
         if (this.hasPlayerReplacementException(trackId)) {
@@ -332,6 +338,7 @@ export class LocalSource implements Source {
         }
 
         this.trackSpoofs.set(id, track);
+        this.bumpSpoofs();
         return this.pushToDb(TRACK_SPOOFS, id, dbTrack);
     }
 
@@ -341,6 +348,7 @@ export class LocalSource implements Source {
             URL.revokeObjectURL(spoof.coverUri);
         }
         this.trackSpoofs.delete(trackId);
+        this.bumpSpoofs();
         return this.removeFromDb(TRACK_SPOOFS, trackId);
     }
 
@@ -358,11 +366,13 @@ export class LocalSource implements Source {
         }
 
         this.albumSpoofs.set(id, album);
+        this.bumpSpoofs();
         return this.pushToDb(ALBUM_SPOOFS, id, dbAlbum);
     }
 
     removeAlbumSpoof(albumId: string) {
         this.albumSpoofs.delete(albumId);
+        this.bumpSpoofs();
         return this.removeFromDb(ALBUM_SPOOFS, albumId);
     }
 
@@ -507,6 +517,7 @@ export class LocalSource implements Source {
             this.artistSpoofs.clear();
             this.trackSpoofs.clear()
             this.artistsInsertions.clear()
+            this.bumpSpoofs();
             this.replacementsTrackIds = [];
             this.replacementExceptionsTrackIds = [];
         }
@@ -541,4 +552,35 @@ export class LocalSource implements Source {
     }
 }
 
+export class AutomaticLocalInsertionsSource implements Source {
+    private readonly local: LocalSource;
+    private cache: Map<string, ArtistInsertions> | null = null;
+    private lastRevision = -1;
+
+    constructor(local: LocalSource) {
+        this.local = local;
+    }
+
+    buildPlayerReplacement(trackId: string): Promise<TrackReplacement | null> { return Promise.resolve(null); }
+    hasPlayerReplacement(trackId: string): boolean | null { return null; }
+    getTrackSpoof(trackId: string): Track | null { return null; }
+    getAlbumSpoof(albumId: string): Album | null { return null; }
+    getArtistSpoof(artistId: string): Artist | null { return null; }
+
+    getArtistInsertions(artistId: string): ArtistInsertions | null {
+        return this.getInsertions().get(String(artistId)) ?? null;
+    }
+
+    private getInsertions(): Map<string, ArtistInsertions> {
+        const revision = this.local.spoofsRevision;
+        if (!this.cache || this.lastRevision !== revision) {
+            this.cache = new Map();
+            collectAutoInsertions(this.cache, this.local.trackSpoofs, this.local.albumSpoofs);
+            this.lastRevision = revision;
+        }
+        return this.cache;
+    }
+}
+
 export const localSource = new LocalSource();
+export const automaticLocalInsertionsSource = new AutomaticLocalInsertionsSource(localSource);
