@@ -5,6 +5,7 @@ import { sources } from "@/api/main-api";
 import { httpsify, randomString } from "./common";
 import { Q_ARTIST_FIBER_ROOT, Q_ALBUM_FIBER_ROOT, Q_TRACK_ROOT, Q_TRACK_FIBER_ROOT } from "@/hooks/ui/constants";
 import { putToBundle } from "@/dev/dev-utils";
+import { restoreOriginalValues } from "./music";
 
 export function getTrackIdFromNode(node: HTMLElement): string | null {
     return String(getTrackFromNode(node)?.id) ?? null;
@@ -188,6 +189,27 @@ export function getMstRootStore<T = any>(target: any): T | null {
     }
 
     return (rootNode.environment?.rootStore as T) ?? (root as T) ?? null;
+}
+
+export function restoreAllNodesByType(type: SpoofableType, id: string) {
+    const originalValues = sources.getFckCensorData(type, id)?.originalValues;
+    if (!originalValues) return;
+
+    for (const node of getEntityNodesById(type, id)) {
+        const entity = type === "track" ? getTrackFromNode(node)
+                      : type === "album" ? getAlbumFromNode(node)
+                      : getArtistFromNode(node);
+        if (entity) {
+            restoreOriginalValues(entity, { originalValues });
+        }
+    }
+
+    if (type === "track") {
+        const currentTrack = window?.pulsesyncApi?.getCurrentTrack?.() as Track | undefined;
+        if (currentTrack && String(currentTrack.id) === id) {
+            restoreOriginalValues(currentTrack, { originalValues });
+        }
+    }
 }
 
 export const [LEFT, TOP, RIGHT, BOTTOM, CENTER] = createFlags(5)
