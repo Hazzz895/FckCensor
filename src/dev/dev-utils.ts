@@ -15,7 +15,7 @@ export function isBeta() {
 }
 
 export function isUserModeration() {
-    return _isDev; // # TODO
+    return _isDev; // # TODO 2.1
 }
 
 export function putToBundle(key: string, value: any) {

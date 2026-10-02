@@ -6,7 +6,7 @@ import { debug, error } from "@/utils/logger";
 import { spoofAllNodesFor } from "@/utils/ui-utils";
 import { SpoofAlertAlbumTrackListField } from "../base/releases/album/SpoofAlertAlbumTrackListField";
 import { SwitchField } from "@/ui/components/SwitchField";
-import { reloadAlbumPage } from "@/utils/music";
+import { reloadAlbumPage } from "@/ui/albums";
 
 export class SpoofAlbumAlert extends SpoofEntityWithArtistsAlert<Album> {
     public constructor(data: Album, scrim: HTMLElement, albumNode: HTMLElement) {

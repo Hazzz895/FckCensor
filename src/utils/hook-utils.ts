@@ -46,6 +46,8 @@ export function appRequire(module: number): any {
     return null;
 }
 
+putToBundle("appRequire", appRequire)
+
 export function findModule(
     expOrString: ((obj: any) => boolean) | string,
     ...requiredStrings: (string | object)[]
