@@ -170,8 +170,8 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         const spoofData = this.getSpoofData();
         const prevSpoof = this.getPrevSpoofedData();
         log("Applying spoof to", this.type, spoofData)
-        if (spoofData) {
-            await this.onApply(cloneEntity(spoofData));
+        if (spoofData || this.forceSpoof()) {
+            await this.onApply(spoofData && cloneEntity(spoofData));
             updateBadgesByType(this.type, this.id);
         }
         else if (this.hadSpoof) {
@@ -251,13 +251,13 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
             }
         }
 
-        const forceSpoof = this.forceSpoof();
-        if (forceSpoof || !isEmptyObject(changedData)) {
-            const spoofData = changedData as T;
-            if (isEmptyObject(spoofData)) {
+        if (this.forceSpoof() || !isEmptyObject(changedData)) {
+            if (isEmptyObject(changedData)) {
                 return null;
             }
-            return spoofData;
+            else {
+                return changedData as T;
+            }
         }
         else {
             log("Spoof has not any changes! Not applying")
@@ -265,7 +265,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         return null;
     }
 
-    protected abstract onApply(spoofData: object): Promise<void>;
+    protected abstract onApply(spoofData: object | null): Promise<void>;
 
     protected abstract onSpoofRemove(): Promise<void>;
 
