@@ -55,8 +55,10 @@ export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
 
     protected async onSpoofRemove() {
         await localSource.removeTrackSpoof(this.id);
-        await localSource.removeTrackReplacement(this.id);
-        reloadPlayer(this.id);
+        if (localSource.hasPlayerReplacement(this.id)) {
+            await localSource.removeTrackReplacement(this.id);
+            reloadPlayer(this.id);
+        }
     }
 
     protected async onSpoofCancel() {
