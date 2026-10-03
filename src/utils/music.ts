@@ -1,8 +1,6 @@
-import { Album, Artist, FckCensorSpoofData, OuterArtist, SearchResponse, SearchType, Spoofable, SpoofableEntity, SpoofableType, Track } from "@/types";
-import { debug, error, log, warn } from "./logger";
-import { findModule, getDiResource, hookDi } from "./hook-utils";
-import Source from "@/api/dto/sources/source";
-import { sources } from "@/api/main-api";
+import { Album, Artist, FckCensorSpoofData, OuterArtist, SearchResponse, SearchType, Spoofable, Track } from "@/types";
+import { log } from "./logger";
+import { getDiResource} from "./hook-utils";
 import { runUnprotected } from "./ui-utils";
 
 export function reloadPlayer(trackId?: string) {
@@ -12,13 +10,6 @@ export function reloadPlayer(trackId?: string) {
         mediaPlayer.reload(e);
         log("Player reloaded");
     }
-}
-
-export function getTrackAvaiableSpoof(): Track {
-    return {
-        available: true,
-        error: undefined
-    } as any
 }
 
 export function restoreOriginalValues(data: Spoofable, fckCensorData?: FckCensorSpoofData | null) {
@@ -95,16 +86,4 @@ export function getAudioMetadata(audioFile: File): Promise<HTMLAudioElement> {
             reject(new Error(`Failed to read audio meta. ${err.error}`));
         });
     });
-}
-
-export function getSpoof<T extends SpoofableEntity>(source: Source, type: SpoofableType, id: string): T | null {
-    return (type == "album" ? source.getAlbumSpoof : type == "artist" ? source.getArtistSpoof : source.getTrackSpoof).bind(source)(id) as T
-}
-
-export function spoofEntity<T extends SpoofableEntity>(type: SpoofableType, entity: T): T | null {
-    return (type == "album" ? sources.spoofAlbum : type == "artist" ? sources.spoofAnyArtist : sources.spoofTrack).bind(sources)(entity as any) as T
-}
-
-export function hasSpoof(source: Source, type: SpoofableType, id: string): boolean {
-    return !!getSpoof(source, type, id);
 }

@@ -4,7 +4,7 @@ import { CoverProps } from "../spoof-alert";
 import { SpoofAlertBase } from "./SpoofAlertBase";
 import { error } from "@/utils/logger";
 import { Cover } from "@/ui/components/Cover";
-import { getSpoof } from "@/utils/music";
+import { getSpoof } from "@/utils/spoofs";
 import { sources } from "@/api/main-api";
 import { localSource } from "@/api/db-api";
 

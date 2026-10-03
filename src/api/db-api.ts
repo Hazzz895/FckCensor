@@ -4,7 +4,8 @@ import { Track, Album, Artist, SpoofableType, SpoofableEntity } from "@/types";
 import TrackReplacement from "./dto/track-replacement";
 import { list } from "./remote-api";
 import { collectAutoInsertions, inheritAlbumCovers, sources } from "./main-api";
-import { getTrackAvaiableSpoof, reloadPlayer } from "@/utils/music";
+import { reloadPlayer } from "@/utils/music";
+import { getTrackAvaiableSpoof } from "@/utils/spoofs";
 import { ArtistInsertions } from "./dto/artist-insertion";
 import { isEmptyObject } from "@/utils/common";
 import { putToBundle } from "@/dev/dev-utils";
@@ -190,7 +191,7 @@ export async function loadLocalDb() {
             artistSpoofs: Object.keys(localSource.artistSpoofs).length,
         });
     } catch (err) {
-        console.error("Failed to load local DB:", err);
+        error("Failed to load local DB:", err);
     }
 }
 

@@ -9,7 +9,7 @@ import SpoofAlertCustomPropertyField, { AddSpoofAlertFieldButton } from "./Spoof
 import { SpoofAlertEntityPropertyField } from "./SpoofAlertEntityPropertyField";
 import { SpoofAlertInputField } from "./SpoofAlertInputField";
 import styles from "@/styles.module.scss"
-import { spoofEntity } from "@/utils/music";
+import { spoofEntity } from "@/utils/spoofs";
 import { restoreAllNodesByType, showNotificationWithCover, spoofAllNodesFor } from "@/utils/ui-utils";
 import { CoverProps } from "../spoof-alert";
 import { SpoofAlertCoverField } from "./SpoofAlertCoverField";

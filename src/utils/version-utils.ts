@@ -1,5 +1,3 @@
-import addonConfig from "../../addon.config.mjs";
-
 type Operator = '>' | '>=' | '<' | '<=' | '=';
 
 interface VersionDiff {

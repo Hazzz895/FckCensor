@@ -4,7 +4,7 @@ import { report } from "@/api/reports-api";
 import { SpoofableType } from "@/types";
 import { localSource } from "@/api/db-api";
 import { sources } from "@/api/main-api";
-import { hasSpoof } from "@/utils/music";
+import { hasSpoof } from "@/utils/spoofs";
 
 export class ReportCensorActionButton extends ElementWrap<HTMLButtonElement> {
     public constructor(private readonly reportData: { id: string, type: SpoofableType }) { 
