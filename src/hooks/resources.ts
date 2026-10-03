@@ -97,7 +97,7 @@ function hookAlbumResource(ar: any) {
                 const spoof = sources.spoofAlbum(a);
                 
                 if (spoof?.volumes) {
-                    const tracks = await getTracks(...spoof.volumes.flatMap(v => v.map(t => t.id)));
+                    const tracks = await getTracks(...spoof.volumes.flatMap(v => v.map(t => String(t.id))));
                     let i = 0;
                     a.volumes = spoof.volumes.map(volume => {
                         const volumeTracks = tracks.slice(i, i + volume.length);

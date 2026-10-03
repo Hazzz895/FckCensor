@@ -171,7 +171,7 @@ export function inheritAlbumCovers(tracks: Map<string, Track>, albums: Map<strin
     for (const entity of albums.values()) {
         if ("volumes" in entity && entity.volumes && entity.coverUri) {
             entity.volumes.forEach(v => v.forEach(t => {
-                let trackSpoof = tracks.get(t.id);
+                let trackSpoof = tracks.get(String(t.id));
                 if (!trackSpoof) {
                     return; // обложка из альбома подтягивается только для треков которые имеют спуф чтобы не подменивать обложки для треков которые уже были в альбоме
                 }
@@ -385,7 +385,7 @@ export default class MainSource implements Source {
 
         if (album.volumes?.length == 1 && album.volumes[0].length == 1) {
             const track = album.volumes[0][0];
-            const trackSpoof = this.getTrackSpoof(track.id);
+            const trackSpoof = this.getTrackSpoof(String(track.id));
             if (trackSpoof) {
                 const keys = ['coverUri', 'title', 'artists'];
 
