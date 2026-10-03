@@ -14,7 +14,7 @@ export interface RemoteSourceBase {
 }
 
 export interface RemoteSource extends RemoteSourceBase {
-    supported_version?: string;
+    supportedVersions?: string | string[];
 }
 
 export interface TrackReplacementStorageBase {

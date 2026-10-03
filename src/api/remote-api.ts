@@ -1,6 +1,6 @@
 import { Album, Artist, Release, RemoteList, RemoteSourceBase, Track, TracksStorage } from "@/types";
 import { debug, error, log, warn } from "@/utils/logger";
-import { versionSatisfies } from "@/utils/version-utils";
+import { versionSatisfies, versionsSatisfies } from "@/utils/version-utils";
 import addonConfig from '../../addon.config.mjs';
 import { ArtistInsertions } from "./dto/artist-insertion";
 import Source from "./dto/sources/source";
@@ -37,7 +37,10 @@ export class MinifiedRemoteSource /*implements RemoteSourceBase*/ {
 
     public constructor(list: RemoteList) {
         for (const source of list.sources) {
-            if (source.supported_version && !versionSatisfies(addonConfig.version, source.supported_version)) continue;
+            if (source.supportedVersions) {
+                const supportedVersions = Array.isArray(source.supportedVersions) ? source.supportedVersions : source.supportedVersions.split("&");
+                if (!versionsSatisfies(addonConfig.version, supportedVersions)) continue;
+            }
 
             mergeIntoMap(this.tracks, source.tracks);
             mergeIntoMap(this.albums, source.albums);
