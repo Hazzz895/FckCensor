@@ -10,6 +10,7 @@ import Source from "./dto/sources/source";
 import TrackReplacement from "./dto/track-replacement";
 import { putToBundle } from "@/dev/dev-utils";
 import { RKN_BLOCKED_DISCLAIMER_ID } from "@/hooks/ui/constants";
+import { FALLBACK_ENTITY } from "./dto/fallback";
 
 type Constructor<T> = new (...args: any[]) => T;
 
@@ -310,26 +311,31 @@ export default class MainSource implements Source {
     spoofTrack(track: Track): Track | null {
         const spoof = this.internalSpoof(track, this.getTrackSpoof.bind(this), String(track.id), true, "track") as Track
 
-        let spoofedAlbum = false;
-        track.albums?.forEach((album) => {
-            if (!isEmptyObject(this.spoofAlbum(album)) && !spoofedAlbum) {
-                spoofedAlbum = true;
-            }
-        })
         track.artists?.forEach(this.spoofArtist.bind(this));
-        
-        if (spoofedAlbum && track.albums) {
-            for (const a of track.albums) {
-                const uri = a.cover?.uri || a.coverUri || a.ogImage;
-                if (spoof?.coverUri === undefined && spoof?.ogImage === undefined && uri) {
-                    track.coverUri = track.ogImage = uri;
+        if (Array.isArray(track.albums) && track.albums.length > 0) {
+            let spoofedAlbum = false;
+            track.albums.forEach((album) => {
+                if (!isEmptyObject(this.spoofAlbum(album)) && !spoofedAlbum) {
+                    spoofedAlbum = true;
                 }
-                if (spoof?.artists === undefined && a.artists) {
-                    if (a.__fckCensor?.replaceArtistsInAlbumVolumes) {
-                        track.artists = fitArtists(track, a.artists);
+            })
+            
+            if (spoofedAlbum) {
+                for (const a of track.albums) {
+                    const uri = a.cover?.uri || a.coverUri || a.ogImage;
+                    if (spoof?.coverUri === undefined && spoof?.ogImage === undefined && uri) {
+                        track.coverUri = track.ogImage = uri;
+                    }
+                    if (spoof?.artists === undefined && a.artists) {
+                        if (a.__fckCensor?.replaceArtistsInAlbumVolumes) {
+                            track.artists = fitArtists(track, a.artists);
+                        }
                     }
                 }
             }
+        }
+        else if (spoof) {
+            track.albums = [FALLBACK_ENTITY]
         }
 
         if (!isEmptyObject(spoof) && track.available) {
