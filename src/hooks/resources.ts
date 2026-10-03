@@ -339,7 +339,7 @@ export function hookRotorResource(doubleRR: any) {
                 sources.spoofTrack(seq.track)
             }
         }
-    }, "sessionTracks")
+    }, "sessionTracks", "sessionNew", "sessionClone", "sessionFeedback", "sessionFeedbacks", "sessionsFeedbacks", "combinedSessionNew", "combinedSessionNext")
 }
 
 export function hookResources() { 
