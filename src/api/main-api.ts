@@ -266,6 +266,7 @@ export default class MainSource implements Source {
                 originalValues[key] = cloneEntity((data as Record<string, any>)[key]);
             }
         }
+        if (type === "artist" && originalValues.coverUri === undefined && originalValues.cover?.uri) originalValues.coverUri = originalValues.cover.uri;
 
         const { __fckCensor: spoofMeta, ...spoofContent } = spoofData as Record<string, any>;
         if (spoofContent.artists) spoofContent.artists = fitArtists(data, spoofContent.artists);
@@ -276,6 +277,8 @@ export default class MainSource implements Source {
         }
 
         if (type) {
+            const prev = this.getFckCensorData(type, id)?.originalValues;
+            if (prev) for (const k in prev) if (originalValues[k] === undefined) originalValues[k] = prev[k];
             this.rememberFckCensorData(type, id, data.__fckCensor);
         }
 
