@@ -223,15 +223,19 @@ function hookLandingResource(lr: any) {
                     block.pager.total += insertions.length
                 }
             }
-            for (const track of block.tracks) {
-                sources.spoofTrack(track)
+            if (Array.isArray(block.tracks)) {
+                for (const track of block.tracks) {
+                    sources.spoofTrack(track)
+                }
             }
         }
 
         if (block.release) {
             sources.spoofAlbum(block.release.album)
-            for (const a of block.release.artists) {
-                sources.spoofAnyArtist(a)
+            if (Array.isArray(block.release.artists)) {
+                for (const a of block.release.artists) {
+                    sources.spoofAnyArtist(a)
+                }
             }
         }
 
@@ -271,16 +275,20 @@ function hookLandingResource(lr: any) {
 
 function hookSearchResource(sr: any) {
     hookHeavyMethods(sr, async (response: SearchResponse) => { 
-        for (const best of response.bestResults) {
-            if (best.best_result_track) sources.spoofTrack(best.best_result_track);
-            if (best.best_result_album) sources.spoofAlbum(best.best_result_album);
-            if (best.best_result_artist) sources.spoofAnyArtist(best.best_result_artist);
+        if (Array.isArray(response.bestResults)) {
+            for (const best of response.bestResults) {
+                if (best.best_result_track) sources.spoofTrack(best.best_result_track);
+                if (best.best_result_album) sources.spoofAlbum(best.best_result_album);
+                if (best.best_result_artist) sources.spoofAnyArtist(best.best_result_artist);
+            }
         }
         
-        for (const r of response.results) {
-            if (r.album) sources.spoofAlbum(r.album);
-            if (r.artist) sources.spoofAnyArtist(r.artist);
-            if (r.track) sources.spoofTrack(r.track);
+        if (Array.isArray(response.results)) {
+            for (const r of response.results) {
+                if (r.album) sources.spoofAlbum(r.album);
+                if (r.artist) sources.spoofAnyArtist(r.artist);
+                if (r.track) sources.spoofTrack(r.track);
+            }
         }
     }, "getInstantMixedSearch")
 }
