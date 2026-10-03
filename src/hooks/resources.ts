@@ -9,6 +9,7 @@ import { isLiteMode, listenSettings } from "@/utils/pulsesync";
 import { h } from "@/jsx-runtime";
 import { showNotificationSafe } from "@/utils/ui-utils";
 import { toggleSettingsHook } from "./ui/settings";
+import { FALLBACK_ENTITY } from "@/api/dto/fallback";
 
 const heavyMethodsUnhooks: string[] = []
 
@@ -27,8 +28,23 @@ class GetTracksMetaHook extends FunctionHook {
             return;
         }
 
-        const uuidPPAlbumId = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}):(.*)$/;
-        request.trackIds = request.trackIds.map(trackId => typeof trackId === "string" ? trackId.match(uuidPPAlbumId)?.[1] ?? trackId : trackId);
+        const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+        request.trackIds = request.trackIds.map(item => {
+            if (typeof item !== 'string') return item;
+
+            const colonIndex = item.indexOf(':');
+            if (colonIndex === -1) return item;
+
+            const trackId = item.slice(0, colonIndex);
+            const albumId = item.slice(colonIndex + 1);
+
+            if (UUID_REGEX.test(trackId) || albumId === String(FALLBACK_ENTITY.id)) {
+                return trackId;
+            }
+            
+            return item;
+        });
     }
 
     public after(tracks: Track[]) {
