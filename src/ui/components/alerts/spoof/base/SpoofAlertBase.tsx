@@ -46,6 +46,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
 
     readonly spoofAlert;
     readonly entity: T;
+    protected readonly realEntity: T;
     readonly type;
     readonly id;
     readonly title;
@@ -66,6 +67,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
     }
 
     protected constructor(entity: T, type: SpoofableType, alertTitle: string, sourceNode?: HTMLElement, scrim?: HTMLElement) {
+        this.realEntity = entity;
         entity = cloneEntity(entity);
         if (isLiteMode()) {
             spoofEntity(type, entity);
@@ -112,8 +114,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
             }
         }
 
-        
-        let jsonStructure = (this.entity as any)?.toJSON?.();
+        let jsonStructure = JSON.stringify((this.realEntity as any)?.toJSON?.() || this.entity, null, 4).replace('\\n', '\n');
 
         let liteModeTooltip = null;
         if (isLiteMode() && shouldShowTutorial(LITE_MODE_WARNING)) {
@@ -138,7 +139,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
                 </summary>
                 {jsonStructure && <details>
                     <summary class="EditContentModal_field__rexIL">JSON-структура</summary>
-                    <pre style="color: var(--ym-controls-color-secondary-text-enabled_variant)" class={"EditContentModal_input__8O8GH " + styles.i}>{JSON.stringify(jsonStructure, null, 4)}</pre>
+                    <pre style="color: var(--ym-controls-color-secondary-text-enabled_variant)" class={"EditContentModal_input__8O8GH " + styles.i}>{jsonStructure}</pre>
                 </details>}
                 {customFields}
                 {addPropButton}
