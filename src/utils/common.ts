@@ -71,6 +71,15 @@ export function cloneEntity<T>(value: T): T {
     return result as T;
 }
 
+export const fitArtists = (target: object, artists?: any[]) => (target as any).$treenode ? artists?.map(a => ({
+    id: String(a.id),
+    name: a.name,
+    various: a.various,
+    isComposer: a.isComposer ?? a.composer,
+    isAvailable: a.isAvailable ?? a.available ?? true,
+    coverUri: a.coverUri ?? a.cover?.uri
+})) : artists;
+
 export function formatBytes(value: number) {
     if ('number' != typeof value || value < 0) return '0 B';
     let units = ['B', 'KB', 'MB', 'GB'],

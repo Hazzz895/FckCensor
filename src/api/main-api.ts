@@ -3,7 +3,7 @@ import { getDb, loadLocalDb } from "./db-api";
 
 import { Track, Album, OuterArtist, Artist, TrackMST, SpoofableEntity, Release, FckCensorSpoofData, SpoofableType } from '@/types'
 import { debug, log } from '@/utils/logger';
-import { isEmptyObject } from '@/utils/common';
+import { isEmptyObject, cloneEntity, fitArtists } from '@/utils/common';
 import { AutomaticLocalInsertionsSource, LocalSource } from '@/api/db-api';
 import { ArtistInsertions } from "./dto/artist-insertion";
 import Source from "./dto/sources/source";
@@ -263,11 +263,12 @@ export default class MainSource implements Source {
         for (const key of Object.keys(spoofData)) {
             if (key === "__fckCensor") continue;
             if (!(key in originalValues)) {
-                originalValues[key] = (data as Record<string, any>)[key];
+                originalValues[key] = cloneEntity((data as Record<string, any>)[key]);
             }
         }
 
-        const { __fckCensor: spoofMeta, ...spoofContent } = spoofData as T;
+        const { __fckCensor: spoofMeta, ...spoofContent } = spoofData as Record<string, any>;
+        if (spoofContent.artists) spoofContent.artists = fitArtists(data, spoofContent.artists);
         Object.assign(data, spoofContent);
 
         if (spoofMeta) {
@@ -322,7 +323,7 @@ export default class MainSource implements Source {
                 }
                 if (spoof?.artists === undefined && a.artists) {
                     if (a.__fckCensor?.replaceArtistsInAlbumVolumes) {
-                        track.artists = a.artists;
+                        track.artists = fitArtists(track, a.artists);
                     }
                 }
             }
@@ -387,7 +388,7 @@ export default class MainSource implements Source {
 
                 keys.forEach(key => {
                     if (key in trackSpoof) {
-                        (album as any)[key] = (trackSpoof as any)[key];
+                        (album as any)[key] = key === 'artists' ? fitArtists(album, trackSpoof.artists) : (trackSpoof as any)[key];
                     }
                 });
             }

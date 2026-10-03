@@ -2,6 +2,7 @@ import { Album, Artist, FckCensorSpoofData, OuterArtist, SearchResponse, SearchT
 import { log } from "./logger";
 import { getDiResource} from "./hook-utils";
 import { runUnprotected } from "./ui-utils";
+import { fitArtists } from "./common";
 
 export function reloadPlayer(trackId?: string) {
     const e = window.sonataState?.queueState?.currentEntity?.value?.entity;
@@ -18,7 +19,7 @@ export function restoreOriginalValues(data: Spoofable, fckCensorData?: FckCensor
     if (!originalValues) return;
 
     runUnprotected(data, () => {
-        Object.assign(data, originalValues);
+        Object.assign(data, { ...originalValues, ...(originalValues.artists && { artists: fitArtists(data, originalValues.artists) }) });
     });
 
     delete source.originalValues;

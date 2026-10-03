@@ -6,6 +6,7 @@ import { httpsify, randomString } from "./common";
 import { Q_ARTIST_FIBER_ROOT, Q_ALBUM_FIBER_ROOT, Q_TRACK_ROOT, Q_TRACK_FIBER_ROOT } from "@/hooks/ui/constants";
 import { putToBundle } from "@/dev/dev-utils";
 import { restoreOriginalValues } from "./music";
+import { convertRawMst } from "./spoofs";
 
 export function getTrackIdFromNode(node: HTMLElement): string | null {
     return String(getTrackFromNode(node)?.id) ?? null;
@@ -107,9 +108,7 @@ export function spoofNode(node: HTMLElement, entity: SpoofableEntity | Spoofable
 
     runUnprotected(e, () => {
         m(e);
-        if ("isAvailable" in e && "available" in e && e.available !== undefined) {
-            e.isAvailable = e.available;
-        }
+        convertRawMst(e, true);
     });
 }
 

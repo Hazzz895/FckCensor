@@ -21,19 +21,18 @@ export function getTrackAvaiableSpoof(): Track {
     } as any;
 }
 
-export function convertRawMst(entity: SpoofableEntity, toMst: Boolean): SpoofableEntity {
-    function setAlias(obj: any, [from, to]: [string, string]) {
-        if (!toMst) {
-            from = to;
-            to = from;
-        }
-        if (from in obj) {
-            obj[to] = obj[from];
-            delete obj[from];
+const aliases: [raw: string, mst: string][] = [
+    ["available", "isAvailable"],
+];
+
+export function convertRawMst<T>(entity: T, toMst: boolean): T {
+    const any = entity as any;
+    for (const [raw, mst] of aliases) {
+        const [from, to] = toMst ? [raw, mst] : [mst, raw];
+        if (from in any) {
+            if (!(to in any)) any[to] = any[from];
+            delete any[from];
         }
     }
-
-    const copy = { ...entity } as any;
-    setAlias(copy, ["available", "isAvailable"]);
-    return copy;
+    return entity;
 }
