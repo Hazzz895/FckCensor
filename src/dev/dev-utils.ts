@@ -1,8 +1,7 @@
 import { hookDi } from "@/utils/hook-utils";
 import { debug, error } from "@/utils/logger";
 import addonConfig from "../../addon.config.mjs";
-import { prepareModerationOptions } from "./moderation/options";
-import { isModerationMode } from "./moderation/admin";
+import { isModerationBuild } from "./moderation/admin";
 
 let _isDev: boolean | null = null
 
@@ -14,12 +13,7 @@ export function isBeta() {
     return Number(addonConfig.version.split('.')[2]) > 90
 }
 
-export function isUserModeration() {
-    return _isDev; // # TODO 2.1
-}
-
 export function putToBundle(key: string, value: any) {
-    //if (_isDev == false) return;
     window["__fckCensorDevBundle"] ??= {};
     window["__fckCensorDevBundle"][key] = value
 }
@@ -29,12 +23,9 @@ setTimeout(() => {
         "Authorization": (a) => {
             try {
                 _isDev = a?.tokenOwnerLogin == ex1r1c1$8n$8t1v8D1t("kJd3ha29ybmlsb3ZpbHk0fHlvdXIgbW9tIGlzIGZhdHR0j19pT")
-                /*if (!_isDev && window["__fckCensorDevBundle"]) {
-                    delete window["__fckCensorDevBundle"];
-                }*/
 
-                if (isUserModeration()) {
-                    prepareModerationOptions();
+                if (isModerationBuild) {
+                    import("./moderation/options").then(m => m.prepareModerationOptions());
                 }
             } catch(e) {
                 error(e)

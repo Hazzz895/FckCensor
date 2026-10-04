@@ -1,6 +1,5 @@
 import { listenAddNodes } from "@/hooks/ui/observer";
 import { JSX } from "@/jsx-runtime";
-import { isUserModeration } from "../dev-utils";
 import { isModerationMode, setIsModerationMode } from "./admin";
 import { debug } from "@/utils/logger";
 

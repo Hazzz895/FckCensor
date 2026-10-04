@@ -2,25 +2,18 @@ import { getAssetText } from "@/utils/pulsesync";
 import { ex1r1c1$8n$8t1v8D1t } from "../dev-utils";
 import { toggleModMenu } from "./mod-menu";
 
-export interface Environment {
-    supabase_secret_token?: string;
-    groq_token?: string;
-}
+export const SUPABASE_SECRET_TOKEN = import.meta.env.VITE_SUPABASE_SECRET_TOKEN;
+export const GROQ_TOKEN = import.meta.env.VITE_GROQ_TOKEN;
 
-let env: Environment = {};
+export const isModerationBuild = !!SUPABASE_SECRET_TOKEN;
 
-export async function loadEnv() {
-    const json = await getAssetText('.moderation.env.json');
-    env = JSON.parse(json);
-}
-
-let _isModMode = false;
+let moderationMode = false;
 
 export function isModerationMode() {
-    return _isModMode
+    return moderationMode
 }
 
 export function setIsModerationMode(value: boolean) {
     toggleModMenu(value);
-    _isModMode = value
+    moderationMode = value
 }

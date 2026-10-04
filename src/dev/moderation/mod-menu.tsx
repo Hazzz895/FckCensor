@@ -1,6 +1,5 @@
 import { Q_FULLSCREEN_CONTENT } from "@/hooks/ui/constants";
 import { listenAddNodes, unlistenAddNodes } from "@/hooks/ui/observer";
-import { debug } from "@/utils/logger";
 import { DevPanelOption } from "./options";
 
 let fullscreenListener: any = null;
