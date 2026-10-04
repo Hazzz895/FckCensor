@@ -84,3 +84,17 @@ export async function getVanillaTrackLyrics(trackId: TrackId | Track): Promise<s
         return null;
     }
 }
+
+export async function getAnyTrackLyrics(track: Track): Promise<string | null> {
+    const tryGet = async (api: (track: Track) => Promise<string | null>): Promise<string | null> => {
+        try {
+            return await api(track);
+        } catch (error) {
+            return null;
+        }
+    }
+
+    return await tryGet(getVanillaTrackLyrics) ?? await tryGet(getLrclibTrackLyrics) ?? await tryGet(getGeniusTrackLyrics);
+}
+
+putToBundle("getAnyTrackLyrics", getAnyTrackLyrics);
