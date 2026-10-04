@@ -1,4 +1,5 @@
 import { Track } from "@/types";
+import { error } from "@/utils/logger";
 import Groq from "groq-sdk";
 
 const PROMPT = `Ты — детектор потенциально заблюриваемых фрагментов в текстах музыкальных произведений (треков).
@@ -125,6 +126,19 @@ const PROMPT = `Ты — детектор потенциально заблюр�
 
 Не добавляй пояснения, markdown или какой-либо текст за пределами JSON.
 `
+
+export interface CensoredFragmentsResponse {
+    dangerousFragments: CensoredFragment[]
+}
+
+export interface CensoredFragment {
+    level: "low" | "medium" | "high" | "censored"
+    text: string
+    timestamp: string | null
+    category: "drugs" | "lgbt" | "suicide" | "childfree" | "goverment" | "military" | "censored" | "unknown";
+    reason: string
+}
+
 const SCHEMA = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
@@ -187,6 +201,40 @@ const SCHEMA = {
 
 
 const groqClient = new Groq({ apiKey: import.meta.env.VITE_GROQ_TOKEN, dangerouslyAllowBrowser: true });
+
+export async function generateCensoredLyricsFragments(text: string, synced: boolean): Promise<CensoredFragment[]> {
+    try {
+        const response = await groqClient.chat.completions.create({
+            "messages": [
+                {
+                    "role": "system",
+                    "content": PROMPT
+                },
+                {
+                    "role": "user",
+                    "content": text
+                }
+            ],
+            "model": "openai/gpt-oss-120b",
+            "stream": false,
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "dangerousFragments",
+                    "schema": SCHEMA,
+                    "strict": true
+                }
+            }
+        })
+        const aiResponse = response?.choices?.[0]?.message?.content;
+        const json = JSON.parse(aiResponse!) as CensoredFragmentsResponse;
+        return json.dangerousFragments ?? [];
+    }
+    catch (e) {
+        error(e);
+        return [];
+    }
+}
 
 export async function checkIfTrackTextCensored(text: string, synced: boolean) {
     const response = await groqClient.chat.completions.create({
