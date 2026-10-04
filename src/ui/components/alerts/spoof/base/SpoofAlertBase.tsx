@@ -185,9 +185,15 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         } catch (e) { error(e) }
 
         const l = localizeSpoofableType(this.type);
-        showNotificationWithCover(this.entity, `${l[0].toUpperCase() + l.slice(1)} подменен успешно! Для применения изменений может потребоваться перезаход.`, "info")
+        showNotificationWithCover(
+            this.entity,
+            spoofData
+                ? `${l[0].toUpperCase() + l.slice(1)} подменен успешно! Для применения изменений может потребоваться перезаход.`
+                : "Подмена была отменена! Для применения изменений может потребоваться перезаход.",
+            "info"
+        )
 
-        if (!prevSpoof) {
+        if (!prevSpoof && spoofData) {
             await report(this.id, this.type, true);
         }
     }

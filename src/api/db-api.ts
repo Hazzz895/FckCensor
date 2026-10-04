@@ -5,7 +5,7 @@ import TrackReplacement from "./dto/track-replacement";
 import { list } from "./remote-api";
 import { collectAutoInsertions, inheritAlbumCovers, sources } from "./main-api";
 import { reloadPlayer } from "@/utils/music";
-import { getTrackAvaiableSpoof } from "@/utils/spoofs";
+import { getSpoof, getTrackAvaiableSpoof } from "@/utils/spoofs";
 import { ArtistInsertions } from "./dto/artist-insertion";
 import { isEmptyObject } from "@/utils/common";
 import { putToBundle } from "@/dev/dev-utils";
@@ -260,6 +260,10 @@ export class LocalSource implements Source {
         return this.replacementExceptionsTrackIds.includes(String(trackId));
     }
 
+    hasPlayerReplacementChanges(trackId: string): boolean {
+        return this.replacementsTrackIds.includes(trackId) || this.hasPlayerReplacementException(trackId);
+    }
+
     getTrackSpoof(trackId: string): Track | null {
         const track = {}
         if (this.hasPlayerReplacement(trackId)) {
@@ -430,18 +434,6 @@ export class LocalSource implements Source {
         return (type == "album" ? this.pushAlbumSpoof : type == "artist" ? this.pushArtistSpoof : this.pushTrackSpoof).bind(this)(spoof, id);
     }
 
-    private getSpoofs(type: SpoofableType): Map<string, SpoofableEntity> {
-        switch (type) {
-            case "album": return this.albumSpoofs;
-            case "artist": return this.artistSpoofs;
-            case "track": return this.trackSpoofs;
-        }
-    }
-
-    getRawSpoof(type: SpoofableType, id: string): SpoofableEntity | undefined {
-        return this.getSpoofs(type).get(String(id));
-    }
-
     hasOwnArtistInsertions(artistId: string): boolean {
         const insertions = this.artistsInsertions.get(String(artistId));
         return !!(insertions?.tracks?.length || insertions?.albums?.length);
@@ -454,7 +446,7 @@ export class LocalSource implements Source {
 
     getSpoofState(type: SpoofableType, id: string): LocalSpoofState {
         const strId = String(id);
-        const spoof = this.getRawSpoof(type, strId);
+        const spoof = getSpoof(this, type, id);;
         let hasException = false;
 
         if (spoof) {

@@ -7,6 +7,7 @@ import { SpoofAudioField } from "./SpoofAudioField";
 import { sources } from "@/api/main-api";
 import { showNotificationWithCover, spoofAllNodesFor } from "@/utils/ui-utils";
 import { ActionButton } from "../../alerts";
+import { getSpoof } from "@/utils/spoofs";
 
 export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
     public constructor(data: Track, scrim: HTMLElement, trackNode: HTMLElement) {
@@ -48,17 +49,30 @@ export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
         await super.onApplyInternal();
     }
 
-    async onApply(spoofData: Track) {
-        await localSource.pushTrackSpoof(spoofData, this.id)
+    async onApply(spoofData: Track | null) {
+        if (spoofData) {
+            await localSource.pushTrackSpoof(spoofData, this.id);
+        }
+        else {
+            const rawSpoof = getSpoof(localSource, "track", this.id);
+            if (rawSpoof) {
+                const keys = Object.keys(rawSpoof);
+                if (keys.length > 0 && keys.every(k => k === "durationMs")) {
+                    await localSource.removeTrackSpoof(this.id);
+                }
+            }
+        }
         spoofAllNodesFor("track", this.id);
+        reloadPlayer(this.id);
     }
 
     protected async onSpoofRemove() {
         await localSource.removeTrackSpoof(this.id);
-        if (localSource.hasPlayerReplacement(this.id)) {
+
+        if (localSource.hasPlayerReplacementChanges(this.id)) {
             await localSource.removeTrackReplacement(this.id);
-            reloadPlayer(this.id);
         }
+        reloadPlayer(this.id);
     }
 
     protected async onSpoofCancel() {
@@ -66,8 +80,8 @@ export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
 
         if (sources.hasPlayerReplacement(this.id)) {
             await localSource.pushTrackReplacementException(this.id);
-            reloadPlayer(this.id);
         }
+        reloadPlayer(this.id);
     }
 
     protected getPrevSpoofedData() {

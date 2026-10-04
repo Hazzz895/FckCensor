@@ -173,7 +173,7 @@ export function inheritAlbumCovers(tracks: Map<string, Track>, albums: Map<strin
         if ("volumes" in entity && entity.volumes && entity.coverUri) {
             entity.volumes.forEach(v => v.forEach(t => {
                 let trackSpoof = tracks.get(String(t.id));
-                if (!trackSpoof) {
+                if (!trackSpoof || isEmptyObject(trackSpoof)) {
                     return; // обложка из альбома подтягивается только для треков которые имеют спуф чтобы не подменивать обложки для треков которые уже были в альбоме
                 }
                 
