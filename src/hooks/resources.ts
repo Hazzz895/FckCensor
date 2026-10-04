@@ -167,12 +167,7 @@ function hookArtistResource(ar: any) {
 
     hookHeavyMethods(ar, async (trackIds: string[], t: ArtistId) => {
         sources.getArtistInsertions(String(t.artistId))?.tracks?.forEach(insertion => {
-            if (insertion.index !== undefined) {
-                trackIds.splice(insertion.index, 0, insertion.releaseId);
-            }
-            else {
-                trackIds.push(insertion.releaseId)
-            }
+            insert(trackIds, insertion.releaseId, insertion.index);
         });
     }, "getArtistTrackIds")
 
