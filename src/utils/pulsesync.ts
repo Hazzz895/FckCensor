@@ -35,7 +35,6 @@ export function prepareSettings() {
     }
     const settingsStore = getAddonSettings()
 
-    applySettings(settingsStore.getCurrent())
     settingsStore.onChange(applySettings)
 }
 
