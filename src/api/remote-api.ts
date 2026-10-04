@@ -47,46 +47,46 @@ export class MinifiedRemoteSource /*implements RemoteSourceBase*/ {
             mergeIntoMap(this.artists, source.artists);
             mergeIntoMap(this.artistsInsertions, source.artistsInsertions);
 
-            if (source.tracksStorages) {
-                this.tracksStorages = [ ...source.tracksStorages, ...this.tracksStorages ];
-            }
+            if (Array.isArray(source.tracksStorages)) {
+                this.tracksStorages = [...source.tracksStorages, ...this.tracksStorages];
 
-            for (const storage of source.tracksStorages ?? []) {
-                const resolveUrl = (rawUrl: string | number): string | number => {
-                    return (typeof rawUrl === "number" || (typeof rawUrl === "string" && !rawUrl.includes("://"))) && storage.urlTemplate 
-                        ? storage.urlTemplate.replace("%%", String(rawUrl)) 
-                        : rawUrl;
-                };
+                for (const storage of source.tracksStorages ?? []) {
+                    const resolveUrl = (rawUrl: string | number): string | number => {
+                        return (typeof rawUrl === "number" || (typeof rawUrl === "string" && !rawUrl.includes("://"))) && storage.urlTemplate
+                            ? storage.urlTemplate.replace("%%", String(rawUrl))
+                            : rawUrl;
+                    };
 
-                if (storage.trackIds) {
-                    for (const item of storage.trackIds) {
-                        const trackId = String(typeof item === "number" ? item : item.id);
-                        const durationMs = typeof item === "number" ? undefined : item.durationMs;
+                    if (Array.isArray(storage.trackIds)) {
+                        for (const item of storage.trackIds) {
+                            const trackId = String(typeof item === "number" ? item : item.id);
+                            const durationMs = typeof item === "number" ? undefined : item.durationMs;
 
-                        if (durationMs !== undefined) {
-                            const existingTrack = this.tracks.get(trackId);
-                            this.tracks.set(trackId, { ...existingTrack, durationMs } as Track);
+                            if (durationMs !== undefined) {
+                                const existingTrack = this.tracks.get(trackId);
+                                this.tracks.set(trackId, { ...existingTrack, durationMs } as Track);
+                            }
                         }
                     }
-                }
 
-                if (storage.tracks) {
-                    for (const [trackId, replacement] of Object.entries(storage.tracks)) {
-                        let durationMs: number | undefined;
+                    if (Array.isArray(storage.tracks)) {
+                        for (const [trackId, replacement] of Object.entries(storage.tracks)) {
+                            let durationMs: number | undefined;
 
-                        if (typeof replacement === "object" && replacement !== null) {
-                            storage.tracks[trackId] = {
-                                ...replacement,
-                                url: resolveUrl(replacement.url)
-                            };
-                            durationMs = replacement.durationMs;
-                        } else {
-                            storage.tracks[trackId] = resolveUrl(replacement);
-                        }
+                            if (typeof replacement === "object" && replacement !== null) {
+                                storage.tracks[trackId] = {
+                                    ...replacement,
+                                    url: resolveUrl(replacement.url)
+                                };
+                                durationMs = replacement.durationMs;
+                            } else {
+                                storage.tracks[trackId] = resolveUrl(replacement);
+                            }
 
-                        if (durationMs !== undefined) {
-                            const existingTrack = this.tracks.get(trackId);
-                            this.tracks.set(trackId, { ...existingTrack, durationMs } as Track);
+                            if (typeof durationMs === "number") {
+                                const existingTrack = this.tracks.get(trackId);
+                                this.tracks.set(trackId, { ...existingTrack, durationMs } as Track);
+                            }
                         }
                     }
                 }
