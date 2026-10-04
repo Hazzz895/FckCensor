@@ -97,7 +97,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
             addPropButton.parentElement!.insertBefore(ts.addPropertyField(new SpoofAlertCustomPropertyField(ts)), addPropButton)
         }
 
-        const titleField = this.addPropertyField(new SpoofAlertInputField(this, type === "artist" ? "name" : "title", type === "artist" ? "Имя исполнителя" : "Название", title));
+        const titleField = this.addPropertyField(new SpoofAlertInputField(this, type === "artist" ? "name" : "title", type === "artist" ? "Имя исполнителя" : "Название"));
         const coverField = this.addPropertyField(new SpoofAlertCoverField(this));
         const childrenNode = this.getChildren();
 
