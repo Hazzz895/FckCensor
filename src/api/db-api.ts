@@ -1,11 +1,11 @@
 import { debug, error, log } from "@/utils/logger";
-import Source from "./dto/sources/source";
+import ISource, { Source } from "./dto/sources/source";
 import { Track, Album, Artist, SpoofableType, SpoofableEntity } from "@/types";
 import TrackReplacement from "./dto/track-replacement";
 import { list } from "./remote-api";
 import { collectAutoInsertions, inheritAlbumCovers, sources } from "./main-api";
 import { reloadPlayer } from "@/utils/music";
-import { getSpoof, getTrackAvaiableSpoof } from "@/utils/spoofs";
+import { getTrackAvaiableSpoof } from "@/utils/spoofs";
 import { ArtistInsertions } from "./dto/artist-insertion";
 import { isEmptyObject } from "@/utils/common";
 import { putToBundle } from "@/dev/dev-utils";
@@ -197,7 +197,7 @@ export async function loadLocalDb() {
 
 const MAX_TRACKS_CACHE_LENGTH = 4;
 
-export class LocalSource implements Source {
+export class LocalSource extends Source {
     private readonly playerReplacementsCache: Map<string, TrackReplacement> = new Map<string, TrackReplacement>();
     
     public replacementsTrackIds: string[] = [];
@@ -446,7 +446,7 @@ export class LocalSource implements Source {
 
     getSpoofState(type: SpoofableType, id: string): LocalSpoofState {
         const strId = String(id);
-        const spoof = getSpoof(this, type, id);;
+        const spoof = this.getSpoof(type, id);
         let hasException = false;
 
         if (spoof) {
@@ -545,7 +545,7 @@ export class LocalSource implements Source {
     }
 }
 
-export class AutomaticLocalInsertionsSource implements Source {
+export class AutomaticLocalInsertionsSource implements ISource {
     private readonly local: LocalSource;
     private cache: Map<string, ArtistInsertions> | null = null;
     private lastRevision = -1;

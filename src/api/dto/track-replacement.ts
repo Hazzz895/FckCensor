@@ -1,8 +1,8 @@
 import { httpsify } from "@/utils/common";
-import Source from "./sources/source";
+import ISource from "./sources/source";
 
 export default class TrackReplacement {
-    public constructor(public readonly source: Source, public readonly url: string | null) {}
+    public constructor(public readonly source: ISource, public readonly url: string | null) {}
 
     toBatch(trackId: string) {
         if (this.url === null) {

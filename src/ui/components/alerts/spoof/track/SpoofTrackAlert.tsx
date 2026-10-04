@@ -7,7 +7,6 @@ import { SpoofAudioField } from "./SpoofAudioField";
 import { sources } from "@/api/main-api";
 import { showNotificationWithCover, spoofAllNodesFor } from "@/utils/ui-utils";
 import { ActionButton } from "../../alerts";
-import { getSpoof } from "@/utils/spoofs";
 
 export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
     public constructor(data: Track, scrim: HTMLElement, trackNode: HTMLElement) {
@@ -54,7 +53,7 @@ export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
             await localSource.pushTrackSpoof(spoofData, this.id);
         }
         else {
-            const rawSpoof = getSpoof(localSource, "track", this.id);
+            const rawSpoof = localSource.getSpoof("track", this.id);
             if (rawSpoof) {
                 const keys = Object.keys(rawSpoof);
                 if (keys.length > 0 && keys.every(k => k === "durationMs")) {

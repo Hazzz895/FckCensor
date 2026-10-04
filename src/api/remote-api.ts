@@ -3,7 +3,7 @@ import { debug, error, log, warn } from "@/utils/logger";
 import { versionSatisfies, versionsSatisfies } from "@/utils/version-utils";
 import addonConfig from '../../addon.config.mjs';
 import { ArtistInsertions } from "./dto/artist-insertion";
-import Source from "./dto/sources/source";
+import ISource, { Source } from "./dto/sources/source";
 import TrackReplacement from "./dto/track-replacement";
 import { postProcess, sources } from "./main-api";
 import { ADDON_FAQ_URI, DATA_LIST_URI } from "@/hooks/ui/constants";
@@ -97,7 +97,7 @@ export class MinifiedRemoteSource /*implements RemoteSourceBase*/ {
     }
 }
 
-export class RemoteSource implements Source {
+export class RemoteSource extends Source {
     public static async load(url: string) {
         try {
             if (list) {
@@ -138,6 +138,7 @@ export class RemoteSource implements Source {
     private list: MinifiedRemoteSource;
 
     public constructor(list: MinifiedRemoteSource) {
+        super();
         this.list = list;
     }
 

@@ -6,7 +6,7 @@ import { debug, log } from '@/utils/logger';
 import { isEmptyObject, cloneEntity, fitArtists } from '@/utils/common';
 import { AutomaticLocalInsertionsSource, LocalSource } from '@/api/db-api';
 import { ArtistInsertions } from "./dto/artist-insertion";
-import Source from "./dto/sources/source";
+import ISource, { Source } from "./dto/sources/source";
 import TrackReplacement from "./dto/track-replacement";
 import { putToBundle } from "@/dev/dev-utils";
 import { RKN_BLOCKED_DISCLAIMER_ID } from "@/hooks/ui/constants";
@@ -26,11 +26,11 @@ export async function loadSources() {
 
 export class SourcesCollection {
     private localSources: LocalSource[] = [];
-    private nonLocalSources: Source[] = [];
+    private nonLocalSources: ISource[] = [];
 
-    public get sources(): Source[] { return [...this.localSources, ...this.nonLocalSources] }
+    public get sources(): ISource[] { return [...this.localSources, ...this.nonLocalSources] }
 
-    public push(source: Source) {
+    public push(source: ISource) {
         if (source instanceof LocalSource) {
             this.localSources.push(source);
         } else {
@@ -38,7 +38,7 @@ export class SourcesCollection {
         }
     }
 
-    public getSource<T extends Source>(targetClass: Constructor<T>): T | null {
+    public getSource<T extends ISource>(targetClass: Constructor<T>): T | null {
         for (const source of this.sources) {
             if (source instanceof targetClass) {
                 return source;
@@ -47,11 +47,11 @@ export class SourcesCollection {
         return null;
     }
 
-    public get automaticSources(): Source[] { return this.nonLocalSources }
+    public get automaticSources(): ISource[] { return this.nonLocalSources }
 
     public collect<T>(
         acc: T,
-        collector: (acc: T, source: Source) => boolean
+        collector: (acc: T, source: ISource) => boolean
     ): T {
         let foundLocal = false;
 
@@ -74,7 +74,7 @@ export class SourcesCollection {
 
     public reduceSpoof<T extends object>(
         initial: T,
-        getSpoof: (source: Source) => T | null | undefined
+        getSpoof: (source: ISource) => T | null | undefined
     ): T {
         const acc = initial;
 
@@ -102,10 +102,10 @@ export class SourcesCollection {
     }
 
     public first<T>(
-        callback: (source: Source) => T | null | undefined,
+        callback: (source: ISource) => T | null | undefined,
         matches: (value: T) => boolean = (value) => !!value
     ): T | null {
-        function walk(sources: Source[]): T | null {
+        function walk(sources: ISource[]): T | null {
             for (const source of sources) {
                 const result = callback(source);
                 if (result != null && matches(result)) {
@@ -123,10 +123,10 @@ export class SourcesCollection {
     }
 
     public async firstAsync<T>(
-        callback: (source: Source) => Promise<T | null | undefined>,
+        callback: (source: ISource) => Promise<T | null | undefined>,
         matches: (value: T) => boolean = (value) => !!value
     ): Promise<T | null> {
-        async function walk(sources: Source[]): Promise<T | null> {
+        async function walk(sources: ISource[]): Promise<T | null> {
             for (const source of sources) {
                 const result = await callback(source);
                 if (result != null && matches(result)) {
@@ -190,7 +190,7 @@ export function postProcess(insertions: Map<string, ArtistInsertions>, tracks: M
     inheritAlbumCovers(tracks, albums);
 }
 
-export default class MainSource implements Source {
+export default class MainSource extends Source {
     private sourcesCollection = new SourcesCollection();
 
     private fckCensorData: Map<string, FckCensorSpoofData> = new Map();
@@ -213,7 +213,7 @@ export default class MainSource implements Source {
 
     public getSourcesCollection() { return this.sourcesCollection }
 
-    getSource<T extends Source>(targetClass: Constructor<T>): T | null {
+    getSource<T extends ISource>(targetClass: Constructor<T>): T | null {
         return this.sourcesCollection.getSource(targetClass);
     }
 
@@ -423,14 +423,14 @@ export default class MainSource implements Source {
         return this.internalSpoof(artist, this.getArtistSpoof.bind(this), String(artist.id), true, "artist")
     }
 
-    private static insertionsPriority(source: Source): number {
+    private static insertionsPriority(source: ISource): number {
         if (source instanceof LocalSource) return 0;
         if (source instanceof AutomaticLocalInsertionsSource) return 1;
         return 2;
     }
 
     getArtistInsertions(artistId: string): ArtistInsertions | null {
-        const layers = this.sourcesCollection.collect<{ source: Source, data: ArtistInsertions }[]>(
+        const layers = this.sourcesCollection.collect<{ source: ISource, data: ArtistInsertions }[]>(
             [],
             (acc, source) => {
                 const data = source.getArtistInsertions(artistId);
@@ -488,11 +488,11 @@ export default class MainSource implements Source {
         return this.spoofArtist(a);
     }
 
-    pushSource(source: Source) {
+    pushSource(source: ISource) {
         this.sourcesCollection.push(source)
     }
 
-    private static getSourceSpoof(source: Source, type: SpoofableType, id: string): SpoofableEntity | null {
+    private static getSourceSpoof(source: ISource, type: SpoofableType, id: string): SpoofableEntity | null {
         switch (type) {
             case "album": return source.getAlbumSpoof(id);
             case "artist": return source.getArtistSpoof(id);
@@ -525,16 +525,20 @@ export default class MainSource implements Source {
         return false;
     }
 
+    public hasSpoof(type: SpoofableType, id: string): boolean {
+        return !isEmptyObject(this.getSpoof(type, id));
+    }
+
     hasTrackSpoof(trackId: string): boolean {
-        return !isEmptyObject(this.getTrackSpoof(trackId))
+        return this.hasSpoof("track", trackId);
     }
 
     hasAlbumSpoof(albumId: string): boolean {
-        return !isEmptyObject(this.getAlbumSpoof(albumId))
+        return this.hasSpoof("album", albumId);
     }
 
     hasArtistSpoof(artistId: string): boolean {
-        return !isEmptyObject(this.getArtistSpoof(artistId))
+        return this.hasSpoof("artist", artistId);
     }
 
     hasInsertions(artistId: string): boolean {
