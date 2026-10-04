@@ -17,6 +17,7 @@ const addonConfig = {
         "https://pzomqvgckpgkshxhpite.supabase.co/",
         "https://t2.genius.com/unsafe/",
         "https://genius.com/",
+        "https://api.groq.com/openai/v1/chat/completions"
     ],
     supportedVersions: [],
 }
