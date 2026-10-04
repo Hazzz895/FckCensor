@@ -1,3 +1,4 @@
+import { Track } from "@/types";
 import Groq from "groq-sdk";
 
 const PROMPT = `Ты — детектор потенциально заблюриваемых фрагментов в текстах музыкальных произведений (треков).
