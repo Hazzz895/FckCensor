@@ -88,3 +88,5 @@ export function getAudioMetadata(audioFile: File): Promise<HTMLAudioElement> {
         });
     });
 }
+
+export const trackToQuery = (track: Track) => `${track.title} - ${track.artists?.map(x => x.name).join(", ")}`;
