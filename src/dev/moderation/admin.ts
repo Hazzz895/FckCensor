@@ -1,11 +1,14 @@
-import { getAssetText } from "@/utils/pulsesync";
-import { ex1r1c1$8n$8t1v8D1t } from "../dev-utils";
+import { debug } from "@/utils/logger";
 import { toggleModMenu } from "./mod-menu";
 
 export const SUPABASE_SECRET_TOKEN = import.meta.env.VITE_SUPABASE_SECRET_TOKEN;
 export const GROQ_TOKEN = import.meta.env.VITE_GROQ_TOKEN;
 
 export const isModerationBuild = !!SUPABASE_SECRET_TOKEN;
+
+if (isModerationBuild) {
+    import("./options").then(m => m.prepareModerationOptions());
+}
 
 let moderationMode = false;
 

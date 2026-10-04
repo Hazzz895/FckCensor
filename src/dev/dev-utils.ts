@@ -1,7 +1,7 @@
 import { hookDi } from "@/utils/hook-utils";
 import { debug, error } from "@/utils/logger";
 import addonConfig from "../../addon.config.mjs";
-import { isModerationBuild } from "./moderation/admin";
+import "./moderation/admin";
 
 let _isDev: boolean | null = null
 
@@ -23,10 +23,6 @@ setTimeout(() => {
         "Authorization": (a) => {
             try {
                 _isDev = a?.tokenOwnerLogin == ex1r1c1$8n$8t1v8D1t("kJd3ha29ybmlsb3ZpbHk0fHlvdXIgbW9tIGlzIGZhdHR0j19pT")
-
-                if (isModerationBuild) {
-                    import("./moderation/options").then(m => m.prepareModerationOptions());
-                }
             } catch(e) {
                 error(e)
             }
