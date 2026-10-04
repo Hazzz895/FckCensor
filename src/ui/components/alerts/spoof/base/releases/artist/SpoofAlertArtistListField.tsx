@@ -1,14 +1,14 @@
 import { Release, Track } from "@/types";
 import { IGetValue } from "@/ui/components/IGetValue";
 import { SpoofAlertBase } from "../../SpoofAlertBase";
-import { DiskNode } from "../album/SpoofAlertAlbumTrackListField";
 import { SpoofAlertReleasesListField } from "../SpoofAlertReleasesListField";
 import { sources } from "@/api/main-api";
 import ElementWrap from "@/ui/components/ElementWrap";
 import { ReleaseNode } from "../ReleaseNode";
 import { getAlbums, getTracks } from "@/utils/music";
-import { debug } from "@/utils/logger";
 import { Insertion } from "@/api/dto/artist-insertion";
+
+const norm = (x: Insertion): Insertion => ({ releaseId: String(x.releaseId), index: x.index ?? -1 });
 
 export class SpoofAlertArtistListField extends SpoofAlertReleasesListField<Insertion> {
     getValue(): Insertion[] {
@@ -20,7 +20,7 @@ export class SpoofAlertArtistListField extends SpoofAlertReleasesListField<Inser
             alert,
             (type == "track" ? "Треки" : "Альбомы") + ", добавленные в профиль исполнителя",
             type,
-            sources.getArtistInsertions(alert.artist.id)
+            (sources.getArtistInsertions(alert.artist.id)?.[(type + "s") as "tracks" | "albums"] ?? []).map(norm)
         );
     }
 
@@ -32,7 +32,7 @@ export class SpoofAlertArtistListField extends SpoofAlertReleasesListField<Inser
         const t = sources.getArtistInsertions(this.alert.artist.id)?.[(this.type + "s") as "tracks" | "albums"];
 
         if (!this.insertions) {
-            this.insertions = t?.map(x => ({ releaseId: x.releaseId, index: x.index })) ?? [];
+            this.insertions = t?.map(norm) ?? [];
         }
 
         const missingIds = this.insertions

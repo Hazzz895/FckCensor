@@ -85,7 +85,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         }
         this.id = String(entity.id);
 
-        this.hadSpoof =(this.type == "artist" && (sources.hasInsertions(this.id) || sources.hasArtistSpoof(this.id))) ||
+        this.hadSpoof =(this.type == "artist" && sources.hasArtistSpoof(this.id)) ||
                         (this.type == "album" && sources.hasAlbumSpoof(this.id)) ||
                         (this.type == "track" && sources.hasTrackSpoof(this.id));
 
@@ -185,15 +185,16 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         } catch (e) { error(e) }
 
         const l = localizeSpoofableType(this.type);
+        const spoofed = !!spoofData || localSource.getSpoofState(this.type, this.id) === "own";
         showNotificationWithCover(
             this.entity,
-            spoofData
+            spoofed
                 ? `${l[0].toUpperCase() + l.slice(1)} подменен успешно! Для применения изменений может потребоваться перезаход.`
                 : "Подмена была отменена! Для применения изменений может потребоваться перезаход.",
             "info"
         )
 
-        if (!prevSpoof && spoofData) {
+        if (!prevSpoof && spoofed) {
             await report(this.id, this.type, true);
         }
     }
