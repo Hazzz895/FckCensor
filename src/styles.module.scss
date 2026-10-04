@@ -280,3 +280,69 @@ option {
 .Switch:not([disabled]) {
     color: var(--ym-controls-color-primary-text-enabled_variant);
 }
+
+.ChangableCoverRoot {
+    position: relative;
+}
+
+.ChangableCoverRoot_hoverable {
+    transition: transform var(--ym-duration-transition) ease-in-out;
+
+    &:has(:focus-visible),
+    &:hover {
+        transform: scale(1.03);
+    }
+}
+
+.ChangableCoverRoot_button {
+    width: 100%;
+}
+
+.Cover {
+    aspect-ratio: 1;
+    height: 100%;
+    width: 100%;
+}
+
+.CursorPointer {
+    cursor: pointer;
+}
+
+.ChangableCoverRoot_buttonContainer {
+    align-items: flex-end;
+    background-color: transparent;
+    display: flex;
+    height: 100%;
+    justify-content: center;
+    padding-block-end: var(--ym-spacer-size-l);
+    position: absolute;
+    transition: background-color var(--ym-duration-transition);
+    width: 100%;
+}
+
+.ChangableCoverRoot_buttonContainer:hover .ChangableCoverRoot_fileUploader_hovered,
+.ChangableCoverRoot_buttonContainer:has(:focus-visible) .ChangableCoverRoot_fileUploader_hovered,
+.ChangableCoverRoot_buttonContainer:focus-within .ChangableCoverRoot_fileUploader_hovered {
+    opacity: 1;
+}
+
+.ChangableCoverRoot_fileUploader_hovered {
+    position: relative;
+    opacity: 0
+}
+
+.ChangableCoverRoot_fileUploader_button {
+    backdrop-filter: none;
+    background-color: var(--ym-controls-color-secondary-card-enabled);
+    color: var(--ym-controls-color-secondary-on_default-hovered);
+    font-size: var(--ym-font-size-label-m);
+    line-height: var(--ym-font-line-height-label-m);
+    padding-inline-end: var(--ym-spacer-size-xl);
+    padding-inline-start: var(--ym-spacer-size-xl);
+
+    &:focus-visible,
+    &:hover,
+    .ChangableCoverRoot_fileUploader_hovered:hover & {
+        background-color: var(--ym-controls-color-secondary-card-hovered);
+    }
+}

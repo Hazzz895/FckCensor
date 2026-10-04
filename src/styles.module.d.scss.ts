@@ -25,5 +25,13 @@ declare const classNames: {
   readonly IndexButton: "IndexButton";
   readonly IndexTriangle: "IndexTriangle";
   readonly Switch: "Switch";
+  readonly ChangableCoverRoot: "ChangableCoverRoot";
+  readonly ChangableCoverRoot_hoverable: "ChangableCoverRoot_hoverable";
+  readonly ChangableCoverRoot_button: "ChangableCoverRoot_button";
+  readonly Cover: "Cover";
+  readonly CursorPointer: "CursorPointer";
+  readonly ChangableCoverRoot_buttonContainer: "ChangableCoverRoot_buttonContainer";
+  readonly ChangableCoverRoot_fileUploader_hovered: "ChangableCoverRoot_fileUploader_hovered";
+  readonly ChangableCoverRoot_fileUploader_button: "ChangableCoverRoot_fileUploader_button";
 };
 export = classNames;

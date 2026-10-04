@@ -1,6 +1,6 @@
 import { httpsify } from "@/utils/common";
 import { CoverProps } from "./alerts/spoof/spoof-alert";
-
+import styles from "@/styles.module.scss"
 
 export function Cover({ src, mini = false, ...props }: CoverProps) {
     const roundClass = mini ? "wdE2qVRIlWUesuBfzCis" : "emVxQKB1wJc9FwuIBG8o"
@@ -11,7 +11,7 @@ export function Cover({ src, mini = false, ...props }: CoverProps) {
         const src600 = src.replace("%%", mini ? "50x50" : "600x600");
         return (
             <img
-                class={"qQ7GQU14EkggPBC6jdeS fosYvyLDok3Kjj9OWmxG PageHeaderPlaylistCover_coverImage__OC58K " + roundClass}
+                class={`qQ7GQU14EkggPBC6jdeS fosYvyLDok3Kjj9OWmxG ${styles.Cover} ${roundClass}`}
                 alt=""
                 loading="eager"
                 data-test-id="ENTITY_COVER_IMAGE"
