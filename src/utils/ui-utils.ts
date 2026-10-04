@@ -1,5 +1,4 @@
 import { Album, Artist, OuterArtist, SpoofableEntity, SpoofableType, Track, TrackMST } from "@/types";
-import { createFlags, flagsToStrings } from "./flags";
 import { debug, error } from "./logger";
 import { sources } from "@/api/main-api";
 import { httpsify, randomString } from "./common";
@@ -209,24 +208,6 @@ export function restoreAllNodesByType(type: SpoofableType, id: string) {
             restoreOriginalValues(currentTrack, { originalValues });
         }
     }
-}
-
-export const [LEFT, TOP, RIGHT, BOTTOM, CENTER] = createFlags(5)
-const anchorToString = {
-    [LEFT]: "left",
-    [TOP]: "top",
-    [RIGHT]: "right",
-    [BOTTOM]: "bottom",
-    [CENTER]: "center",
-}
-
-export function anchorElement(anchor: HTMLElement, target: HTMLElement, area: number = LEFT | TOP) {
-    const anchorName = '--' + randomString();
-    const strArea = flagsToStrings(area, anchorToString).join(" ");
-    anchor.style.anchorName = anchorName;
-    target.style.positionAnchor = anchorName;
-    target.style.positionArea = strArea;
-    target.style.positionVisibility = "anchors-visible";
 }
 
 export function computeStyle(classes: Record<string, string | number | undefined | null>) {
