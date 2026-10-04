@@ -1,5 +1,6 @@
 import { Track } from "@/types";
 import { error } from "@/utils/logger";
+import { getAnyTrackLyrics } from "@/utils/universal-lyrics";
 import Groq from "groq-sdk";
 
 const PROMPT = `Ты — детектор потенциально заблюриваемых фрагментов в текстах музыкальных произведений (треков).
@@ -236,28 +237,8 @@ export async function generateCensoredLyricsFragments(text: string, synced: bool
     }
 }
 
-export async function checkIfTrackTextCensored(text: string, synced: boolean) {
-    const response = await groqClient.chat.completions.create({
-        "messages": [
-            {
-                "role": "system",
-                "content": PROMPT
-            },
-            {
-                "role": "user",
-                "content": text
-            }
-        ],
-        "model": "openai/gpt-oss-120b",
-        "stream": false,
-        "response_format": {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "dangerousFragments",
-                "schema": SCHEMA,
-                "strict": true
-            }
-        }
-    })
-    return response?.choices?.[0]?.message?.content
+export async function generateCensoredTrackLyricsFragments(track: Track) {
+    const lyrics = await getAnyTrackLyrics(track);
+    if (!lyrics) return [];
+    return generateCensoredLyricsFragments(lyrics, false);
 }
