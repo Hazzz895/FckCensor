@@ -205,37 +205,31 @@ const SCHEMA = {
 const groqClient = new Groq({ apiKey: import.meta.env.VITE_GROQ_TOKEN, dangerouslyAllowBrowser: true });
 
 export async function generateCensoredLyricsFragments(text: string, synced: boolean): Promise<CensoredFragment[]> {
-    try {
-        const response = await groqClient.chat.completions.create({
-            "messages": [
-                {
-                    "role": "system",
-                    "content": PROMPT
-                },
-                {
-                    "role": "user",
-                    "content": text
-                }
-            ],
-            "model": "openai/gpt-oss-120b",
-            "stream": false,
-            "response_format": {
-                "type": "json_schema",
-                "json_schema": {
-                    "name": "dangerousFragments",
-                    "schema": SCHEMA,
-                    "strict": true
-                }
+    const response = await groqClient.chat.completions.create({
+        "messages": [
+            {
+                "role": "system",
+                "content": PROMPT
+            },
+            {
+                "role": "user",
+                "content": text
             }
-        })
-        const aiResponse = response?.choices?.[0]?.message?.content;
-        const json = JSON.parse(aiResponse!) as CensoredFragmentsResponse;
-        return json.dangerousFragments ?? [];
-    }
-    catch (e) {
-        error(e);
-        return [];
-    }
+        ],
+        "model": "openai/gpt-oss-120b",
+        "stream": false,
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "dangerousFragments",
+                "schema": SCHEMA,
+                "strict": true
+            }
+        }
+    })
+    const aiResponse = response?.choices?.[0]?.message?.content;
+    const json = JSON.parse(aiResponse!) as CensoredFragmentsResponse;
+    return json.dangerousFragments ?? [];
 }
 
 export async function generateCensoredTrackLyricsFragments(track: Track) {
