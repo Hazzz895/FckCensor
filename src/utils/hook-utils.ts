@@ -130,7 +130,7 @@ let originalDiGet: diGetType | null = null;
 let pendingHooks: Record<string, ((dimodule: any) => any)[]> = {}
 let di: Di | null = null;
 
-export function getDiResource(resource: string) {
+export function getDiResource(resource: DiResourceName) {
     return resource === undefined ? di : di?.get(resource) || null;
 }
 
