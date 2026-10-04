@@ -1,3 +1,4 @@
+import { putToBundle } from "@/dev/dev-utils";
 import { Track } from "@/types";
 import { error } from "@/utils/logger";
 import { getAnyTrackLyrics } from "@/utils/universal-lyrics";
@@ -242,3 +243,5 @@ export async function generateCensoredTrackLyricsFragments(track: Track) {
     if (!lyrics) return [];
     return generateCensoredLyricsFragments(lyrics, false);
 }
+
+putToBundle("generateCensoredTrackLyricsFragments", generateCensoredTrackLyricsFragments);
