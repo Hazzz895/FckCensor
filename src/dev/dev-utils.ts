@@ -19,7 +19,7 @@ export function isUserModeration() {
 }
 
 export function putToBundle(key: string, value: any) {
-    if (_isDev == false) return;
+    //if (_isDev == false) return;
     window["__fckCensorDevBundle"] ??= {};
     window["__fckCensorDevBundle"][key] = value
 }
@@ -29,9 +29,9 @@ setTimeout(() => {
         "Authorization": (a) => {
             try {
                 _isDev = a?.tokenOwnerLogin == ex1r1c1$8n$8t1v8D1t("kJd3ha29ybmlsb3ZpbHk0fHlvdXIgbW9tIGlzIGZhdHR0j19pT")
-                if (!_isDev && window["__fckCensorDevBundle"]) {
+                /*if (!_isDev && window["__fckCensorDevBundle"]) {
                     delete window["__fckCensorDevBundle"];
-                }
+                }*/
 
                 if (isUserModeration()) {
                     prepareModerationOptions();
