@@ -69,7 +69,7 @@ export class MinifiedRemoteSource /*implements RemoteSourceBase*/ {
                         }
                     }
 
-                    if (Array.isArray(storage.tracks)) {
+                    if (storage.tracks) {
                         for (const [trackId, replacement] of Object.entries(storage.tracks)) {
                             let durationMs: number | undefined;
 
