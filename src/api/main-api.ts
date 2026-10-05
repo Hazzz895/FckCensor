@@ -309,11 +309,11 @@ export default class MainSource extends Source {
     }
 
     spoofTrack(track: Track): Track | null {
-        const spoof = this.internalSpoof(track, this.getTrackSpoof.bind(this), String(track.id), true, "track") as Track
+        const spoof: Track | null = this.internalSpoof(track, this.getTrackSpoof.bind(this), String(track.id), true, "track") as Track
 
         track.artists?.forEach(this.spoofArtist.bind(this));
         if (Array.isArray(track.albums) && track.albums.length > 0) {
-            let spoofedAlbum = !!spoof.albums?.length;
+            let spoofedAlbum = !!spoof?.albums?.length;
             track.albums.forEach((album) => {
                 if (!isEmptyObject(this.spoofAlbum(album)) && !spoofedAlbum) {
                     spoofedAlbum = true;
