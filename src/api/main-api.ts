@@ -313,7 +313,7 @@ export default class MainSource extends Source {
 
         track.artists?.forEach(this.spoofArtist.bind(this));
         if (Array.isArray(track.albums) && track.albums.length > 0) {
-            let spoofedAlbum = false;
+            let spoofedAlbum = !!spoof.albums?.length;
             track.albums.forEach((album) => {
                 if (!isEmptyObject(this.spoofAlbum(album)) && !spoofedAlbum) {
                     spoofedAlbum = true;
