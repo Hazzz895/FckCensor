@@ -204,7 +204,7 @@ const SCHEMA = {
 
 const groqClient = new Groq({ apiKey: import.meta.env.VITE_GROQ_TOKEN, dangerouslyAllowBrowser: true });
 
-export async function generateCensoredLyricsFragments(text: string, synced: boolean): Promise<CensoredFragment[]> {
+export async function generateCensoredLyricsFragments(text: string): Promise<CensoredFragment[]> {
     const response = await groqClient.chat.completions.create({
         "messages": [
             {
@@ -235,5 +235,5 @@ export async function generateCensoredLyricsFragments(text: string, synced: bool
 export async function generateCensoredTrackLyricsFragments(track: Track) {
     const lyrics = await getAnyTrackLyrics(track);
     if (!lyrics) return [];
-    return generateCensoredLyricsFragments(lyrics, false);
+    return generateCensoredLyricsFragments(lyrics);
 }
