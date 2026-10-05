@@ -7,6 +7,7 @@ import { CensoredFragment, generateCensoredTrackLyricsFragments } from "@/dev/mo
 import { Track } from "@/types";
 import { debug, error } from "@/utils/logger";
 import { lrcLineToTimestamp } from "@/utils/music";
+import { getReports, Report } from "./api/moderation-reports-api";
 
 let fullscreenListener: any = null;
 
@@ -30,6 +31,9 @@ function addModMenuToFullscreen(fullscreen: HTMLElement) {
     fullscreen.appendChild(<DevPanelOption style="position: absolute; top: 0; left: 0;">Режим модерации</DevPanelOption>)
 
     fullscreen.appendChild(new AiAnaliticsMenuWindow().element)
+    const reportsWindow = new ReportsWindow();
+    reportsWindow.x = 300;
+    fullscreen.appendChild(reportsWindow.element)
 }
 
 abstract class MenuWindow extends ElementWrap {
@@ -258,5 +262,76 @@ class AiAnaliticsResultList extends ElementWrap {
 
     public get results() {
         return this._results;
+    }
+}
+
+class ReportsWindow extends MenuWindow {
+    private readonly resultsList = new ReportsResultList();
+
+    protected createContent(): HTMLElement {
+        return <div style="min-width: 250px; min-height: 250px;">
+            {this.resultsList.element}
+        </div>
+    }
+
+    constructor() {
+        super("Сообщения о цензуре");
+        void this.loadReports();
+    }
+
+    private async loadReports() {
+        try {
+            this.resultsList.reports = await getReports();
+        }
+        catch (e: unknown) {
+            error(e);
+            this.resultsList.placeholder = e instanceof Error ? e.message : String(e);
+        }
+    }
+}
+
+class ReportsResultList extends ElementWrap {
+    protected createElement(): HTMLElement {
+        const rows = this._reports.length
+            ? this._reports.map(report => <tr key={report.id}>
+                <td style="padding: 0.75rem 0.875rem; border-bottom: 1px solid rgba(148, 163, 184, 0.18);">{report.id}</td>
+                <td style="padding: 0.75rem 0.875rem; border-bottom: 1px solid rgba(148, 163, 184, 0.18);">{new Date(report.created_at).toLocaleString()}</td>
+                <td style="padding: 0.75rem 0.875rem; border-bottom: 1px solid rgba(148, 163, 184, 0.18);">{report.track_id}</td>
+                <td style="padding: 0.75rem 0.875rem; border-bottom: 1px solid rgba(148, 163, 184, 0.18);">{report.replaced ? "Да" : "Нет"}</td>
+                <td style="padding: 0.75rem 0.875rem; border-bottom: 1px solid rgba(148, 163, 184, 0.18);">{report.type}</td>
+            </tr>)
+            : <tr>
+                <td colspan={5} style={`padding: 1.25rem 1rem; text-align: center; color: ${this._placeholder ? "red" : "#94a3b8"};`}>{this._placeholder || "Нет сообщений о цензуре"}</td>
+            </tr>;
+
+        return <div style="max-height: 42vh; overflow: auto; background: rgba(15, 23, 42, 0.9); border-top: 1px solid rgba(148, 163, 184, 0.2); border-bottom: 1px solid rgba(148, 163, 184, 0.2);">
+            <table style="width: 100%; border-collapse: collapse; color: #e2e8f0; font-size: 0.8rem;">
+                <thead style="position: sticky; top: 0; z-index: 1; background: rgba(15, 23, 42, 0.98);">
+                    <tr>
+                        <th style="padding: 0.75rem 0.875rem; text-align: left; color: #94a3b8;">ID</th>
+                        <th style="padding: 0.75rem 0.875rem; text-align: left; color: #94a3b8;">Дата</th>
+                        <th style="padding: 0.75rem 0.875rem; text-align: left; color: #94a3b8;">ID трека</th>
+                        <th style="padding: 0.75rem 0.875rem; text-align: left; color: #94a3b8;">Заменено</th>
+                        <th style="padding: 0.75rem 0.875rem; text-align: left; color: #94a3b8;">Тип</th>
+                    </tr>
+                </thead>
+                <tbody>{rows}</tbody>
+            </table>
+        </div>;
+    }
+
+    private _placeholder?: string = "Загрузка отчетов...";
+
+    public set placeholder(value: string | undefined) {
+        this._placeholder = value;
+        this.reRenderElement();
+    }
+
+    private _reports: Report[] = [];
+
+    public set reports(value: Report[]) {
+        this._reports = value;
+        this._placeholder = undefined;
+        this.reRenderElement();
     }
 }
