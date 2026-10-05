@@ -3,7 +3,7 @@ import { listenAddNodes, unlistenAddNodes } from "@/hooks/ui/observer";
 import { DevPanelOption } from "./options";
 import ElementWrap from "@/ui/components/ElementWrap";
 import { ActionButton } from "@/ui/components/alerts/alerts";
-import { CensoredFragment, generateCensoredTrackLyricsFragments } from "@/api/ai-lyrics-moderation";
+import { CensoredFragment, generateCensoredTrackLyricsFragments } from "@/dev/moderation/api/ai-lyrics-moderation";
 import { Track } from "@/types";
 import { debug, error } from "@/utils/logger";
 

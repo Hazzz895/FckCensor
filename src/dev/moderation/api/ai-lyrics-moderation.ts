@@ -237,5 +237,3 @@ export async function generateCensoredTrackLyricsFragments(track: Track) {
     if (!lyrics) return [];
     return generateCensoredLyricsFragments(lyrics, false);
 }
-
-putToBundle("generateCensoredTrackLyricsFragments", generateCensoredTrackLyricsFragments);
