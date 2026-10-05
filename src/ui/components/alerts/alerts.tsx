@@ -1,6 +1,5 @@
 import { JSX } from '@/jsx-runtime';
 import styles from '@/styles.module.scss';
-import { computeStyle } from '@/utils/ui-utils';
 
 export function AlertRoot({ children }: JSX.HTMLAttributes) {
     return (
@@ -115,7 +114,6 @@ export function ScrimAlert({ scrimElement, x, y, width, height, children }: Scri
     return (
         <div
             class={styles.AlertFromScrim}
-            style={computeStyle({ 'max-width': width, 'max-height': height })}
         >
             {children}
         </div>

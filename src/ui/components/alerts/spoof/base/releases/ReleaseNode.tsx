@@ -4,7 +4,6 @@ import ElementWrap from "@/ui/components/ElementWrap";
 import { CloseButton } from "../../../alerts";
 import styles from "@/styles.module.scss";
 import { eventHandlerForTooltip } from "@/ui/tooltips";
-import { computeStyle } from "@/utils/ui-utils";
 
 export function ReleaseNode({
     release,

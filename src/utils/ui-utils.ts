@@ -210,10 +210,6 @@ export function restoreAllNodesByType(type: SpoofableType, id: string) {
     }
 }
 
-export function computeStyle(classes: Record<string, string | number | undefined | null>) {
-    return Object.entries(classes).filter((_,v)=> !!v).map((k,v) => `${k}: ${v}`).join('; ');
-}
-
 /* thx gemini */
 export function runUnprotected(target: any, callback: () => void) {
     const node = target?.$treenode;
