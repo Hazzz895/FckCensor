@@ -89,4 +89,25 @@ export function getAudioMetadata(audioFile: File): Promise<HTMLAudioElement> {
     });
 }
 
+
 export const trackToQuery = (track: Track) => `${track.title} - ${track.artists?.map(x => x.name).join(", ")}`;
+
+export function lrcLineToTimestamp(lrc: string): number {
+    const match = /^\[(?:(\d+):)?(\d{1,2}):(\d{1,2})(?:\.(\d+))?\]/.exec(lrc.trim());
+
+    if (!match) {
+        return 0;
+    }
+
+    const [, hours, minutes, seconds, fraction] = match;
+
+    const h = Number(hours ?? 0);
+    const m = Number(minutes);
+    const s = Number(seconds);
+
+    const ms = fraction
+        ? Number(fraction.padEnd(3, "0").slice(0, 3))
+        : 0;
+
+    return h * 3600000 + m * 60000 + s * 1000 + ms;
+}

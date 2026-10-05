@@ -6,6 +6,7 @@ import { ActionButton } from "@/ui/components/alerts/alerts";
 import { CensoredFragment, generateCensoredTrackLyricsFragments } from "@/dev/moderation/api/ai-lyrics-moderation";
 import { Track } from "@/types";
 import { debug, error } from "@/utils/logger";
+import { lrcLineToTimestamp } from "@/utils/music";
 
 let fullscreenListener: any = null;
 
@@ -182,6 +183,12 @@ class AiAnaliticsMenuWindow extends MenuWindow {
 }
 
 class AiAnaliticsResultList extends ElementWrap {
+    private onTimestampClick(ev: MouseEvent, result: CensoredFragment) {
+        if (!result.timestamp) return;
+        const parsed = lrcLineToTimestamp(result.timestamp) / 1000;
+        window.pulsesyncApi?.setProgress(parsed - 1);
+    }
+
     protected createElement(): HTMLElement {
         const rows = this._results.length
             ? this._results.map((r, i) => {
@@ -202,7 +209,9 @@ class AiAnaliticsResultList extends ElementWrap {
                         </span>
                     </td>
                     <td style="padding: 0.75rem 0.875rem; border-bottom: 1px solid rgba(148, 163, 184, 0.18); vertical-align: top;">
-                        {r.timestamp || "нет таймкода"}
+                        <button onclick={(ev: any) => this.onTimestampClick(ev, r)} style="display: inline-flex; align-items: center; padding: 0.25rem 0.6rem; border-radius: 999px; background: rgba(148, 163, 184, 0.12); color: #e2e8f0; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em;">
+                            {r.timestamp || "нет таймкода"}
+                        </button>
                     </td>
                 </tr>;
             })
