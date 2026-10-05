@@ -330,7 +330,7 @@ export function hookRotorResource(doubleRR: any) {
     hookHeavyMethods(doubleRR, async (session: { sequence: { track?: Track }[] }) => {
         if (Array.isArray(session?.sequence)) {
             for (const seq of session.sequence) {
-                if (!seq.track) return;
+                if (!seq.track) continue;
                 sources.spoofTrack(seq.track)
             }
         }
