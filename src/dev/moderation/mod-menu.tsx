@@ -5,7 +5,7 @@ import ElementWrap from "@/ui/components/ElementWrap";
 import { ActionButton } from "@/ui/components/alerts/alerts";
 import { CensoredFragment, generateCensoredTrackLyricsFragments } from "@/api/ai-lyrics-moderation";
 import { Track } from "@/types";
-import { debug } from "@/utils/logger";
+import { debug, error } from "@/utils/logger";
 
 let fullscreenListener: any = null;
 
@@ -167,6 +167,10 @@ class AiAnaliticsMenuWindow extends MenuWindow {
             debug("Fragments", fragments);
             this.resultsList.results = fragments;
         }
+        catch (e: any) {
+            error(e)
+            this.resultsList.placeholder = e?.message;
+        }
         finally {
             button.disabled = false;
         }
@@ -179,30 +183,67 @@ class AiAnaliticsMenuWindow extends MenuWindow {
 
 class AiAnaliticsResultList extends ElementWrap {
     protected createElement(): HTMLElement {
-        return <table>
-            <thead>
-                <tr>
-                    <th>У</th>
-                    <th>Фрагмент</th>
-                    <th>Причина</th>
-                    <th>Категория</th>
-                </tr>
-            </thead>
-            <tbody>
-                {this._results.map((r, i) => <tr key={i}>
-                    <td>{r.level}</td>
-                    <td>{r.text}</td>
-                    <td>{r.reason}</td>
-                    <td>{r.category}</td>
-                </tr>)}
-            </tbody>
-        </table>
+        const rows = this._results.length
+            ? this._results.map((r, i) => {
+                const levelColor = r.level === "high" ? "#fca5a5" : r.level === "medium" ? "#fbbf24" : r.level === "low" ? "#93c5fd" : "black";
+                const levelBg = r.level === "high" ? "rgba(239, 68, 68, 0.18)" : r.level === "medium" ? "rgba(251, 191, 36, 0.18)" : r.level === "low" ? "rgba(59, 130, 246, 0.18)" : "white";
+
+                return <tr key={i} style="transition: background 0.2s ease;">
+                    <td style="padding: 0.75rem 0.875rem; border-bottom: 1px solid rgba(148, 163, 184, 0.18); vertical-align: top;">
+                        <span style={`display: inline-flex; align-items: center; justify-content: center; min-width: 2rem; padding: 0.25rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; background: ${levelBg}; color: ${levelColor};`}>
+                            {r.level}
+                        </span>
+                    </td>
+                    <td style="padding: 0.75rem 0.875rem; border-bottom: 1px solid rgba(148, 163, 184, 0.18); vertical-align: top; color: #f8fafc; word-break: break-word; line-height: 1.45;">{r.text}</td>
+                    <td style="padding: 0.75rem 0.875rem; border-bottom: 1px solid rgba(148, 163, 184, 0.18); vertical-align: top; color: #cbd5e1; word-break: break-word; line-height: 1.45;">{r.reason || "—"}</td>
+                    <td style="padding: 0.75rem 0.875rem; border-bottom: 1px solid rgba(148, 163, 184, 0.18); vertical-align: top;">
+                        <span style="display: inline-flex; align-items: center; padding: 0.25rem 0.6rem; border-radius: 999px; background: rgba(148, 163, 184, 0.12); color: #e2e8f0; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em;">
+                            {r.category || "—"}
+                        </span>
+                    </td>
+                    <td style="padding: 0.75rem 0.875rem; border-bottom: 1px solid rgba(148, 163, 184, 0.18); vertical-align: top;">
+                        {r.timestamp || "нет таймкода"}
+                    </td>
+                </tr>;
+            })
+            : <tr>
+                <td colspan={4} style={"padding: 1.25rem 1rem; text-align: center; color:" + (this.placeholder ? "red" : " color: #94a3b8;")}>{this.placeholder || "Нет результатов"}</td>
+            </tr>;
+
+        return <div style="max-height: 42vh; overflow: auto; background: rgba(15, 23, 42, 0.9); border-top: 1px solid rgba(148, 163, 184, 0.2); border-bottom: 1px solid rgba(148, 163, 184, 0.2);">
+            <table style="width: 100%; border-collapse: collapse; table-layout: fixed; color: #e2e8f0; font-size: 0.8rem;">
+                <thead style="position: sticky; top: 0; z-index:1; background: rgba(15, 23, 42, 0.98);">
+                    <tr>
+                        <th style="padding: 0.75rem 0.875rem; text-align: left; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: #94a3b8; border-bottom: 1px solid rgba(148, 163, 184, 0.22);">У</th>
+                        <th style="padding: 0.75rem 0.875rem; text-align: left; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: #94a3b8; border-bottom: 1px solid rgba(148, 163, 184, 0.22);">Фрагмент</th>
+                        <th style="padding: 0.75rem 0.875rem; text-align: left; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: #94a3b8; border-bottom: 1px solid rgba(148, 163, 184, 0.22);">Причина</th>
+                        <th style="padding: 0.75rem 0.875rem; text-align: left; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: #94a3b8; border-bottom: 1px solid rgba(148, 163, 184, 0.22);">Категория</th>
+                        <th style="padding: 0.75rem 0.875rem; text-align: left; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: #94a3b8; border-bottom: 1px solid rgba(148, 163, 184, 0.22);">Таймкод</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows}
+                </tbody>
+            </table>
+        </div>;
+    }
+
+    private _placeholder?: string;
+
+    public set placeholder(value: string | undefined) {
+        this._placeholder = value;
+        this.reRenderElement();
+    }
+
+    public get placeholder() {
+        return this._placeholder;
     }
 
     private _results: CensoredFragment[] = [];
 
     public set results(value: CensoredFragment[]) {
         this._results = value;
+        this.placeholder = undefined;
         this.reRenderElement();
     }
 
