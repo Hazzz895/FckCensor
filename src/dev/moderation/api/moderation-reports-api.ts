@@ -1,15 +1,16 @@
-import { SUPABASE_SECRET_TOKEN } from "../admin"
+
+import { SECRET_SUPABASE_TOKEN } from "@/../build-info";
 
 const BASE_URL = "https://pzomqvgckpgkshxhpite.supabase.co/rest/v1"
 
 function request(table: string, query: string) {
-    if (!SUPABASE_SECRET_TOKEN) throw new Error("SUPABASE_SECRET_TOKEN is not defined");
+    if (!SECRET_SUPABASE_TOKEN) throw new Error("SECRET_SUPABASE_TOKEN is not defined");
 
     return fetch(`${BASE_URL}/${table}?${query}`, {
         headers: {
-            "apiKey": SUPABASE_SECRET_TOKEN,
+            "apiKey": SECRET_SUPABASE_TOKEN,
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${SUPABASE_SECRET_TOKEN}`
+            "Authorization": `Bearer ${SECRET_SUPABASE_TOKEN}`
         }
     })
 }

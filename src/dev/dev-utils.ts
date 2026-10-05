@@ -1,9 +1,13 @@
 import { hookDi } from "@/utils/hook-utils";
 import { debug, error } from "@/utils/logger";
 import addonConfig from "../../addon.config.mjs";
-import "./moderation/admin";
+import { IS_MODERATION_BUILD } from "@/../build-info";
 
 let _isDev: boolean | null = null
+
+if (IS_MODERATION_BUILD) {
+    import("./moderation/options").then(m => m.prepareModerationOptions());
+}
 
 export function isUserDev() {
     return _isDev;
