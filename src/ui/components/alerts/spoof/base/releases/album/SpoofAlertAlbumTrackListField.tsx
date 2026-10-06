@@ -105,7 +105,7 @@ export class DiskNode extends ElementWrap implements IGetValue<Track[]> {
     ) { super(); }
 
     protected createElement(): HTMLElement {
-        const header = this.displayIndex !== undefined ? <div class="TextVolume_root__wxSaK"><h2 class="_MWOVuZRvUQdXKTMcOPx _sd8Q9d_Ttn0Ufe4ISWS nSU6fV9y80WrZEfafvww CommonAlbumPage_text__kqBSb">Диск {this.displayIndex + 1}</h2></div> : undefined;
+        const header = this.displayIndex !== undefined ? <div className="TextVolume_root__wxSaK"><h2 className="_MWOVuZRvUQdXKTMcOPx _sd8Q9d_Ttn0Ufe4ISWS nSU6fV9y80WrZEfafvww CommonAlbumPage_text__kqBSb">Диск {this.displayIndex + 1}</h2></div> : undefined;
         const totalDisks = this.field.tracks?.length ?? 1;
         return <div style="width: 100%">
             {header}

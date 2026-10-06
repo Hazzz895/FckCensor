@@ -29,12 +29,12 @@ export abstract class SpoofAlertReleasesListField<T> extends SpoofAlertEntityPro
 
     protected createElement() {
         this.releaseNodes = []
-        return <TextField Tag="div" style="display: flex; gap: 8px; flex-direction: column" header={this.title} class={styles.i + " " + " EditContentModal_input__8O8GH EditContentModal_field__rexIL"}>
+        return <TextField Tag="div" style="display: flex; gap: 8px; flex-direction: column" header={this.title} className={styles.i + " " + " EditContentModal_input__8O8GH EditContentModal_field__rexIL"}>
             {this.fillElements().map(n => {
                 this.releaseNodes.push(n);
                 return n.element;
             })}
-            <div class={styles.FullWidthContainer}>
+            <div className={styles.FullWidthContainer}>
                 {new AddEntityToListField<Release>(this.type, this.onReleaseAddInternal.bind(this)).element}
                 {this.getAdditionalActionButton()}
             </div>

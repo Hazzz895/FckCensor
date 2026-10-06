@@ -1,23 +1,22 @@
-import { JSX } from "@/jsx-runtime";
 import { CloseButton } from "./components/alerts/alerts";
 import styles from '@/styles.module.scss'
 import { debug } from "@/utils/logger";
+import { JSX } from "react/jsx-runtime";
 
 const TOOLTIP_ID = (styles as any).FckCensorTooltip
 const CLOSABLE_TOOLTIP_ID = (styles as any).ClosableTooltip
 
-export function Tooltip({ children }: JSX.HTMLAttributes) {
+export function Tooltip({ children }: React.PropsWithChildren) {
     removeTooltip()
     const tooltip = (
-        <div class="QhR4J536RmNHBB5bZYwF TooltipWithTitle_root__7jLY3" 
+        <div className="QhR4J536RmNHBB5bZYwF TooltipWithTitle_root__7jLY3" 
              data-test-id="TOOLTIP_WITH_TITLE" 
-             tabindex="-1"
              role="tooltip" 
              id={TOOLTIP_ID}
-             onmouseenter={removeTooltip}>
-                <div class="_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 _3_Mxw7Si7j2g4kWjlpR Fqg1VWCJUfasVVxqICeO">
-                    <div class="TooltipWithTitle_text__ElBtq">
-                        <span class="_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 ZYV27jeWd30QDXu4GhaH TooltipWithTitle_description__HsGcR">
+             onMouseEnter={() => removeTooltip()}>
+                <div className="_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 _3_Mxw7Si7j2g4kWjlpR Fqg1VWCJUfasVVxqICeO">
+                    <div className="TooltipWithTitle_text__ElBtq">
+                        <span className="_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 ZYV27jeWd30QDXu4GhaH TooltipWithTitle_description__HsGcR">
                             {children}
                         </span>
                     </div>
@@ -55,17 +54,17 @@ export function ClosableTooltip({ children, id = CLOSABLE_TOOLTIP_ID, onclose: o
     removeTooltip(id)
     const tooltip = (
     <div id={id}>
-        <div class="QhR4J536RmNHBB5bZYwF" 
+        <div className="QhR4J536RmNHBB5bZYwF" 
              data-test-id={id}
              tabindex="-1"
              role="tooltip" {...props}>
-                <div class={`_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 _3_Mxw7Si7j2g4kWjlpR Fqg1VWCJUfasVVxqICeO1 ${styles.Content}`}>
-                    <div class="TooltipWithTitle_text__ElBtq">
-                        <span class="_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 ZYV27jeWd30QDXu4GhaH TooltipWithTitle_description__HsGcR">
+                <div className={`_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 _3_Mxw7Si7j2g4kWjlpR Fqg1VWCJUfasVVxqICeO1 ${styles.Content}`}>
+                    <div className="TooltipWithTitle_text__ElBtq">
+                        <span className="_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 ZYV27jeWd30QDXu4GhaH TooltipWithTitle_description__HsGcR">
                             {children}
                         </span>
                     </div>
-                    <div class={styles.TooltipButtons}>
+                    <div className={styles.TooltipButtons}>
                         <CloseButton onclick={() => { removeTooltip(); removeTooltip(id); onClose != null && onClose() }} onmouseenter={eventHandlerForTooltip} aria-label="Скрыть и больше не показывать"/>
                     </div>
                 </div>

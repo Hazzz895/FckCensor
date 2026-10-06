@@ -115,8 +115,8 @@ export interface BadgeProps extends JSX.HTMLAttributes {
  
 export function Badge({ icon, description, ...props }: BadgeProps) {
     return (
-        <span aria-label={description} {...props} class={`Meta_explicitMarkContainer__BxMQg ${styles.FckCensorBadge}`} onmouseenter={eventHandlerForTooltip}>
-            <svg class="ExplicitMarkIcon_explicitMark__0BPeQ Meta_explicitMark__ocnCV Rkdd2vKC_3xa1eUdRdHP" 
+        <span aria-label={description} {...props} className={`Meta_explicitMarkContainer__BxMQg ${styles.FckCensorBadge}`} onmouseenter={eventHandlerForTooltip}>
+            <svg className="ExplicitMarkIcon_explicitMark__0BPeQ Meta_explicitMark__ocnCV Rkdd2vKC_3xa1eUdRdHP" 
                  focusable="false" 
                  data-test-id="FCKCENSOR_BADGE_ICON"
                  aria-hidden="false">

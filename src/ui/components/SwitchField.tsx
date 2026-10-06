@@ -49,15 +49,15 @@ export class SwitchField extends SpoofAlertEntityPropertyField<boolean> {
 
     protected createElement(): HTMLElement {
         const el = (
-            <div class={styles.Switch + " EditContentModal_field__rexIL"}>
-                <div class={styles.Switch}>
+            <div className={styles.Switch + " EditContentModal_field__rexIL"}>
+                <div className={styles.Switch}>
                     {this.labelElement = <div
-                        class="_MWOVuZRvUQdXKTMcOPx LezmJlldtbHWqU7l1950 oyQL2RSmoNbNQf3Vc6YI V3WU123oO65AxsprotU9 Vi7Rd0SZWqD17F0872TB"
+                        className="_MWOVuZRvUQdXKTMcOPx LezmJlldtbHWqU7l1950 oyQL2RSmoNbNQf3Vc6YI V3WU123oO65AxsprotU9 Vi7Rd0SZWqD17F0872TB"
                         aria-hidden="true"
                         style="-webkit-line-clamp: 1;"/>}
                 </div>
                 {this.switchButton = <button
-                    class="cpeagBA1_PblpJn8Xgtv _eTRQi5ADZCUvUKMZqJU zIMibMuH7wcqUoW7KH1B IlG7b1K0AD7E7AMx6F5p rWukOKAJh5Ga7JuIp62L undefined qU2apWBO1yyEK0lZ3lPO rqUESGQ8jp3tbDawOzuG GJh5PwV9GyFuKhlG6pQz"
+                    className="cpeagBA1_PblpJn8Xgtv _eTRQi5ADZCUvUKMZqJU zIMibMuH7wcqUoW7KH1B IlG7b1K0AD7E7AMx6F5p rWukOKAJh5Ga7JuIp62L undefined qU2apWBO1yyEK0lZ3lPO rqUESGQ8jp3tbDawOzuG GJh5PwV9GyFuKhlG6pQz"
                     type="button"
                     role="switch"
                     aria-checked={String(this._value)}
@@ -65,8 +65,8 @@ export class SwitchField extends SpoofAlertEntityPropertyField<boolean> {
                     aria-busy="false"
                     onclick={() => this.value = !this.value}
                 >
-                    <span class="JjlbHZ4FaP9EAcR_1DxF">
-                        <div class="aw9IoPC0GuAC7Hmf825u KC8t9NStVmQ1_VY54KH4"></div>
+                    <span className="JjlbHZ4FaP9EAcR_1DxF">
+                        <div className="aw9IoPC0GuAC7Hmf825u KC8t9NStVmQ1_VY54KH4"></div>
                     </span>
                 </button>}
             </div>

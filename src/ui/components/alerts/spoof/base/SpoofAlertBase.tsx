@@ -118,28 +118,28 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
 
         let liteModeTooltip = null;
         if (isLiteMode() && shouldShowTutorial(LITE_MODE_WARNING)) {
-            liteModeTooltip = <TutorialTooltip id={LITE_MODE_WARNING} class="QhR4J536RmNHBB5bZYwF EditContentModal_field__rexIL">Включен упрощённый режим. Изменения{this.type === "track" ? " (кроме аудиопотока) " : ""} не будут применены на {localizeSpoofableType(this.type)} до отключения.{this.type === "track" ? " Подмена аудиопотока будет применена." : ""}</TutorialTooltip>
+            liteModeTooltip = <TutorialTooltip id={LITE_MODE_WARNING} className="QhR4J536RmNHBB5bZYwF EditContentModal_field__rexIL">Включен упрощённый режим. Изменения{this.type === "track" ? " (кроме аудиопотока) " : ""} не будут применены на {localizeSpoofableType(this.type)} до отключения.{this.type === "track" ? " Подмена аудиопотока будет применена." : ""}</TutorialTooltip>
         }
 
         const content = (<div>
             {liteModeTooltip}
-            <div class={"EditContentModal_field__rexIL " + styles.CoverAndTitleContainer}>
+            <div className={"EditContentModal_field__rexIL " + styles.CoverAndTitleContainer}>
                 {coverField}
                 {titleField}
             </div>
             {childrenNode}
-            <details class="EditContentModal_field__rexIL">
-                <summary class="EditContentModal_field__rexIL">
+            <details className="EditContentModal_field__rexIL">
+                <summary className="EditContentModal_field__rexIL">
                     <div style="display: inline-flex">
                         Дополнительные поля (продвинуто)
-                        <a target="_blank" rel="noreferrer noopener" class="buOTZq_TKQOVyjMLrXvB Meta_root_withSecondaryColor___uENY" href={ADDON_FAQ_URI + "#%D0%B4%D0%BE%D0%BF%D0%BE%D0%BB%D0%BD%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D1%8B%D0%B5-%D0%BF%D0%BE%D0%BB%D1%8F-%D0%BF%D0%BE%D0%B4%D0%BC%D0%B5%D0%BD%D1%8B-%D0%BF%D1%80%D0%BE%D0%B4%D0%B2%D0%B8%D0%BD%D1%83%D1%82%D0%BE"}>
+                        <a target="_blank" rel="noreferrer noopener" className="buOTZq_TKQOVyjMLrXvB Meta_root_withSecondaryColor___uENY" href={ADDON_FAQ_URI + "#%D0%B4%D0%BE%D0%BF%D0%BE%D0%BB%D0%BD%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D1%8B%D0%B5-%D0%BF%D0%BE%D0%BB%D1%8F-%D0%BF%D0%BE%D0%B4%D0%BC%D0%B5%D0%BD%D1%8B-%D0%BF%D1%80%D0%BE%D0%B4%D0%B2%D0%B8%D0%BD%D1%83%D1%82%D0%BE"}>
                             <Badge icon="info_xxs" description="Нажмите, чтобы узнать как работать с дополнительными полями"/>
                         </a>
                     </div>
                 </summary>
                 {jsonStructure && <details>
-                    <summary class="EditContentModal_field__rexIL">JSON-структура</summary>
-                    <pre style="color: var(--ym-controls-color-secondary-text-enabled_variant)" class={"EditContentModal_input__8O8GH " + styles.i}>{jsonStructure}</pre>
+                    <summary className="EditContentModal_field__rexIL">JSON-структура</summary>
+                    <pre style="color: var(--ym-controls-color-secondary-text-enabled_variant)" className={"EditContentModal_input__8O8GH " + styles.i}>{jsonStructure}</pre>
                 </details>}
                 {customFields}
                 {addPropButton}

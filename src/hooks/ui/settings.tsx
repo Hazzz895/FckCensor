@@ -43,29 +43,29 @@ async function showConfirmationModal() {
 
 export function SettingsItem({ children, onclick }: JSX.HTMLAttributes) {
     return (
-        <li class="Settings_item__Ksa9h">
+        <li className="Settings_item__Ksa9h">
             <button
-                class="cpeagBA1_PblpJn8Xgtv UDMYhpDjiAFT3xUx268O dgV08FKVLZKFsucuiryn IlG7b1K0AD7E7AMx6F5p j1jXIVckFgZECecFzZMe qU2apWBO1yyEK0lZ3lPO BbCxxIjBGupN28bq2lSP et24Jf7pT_X9Fvc7TznR SettingsListButtonItem_root__3dtV2 SettingsListButtonItem_important__AcEon"
+                className="cpeagBA1_PblpJn8Xgtv UDMYhpDjiAFT3xUx268O dgV08FKVLZKFsucuiryn IlG7b1K0AD7E7AMx6F5p j1jXIVckFgZECecFzZMe qU2apWBO1yyEK0lZ3lPO BbCxxIjBGupN28bq2lSP et24Jf7pT_X9Fvc7TznR SettingsListButtonItem_root__3dtV2 SettingsListButtonItem_important__AcEon"
                 type="button"
                 aria-live="off"
                 aria-busy="false"
                 onclick={onclick}
             >
-                <span class="JjlbHZ4FaP9EAcR_1DxF iOlzvyUREgDkthkrx7Sf SettingsListButtonItem_contentContainer__jqoKg">
-                    <div class="SettingsListButtonItem_content___Opuo">
+                <span className="JjlbHZ4FaP9EAcR_1DxF iOlzvyUREgDkthkrx7Sf SettingsListButtonItem_contentContainer__jqoKg">
+                    <div className="SettingsListButtonItem_content___Opuo">
                         <div
                             title={children?.toString()}
-                            class="_MWOVuZRvUQdXKTMcOPx LezmJlldtbHWqU7l1950 oyQL2RSmoNbNQf3Vc6YI V3WU123oO65AxsprotU9 Vi7Rd0SZWqD17F0872TB SettingsListButtonItem_title__npCza"
+                            className="_MWOVuZRvUQdXKTMcOPx LezmJlldtbHWqU7l1950 oyQL2RSmoNbNQf3Vc6YI V3WU123oO65AxsprotU9 Vi7Rd0SZWqD17F0872TB SettingsListButtonItem_title__npCza"
                             style="-webkit-line-clamp: 1;"
                         >
                             {children}
                         </div>
-                        <div class="_MWOVuZRvUQdXKTMcOPx SehSa7OyRpC2nzYTVb2Q _3_Mxw7Si7j2g4kWjlpR SettingsListButtonItem_description__g8_Ba">
+                        <div className="_MWOVuZRvUQdXKTMcOPx SehSa7OyRpC2nzYTVb2Q _3_Mxw7Si7j2g4kWjlpR SettingsListButtonItem_description__g8_Ba">
                             {`Хранится ${localSource.albumSpoofs.size + localSource.artistSpoofs.size + localSource.trackSpoofs.size + localSource.replacementsTrackIds.length} подмен (${formatBytes(localSource.getTracksAudioSize())})`}
                         </div>
                     </div>
                     <svg
-                        class="J9wTKytjOWG73QMoN5WP RBoEbyJKP5rEtLsXM1ji SettingsListButtonItem_icon__WULZ1 UwnL5AJBMMAp6NwMDdZk"
+                        className="J9wTKytjOWG73QMoN5WP RBoEbyJKP5rEtLsXM1ji SettingsListButtonItem_icon__WULZ1 UwnL5AJBMMAp6NwMDdZk"
                         focusable="false"
                         aria-hidden="true"
                     >

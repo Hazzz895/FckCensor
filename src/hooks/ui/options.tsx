@@ -74,9 +74,9 @@ function SpoofOption({ label, onclick, ...props }: any) {
 
 export function Option({ label, icon, onclick}: OptionAttributes) {
     return (
-    <button onclick={onclick} fckcensoroption class="cpeagBA1_PblpJn8Xgtv UDMYhpDjiAFT3xUx268O dgV08FKVLZKFsucuiryn IlG7b1K0AD7E7AMx6F5p HbaqudSqu7Q3mv3zMPGr qU2apWBO1yyEK0lZ3lPO kc5CjvU5hT9KEj0iTt3C EiyUV4aCJzpfNzuihfMM" type="button" role="menuitem" data-test-id="CONTEXT_MENU_SPOOF_BUTTON" tabindex="-1" aria-live="off" aria-busy="false">
-        <span class="JjlbHZ4FaP9EAcR_1DxF">
-            <svg class="J9wTKytjOWG73QMoN5WP elJfazUBui03YWZgHCbW vqAVPWFJlhAOleK_SLk4 l3tE1hAMmBj2aoPPwU08" focusable="false" aria-hidden="true">
+    <button onclick={onclick} fckcensoroption className="cpeagBA1_PblpJn8Xgtv UDMYhpDjiAFT3xUx268O dgV08FKVLZKFsucuiryn IlG7b1K0AD7E7AMx6F5p HbaqudSqu7Q3mv3zMPGr qU2apWBO1yyEK0lZ3lPO kc5CjvU5hT9KEj0iTt3C EiyUV4aCJzpfNzuihfMM" type="button" role="menuitem" data-test-id="CONTEXT_MENU_SPOOF_BUTTON" tabindex="-1" aria-live="off" aria-busy="false">
+        <span className="JjlbHZ4FaP9EAcR_1DxF">
+            <svg className="J9wTKytjOWG73QMoN5WP elJfazUBui03YWZgHCbW vqAVPWFJlhAOleK_SLk4 l3tE1hAMmBj2aoPPwU08" focusable="false" aria-hidden="true">
                 <use xlink:href={`/icons/sprite.svg#${icon}`}></use>
             </svg>
             {label}

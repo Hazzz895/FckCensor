@@ -37,7 +37,7 @@ export class TabbedArtist extends Searchable<Artist> {
             children = super.createElement(); // FIXME невозможно удалить кастомного исполнителя
         }
 
-        return <div aria-label="Нажмите чтобы удалить исполнителя" onmouseenter={(ev: MouseEvent) => !this.input && eventHandlerForTooltip(ev)} class={styles.TabbedArtist}>
+        return <div aria-label="Нажмите чтобы удалить исполнителя" onmouseenter={(ev: MouseEvent) => !this.input && eventHandlerForTooltip(ev)} className={styles.TabbedArtist}>
             {children}
              </div>
     }

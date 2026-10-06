@@ -16,8 +16,8 @@ export class Searchable<T extends SpoofableEntity> extends ElementWrap {
 
     protected createElement(): HTMLElement {
         return <div style="position: relative">
-            {this.input = <input class={styles.input} oninput={this.onTextChanged.bind(this)} onfocusout={this.onFocusLost.bind(this)}></input> as unknown as HTMLInputElement}
-            {this.searchResults = <div hidden={true} class={styles.TabbedArtistSearchResults}/>}
+            {this.input = <input className={styles.input} oninput={this.onTextChanged.bind(this)} onfocusout={this.onFocusLost.bind(this)}></input> as unknown as HTMLInputElement}
+            {this.searchResults = <div hidden={true} className={styles.TabbedArtistSearchResults}/>}
         </div>
     }
 
@@ -47,7 +47,7 @@ export class Searchable<T extends SpoofableEntity> extends ElementWrap {
         this.searchResults.hidden = results.length === 0;
 
         for (const res of results) {
-            const result = <button type="button" class={styles.TabbedArtistSearchResult} onmousedown={(ev: MouseEvent) => ev.preventDefault()} onclick={() => this.selectEntity(res)}>
+            const result = <button type="button" className={styles.TabbedArtistSearchResult} onmousedown={(ev: MouseEvent) => ev.preventDefault()} onclick={() => this.selectEntity(res)}>
                 <Cover mini src={res.coverUri ?? res.ogImage}/>
                 <span>{this.type === "artist" ? (res as Artist).name : (res as Release).title}</span>
             </button> as HTMLElement;

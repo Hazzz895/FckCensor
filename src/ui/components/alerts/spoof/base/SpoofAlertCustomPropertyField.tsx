@@ -19,7 +19,7 @@ export default class SpoofAlertCustomPropertyField extends SpoofAlertEntityPrope
         this.propertyNameField = <TextField list="FckCensorEntityPropertiesList" oninput={this.onPropertyNameChanged.bind(this)} placeholder="Название"/>;
         
         this.propertyValueField = <TextField oninput={this.onValueChanged.bind(this)}  placeholder="Значение"/>
-        this.propertyTypeField = <select onchange={this.onTypeChanged.bind(this)} class={"EditContentModal_field__rexIL EditContentModal_input__8O8GH " + styles.i}>
+        this.propertyTypeField = <select onchange={this.onTypeChanged.bind(this)} className={"EditContentModal_field__rexIL EditContentModal_input__8O8GH " + styles.i}>
                                     <option value="string">Строка</option>
                                     <option value="number">Число</option>
                                     <option value="boolean">Логическое</option>
@@ -34,7 +34,7 @@ export default class SpoofAlertCustomPropertyField extends SpoofAlertEntityPrope
         const x = <CloseButton onclick={onClose.bind(this)} style="align-self: center"/>
         x.classList.add("EditContentModal_field__rexIL")
 
-        return <div class={styles.AddSpoofAlertFieldFieldGrid}>
+        return <div className={styles.AddSpoofAlertFieldFieldGrid}>
             {x}
             {this.propertyNameField}
             <datalist id="FckCensorEntityPropertiesList">
@@ -109,7 +109,7 @@ export default class SpoofAlertCustomPropertyField extends SpoofAlertEntityPrope
         let errorLabel = this.propertyValueField.querySelector<HTMLElement>('[data-test-id="ERROR_LABEL"]');
         if (!fits) {
             if (!errorLabel) {
-                errorLabel = <div class="_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 _3_Mxw7Si7j2g4kWjlpR" data-test-id="ERROR_LABEL" style="color: var(--ym-message-color-error-text-enabled); margin-block-start: var(--ym-spacer-size-xs);"/>;
+                errorLabel = <div className="_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 _3_Mxw7Si7j2g4kWjlpR" data-test-id="ERROR_LABEL" style="color: var(--ym-message-color-error-text-enabled); margin-block-start: var(--ym-spacer-size-xs);"/>;
                 this.propertyValueField.appendChild(errorLabel);
             }
             errorLabel.textContent = error;
@@ -205,5 +205,5 @@ export default class SpoofAlertCustomPropertyField extends SpoofAlertEntityPrope
 }
 
 export function AddSpoofAlertFieldButton({ children, ...props }: JSX.HTMLAttributes) {
-    return <button {...props} class={`EditContentModal_input__8O8GH EditContentModal_field__rexIL ${styles.AddSpoofAlertFieldField}`}>{children ?? "Добавить поле"}</button>
+    return <button {...props} className={`EditContentModal_input__8O8GH EditContentModal_field__rexIL ${styles.AddSpoofAlertFieldField}`}>{children ?? "Добавить поле"}</button>
 }
