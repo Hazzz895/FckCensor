@@ -1,23 +1,32 @@
 import path from 'node:path'
-import { promises as fs } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
-import addonConfig from '../addon.config.mjs'
-import { getPulseSyncAddonDir, getPulseSyncAddonsDir } from './pulsesync-paths.mjs'
+import { deliverAddon, formatDeliveryResult } from './addon-delivery.mjs'
+import { createModuleBuilder } from './module-build.mjs'
 
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const scriptRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const rootDir = process.argv[2] ? path.resolve(process.argv[2]) : scriptRoot
+const { default: addonConfig } = await import(pathToFileURL(path.join(rootDir, 'addon.config.mjs')).href)
 const sourceDir = path.join(rootDir, 'dist', addonConfig.directoryName)
 
 async function main() {
-    const targetRoot = getPulseSyncAddonsDir()
-    const targetDir = getPulseSyncAddonDir()
-
-    await fs.access(sourceDir)
-    await fs.mkdir(targetRoot, { recursive: true })
-    await fs.rm(targetDir, { recursive: true, force: true })
-    await fs.cp(sourceDir, targetDir, { recursive: true, force: true })
-
-    console.log(`Synced addon to ${targetDir}`)
+    const modules = createModuleBuilder(rootDir)
+    const stop = () => {
+        modules.stop()
+        process.exitCode = 130
+    }
+    process.once('SIGINT', stop)
+    process.once('SIGTERM', stop)
+    try {
+        await modules.update({ force: true, strict: true })
+    } finally {
+        process.removeListener('SIGINT', stop)
+        process.removeListener('SIGTERM', stop)
+    }
+    if (!modules.ready) return
+    const result = await deliverAddon(sourceDir, addonConfig, rootDir)
+    console.log(formatDeliveryResult(result))
+    console.log(`Addon directory: ${result.targetDir}`)
 }
 
 main().catch(error => {

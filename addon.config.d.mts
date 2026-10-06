@@ -5,7 +5,7 @@ declare const addonConfig: {
     description: string
     version: string
     author: string | string[]
-    type: 'script' | 'theme' | 'library' | string
+    type: 'web-addon' | 'script' | 'theme' | 'library' | string
     image: string
     banner: string
     libraryLogo: string
