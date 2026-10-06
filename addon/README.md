@@ -7,7 +7,7 @@
         <img style="height: 2rem; width: 2rem; display: inline; margin-right: 8px" src="https://github.com/Hazzz895/FckCensor/blob/v2/addon/image.png?raw=true"/>FckCensor (обход запикивания / цензуры)
     </h1>
 </div>
-<b>FckCensor</b> — аддон, позволяющий легко подменить любую информацию альбомов, исполнителей и треков (включая аудио), а также автоматически подменивает вышеперечисленную информацию, если такова есть в <a href="https://github.com/Hazzz895/FckCensorData/blob/main/README.md">списке автомаметических замен</a>.
+<b>FckCensor</b> — аддон, позволяющий легко подменить любую информацию альбомов, исполнителей и треков (включая аудио), а также автоматически подменивает вышеперечисленную информацию, если такова есть в <a href="https://github.com/Hazzz895/FckCensorData/blob/main/README.md">списке автоматических замен</a>.
 
 <div style="height: 24px"></div>
 
