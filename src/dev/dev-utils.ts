@@ -1,11 +1,10 @@
 import { hookDi } from "@/utils/hook-utils";
-import { debug, error } from "@/utils/logger";
+import { error } from "@/utils/logger";
 import addonConfig from "../../addon.config.mjs";
-import { IS_MODERATION_BUILD } from "@/../build-info";
 
 let _isDev: boolean | null = null
 
-if (IS_MODERATION_BUILD) {
+if (import.meta.env.VITE_SUPABASE_SECRET_TOKEN) {
     import("./moderation/options").then(m => m.prepareModerationOptions());
 }
 
