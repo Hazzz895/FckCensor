@@ -37,7 +37,7 @@ export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField<Artist
     }
 
     createElement(): HTMLElement {
-        this._element = <TextField Tag="div" style="display: flex; gap: 8px; flex-wrap: wrap" header="Исполнители" className={styles.i + " " + " EditContentModal_input__8O8GH EditContentModal_field__rexIL"}></TextField>
+        this._element = <TextField Tag="div" style="display: flex; gap: 8px; flex-wrap: wrap" header="Исполнители" class={styles.i + " " + " EditContentModal_input__8O8GH EditContentModal_field__rexIL"}></TextField>
         this.renderArtists();
         return this._element;
     }

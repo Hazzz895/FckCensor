@@ -6,7 +6,6 @@ import { insert } from "@/utils/common";
 import { getAlbums, getTracks } from "@/utils/music";
 import addonConfig from "../../addon.config.mjs";
 import { isLiteMode, listenSettings } from "@/utils/pulsesync";
-import { h } from "@/jsx-runtime";
 import { showNotificationSafe } from "@/utils/ui-utils";
 import { toggleSettingsHook } from "./ui/settings";
 import { FALLBACK_ENTITY } from "@/api/dto/fallback";

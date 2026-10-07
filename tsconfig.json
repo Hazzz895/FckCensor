@@ -13,8 +13,10 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "paths": {
-      "@/*": ["./src/*"]
-    }
+      "@/*": ["./src/*"],
+      "@/jsx-runtime": ["./src/ui/dom-factory.ts"],
+    },
+    "jsxImportSource": "@" 
   },
-  "include": ["src", "modules/**/*.ts", "vite.config.ts", "addon.config.d.mts"]
+  "include": ["src", "modules/**/*.ts", "vite.config.ts", "addon.config.d.mts", "env.d.ts"]
 }

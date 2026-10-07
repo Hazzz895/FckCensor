@@ -40,7 +40,7 @@ export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | unde
     }
 
     protected createElement(): HTMLElement {
-        return <div className={"EditContentModal_field__rexIL " + styles.i} style="display: grid; align-items: center; grid-template-columns: 1fr 1fr; gap: 24px">
+        return <div class={"EditContentModal_field__rexIL " + styles.i} style="display: grid; align-items: center; grid-template-columns: 1fr 1fr; gap: 24px">
                 <ActionButton onclick={this.onReplaceButtonClick.bind(this)} style="width: 100%">{this.hasSpoof ? "Удалить подмену аудио" : "Подменить аудио"}</ActionButton>
                 <div style="text-align: center">
                     <span>{this.hasSpoof ? "Аудио подменено" : "Аудио не подменивается."}</span>

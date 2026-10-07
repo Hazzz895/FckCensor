@@ -11,7 +11,7 @@ export function Cover({ src, mini = false, ...props }: CoverProps) {
         const src600 = src.replace("%%", mini ? "50x50" : "600x600");
         return (
             <img
-                className={`qQ7GQU14EkggPBC6jdeS fosYvyLDok3Kjj9OWmxG ${styles.Cover} ${roundClass}`}
+                class={`qQ7GQU14EkggPBC6jdeS fosYvyLDok3Kjj9OWmxG ${styles.Cover} ${roundClass}`}
                 alt=""
                 loading="eager"
                 data-test-id="ENTITY_COVER_IMAGE"
@@ -21,8 +21,8 @@ export function Cover({ src, mini = false, ...props }: CoverProps) {
         );
     } else {
         return (
-            <div className={"iha4fse_uYSR5XdCNFvU " + roundClass} data-test-id="ENTITY_COVER_NULL_IMAGE" {...props}>
-                <svg className="IXo8WeM40YvVigqgCP7J UwnL5AJBMMAp6NwMDdZk" focusable="false" aria-hidden="true">
+            <div class={"iha4fse_uYSR5XdCNFvU " + roundClass} data-test-id="ENTITY_COVER_NULL_IMAGE" {...props}>
+                <svg class="IXo8WeM40YvVigqgCP7J UwnL5AJBMMAp6NwMDdZk" focusable="false" aria-hidden="true">
                     <use xlink:href="/icons/sprite.svg#note_xs"></use>
                 </svg>
             </div>

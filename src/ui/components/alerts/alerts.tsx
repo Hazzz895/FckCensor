@@ -6,7 +6,7 @@ export function AlertRoot({ children }: JSX.HTMLAttributes) {
         <div
             tabindex="-1"
             role="dialog"
-            className="ifxS_8bgSnwBoCsyow0E t7tk8IYH3tGrhDZJpi3Z GKgBufCxWa9erUCTU3Fp mjhMCLd6OX1d1_cJo5Cm"
+            class="ifxS_8bgSnwBoCsyow0E t7tk8IYH3tGrhDZJpi3Z GKgBufCxWa9erUCTU3Fp mjhMCLd6OX1d1_cJo5Cm"
         >
             {children}
         </div>
@@ -20,7 +20,7 @@ interface AlertHeaderProps extends JSX.HTMLAttributes {
 export function CloseButton({ onclick, ...props }: Record<string, any>) {
     return (
         <button
-            className={`cpeagBA1_PblpJn8Xgtv iJVAJMgccD4vj4E4o068 uwk3hfWzB2VT7kE13SQk IlG7b1K0AD7E7AMx6F5p nHWc2sto1C6Gm0Dpw_l0 oR11LfCBVqMbUJiAgknd qU2apWBO1yyEK0lZ3lPO YUY9QjXr1E4DQfQdMjGt ${styles.CloseButton}`}
+            class={`cpeagBA1_PblpJn8Xgtv iJVAJMgccD4vj4E4o068 uwk3hfWzB2VT7kE13SQk IlG7b1K0AD7E7AMx6F5p nHWc2sto1C6Gm0Dpw_l0 oR11LfCBVqMbUJiAgknd qU2apWBO1yyEK0lZ3lPO YUY9QjXr1E4DQfQdMjGt ${styles.CloseButton}`}
             type="button"
             aria-label="Закрыть"
             aria-live="off"
@@ -29,8 +29,8 @@ export function CloseButton({ onclick, ...props }: Record<string, any>) {
             {...props}
             data-scrim-close-button="true"
         >
-            <span className="JjlbHZ4FaP9EAcR_1DxF">
-                <svg className="J9wTKytjOWG73QMoN5WP l3tE1hAMmBj2aoPPwU08" focusable="false" aria-hidden="true">
+            <span class="JjlbHZ4FaP9EAcR_1DxF">
+                <svg class="J9wTKytjOWG73QMoN5WP l3tE1hAMmBj2aoPPwU08" focusable="false" aria-hidden="true">
                     <use xlink:href="/icons/sprite.svg#close_xxs"></use>
                 </svg>
             </span>
@@ -40,8 +40,8 @@ export function CloseButton({ onclick, ...props }: Record<string, any>) {
 
 export function AlertHeader({ title, children }: AlertHeaderProps) {
     return (
-        <header className="EditContentModal_header__F6BJQ" data-scrim-header="true">
-            <h3 className="_MWOVuZRvUQdXKTMcOPx _sd8Q9d_Ttn0Ufe4ISWS nSU6fV9y80WrZEfafvww xuw9gha2dQiGgdRcHNgU">
+        <header class="EditContentModal_header__F6BJQ" data-scrim-header="true">
+            <h3 class="_MWOVuZRvUQdXKTMcOPx _sd8Q9d_Ttn0Ufe4ISWS nSU6fV9y80WrZEfafvww xuw9gha2dQiGgdRcHNgU">
                 {title ?? children}
             </h3>
             <CloseButton />
@@ -51,14 +51,14 @@ export function AlertHeader({ title, children }: AlertHeaderProps) {
 
 export function AlertContentRoot({ children }: JSX.HTMLAttributes) {
     return (
-        <div className={`EditContentModal_content__6yEGM ${styles.AlertContent}`}>
+        <div class={`EditContentModal_content__6yEGM ${styles.AlertContent}`}>
             {children}
         </div>
     );
 }
 
 export function AlertButtons({ children }: JSX.HTMLAttributes) {
-    return <div className="EditContentModal_buttons__bHzfS">{children}</div>;
+    return <div class="EditContentModal_buttons__bHzfS">{children}</div>;
 }
 
 export interface ActionButtonProps extends JSX.HTMLAttributes {
@@ -68,7 +68,7 @@ export interface ActionButtonProps extends JSX.HTMLAttributes {
 export function ActionButton({ children, onclick, class: className, ...props }: ActionButtonProps) {
     return (
         <button
-            className={`cpeagBA1_PblpJn8Xgtv _eTRQi5ADZCUvUKMZqJU zIMibMuH7wcqUoW7KH1B IlG7b1K0AD7E7AMx6F5p Y2uqxoU7xa_AZ8FUCVOW qU2apWBO1yyEK0lZ3lPO ${className ?? ''}`}
+            class={`cpeagBA1_PblpJn8Xgtv _eTRQi5ADZCUvUKMZqJU zIMibMuH7wcqUoW7KH1B IlG7b1K0AD7E7AMx6F5p Y2uqxoU7xa_AZ8FUCVOW qU2apWBO1yyEK0lZ3lPO ${className ?? ''}`}
             type="button"
             aria-live="off"
             aria-busy="false"
@@ -83,7 +83,7 @@ export function ActionButton({ children, onclick, class: className, ...props }: 
 export function AlertBackground() {
     return (
         <div
-            className="l66GiFKS1Ux_BNd603Cu NaZE1NCUxSM1MvpZuLJV"
+            class="l66GiFKS1Ux_BNd603Cu NaZE1NCUxSM1MvpZuLJV"
             style="position: fixed; overflow: auto; inset: 0px;"
             aria-hidden="true"
             data-scrim-backdrop="true"
@@ -113,7 +113,7 @@ function forceReflow(el: HTMLElement) {
 export function ScrimAlert({ scrimElement, x, y, width, height, children }: ScrimAlertProps) {
     return (
         <div
-            className={styles.AlertFromScrim}
+            class={styles.AlertFromScrim}
         >
             {children}
         </div>
@@ -227,12 +227,12 @@ export function TextField({ header, placeholder, multiline, children, ...props }
     const Tag = (props as any).Tag ? (props as any).Tag : multiline ? "textarea" : "input"; 
     delete props.Tag;
     return (
-    <div className="EditContentModal_field__rexIL">
+    <div class="EditContentModal_field__rexIL">
         {header ?(
-        <div className="_MWOVuZRvUQdXKTMcOPx g3qWNP6xl__7qxNmtrvd _3_Mxw7Si7j2g4kWjlpR EditContentModal_label__Cf3Kp">
+        <div class="_MWOVuZRvUQdXKTMcOPx g3qWNP6xl__7qxNmtrvd _3_Mxw7Si7j2g4kWjlpR EditContentModal_label__Cf3Kp">
             {header}
         </div>) : ""}
-        <Tag {...props} className={"kAYDswAvA1AJoAzRV4rY EditContentModal_input__8O8GH " + styles.i} placeholder={placeholder ?? ""}>
+        <Tag {...props} class={"kAYDswAvA1AJoAzRV4rY EditContentModal_input__8O8GH " + styles.i} placeholder={placeholder ?? ""}>
             {children}
         </Tag>
     </div>)

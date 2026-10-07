@@ -73,13 +73,13 @@ export function ChangableCover({ onselected, ...props }: ChangableCoverProps) {
             .catch((e) => error(e));
     }
 
-    const element = <div onclick={onClick} className={`qaIScXjx1qyXuaIHXQIo emVxQKB1wJc9FwuIBG8o ZcpulvHgF_wsgzB8Hye9 ${styles.ChangableCoverRoot} ${styles.ChangableCoverRoot_hoverable}`}>
-        <button className={`cpeagBA1_PblpJn8Xgtv iJVAJMgccD4vj4E4o068 dgV08FKVLZKFsucuiryn IlG7b1K0AD7E7AMx6F5p nHWc2sto1C6Gm0Dpw_l0 qU2apWBO1yyEK0lZ3lPO ${styles.ChangableCoverRoot_button}`} type="button" aria-label="Просмотр обложки" tabindex="0" aria-live="off" aria-busy="false">
+    const element = <div onclick={onClick} class={`qaIScXjx1qyXuaIHXQIo emVxQKB1wJc9FwuIBG8o ZcpulvHgF_wsgzB8Hye9 ${styles.ChangableCoverRoot} ${styles.ChangableCoverRoot_hoverable}`}>
+        <button class={`cpeagBA1_PblpJn8Xgtv iJVAJMgccD4vj4E4o068 dgV08FKVLZKFsucuiryn IlG7b1K0AD7E7AMx6F5p nHWc2sto1C6Gm0Dpw_l0 qU2apWBO1yyEK0lZ3lPO ${styles.ChangableCoverRoot_button}`} type="button" aria-label="Просмотр обложки" tabindex="0" aria-live="off" aria-busy="false">
             <Cover {...props}/>
         </button>
-        <div className={`${styles.ChangableCoverRoot_buttonContainer} ${styles.CursorPointer}`}>
-            <div className={`${styles.ChangableCoverRoot} ${styles.ChangableCoverRoot_fileUploader_hovered}`}>
-                <button className={`cpeagBA1_PblpJn8Xgtv iJVAJMgccD4vj4E4o068 zIMibMuH7wcqUoW7KH1B IlG7b1K0AD7E7AMx6F5p nHWc2sto1C6Gm0Dpw_l0 oR11LfCBVqMbUJiAgknd qU2apWBO1yyEK0lZ3lPO ${styles.ChangableCoverRoot_fileUploader_button}`} type="button" aria-label="Добавить обложку" data-test-id="PLAYLIST_HEADER_ADD_COVER_BUTTON" aria-live="off" aria-busy="false">
+        <div class={`${styles.ChangableCoverRoot_buttonContainer} ${styles.CursorPointer}`}>
+            <div class={`${styles.ChangableCoverRoot} ${styles.ChangableCoverRoot_fileUploader_hovered}`}>
+                <button class={`cpeagBA1_PblpJn8Xgtv iJVAJMgccD4vj4E4o068 zIMibMuH7wcqUoW7KH1B IlG7b1K0AD7E7AMx6F5p nHWc2sto1C6Gm0Dpw_l0 oR11LfCBVqMbUJiAgknd qU2apWBO1yyEK0lZ3lPO ${styles.ChangableCoverRoot_fileUploader_button}`} type="button" aria-label="Добавить обложку" data-test-id="PLAYLIST_HEADER_ADD_COVER_BUTTON" aria-live="off" aria-busy="false">
                     Изменить обложку
                 </button>
             </div>
