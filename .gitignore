@@ -82,6 +82,7 @@ out
 # Nuxt.js build / generate output
 .nuxt
 dist
+.pulsesync-dev/
 
 # Gatsby files
 .cache/
@@ -125,6 +126,7 @@ dist
 
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
+.vs
 
 # yarn v3
 .pnp.*
@@ -138,9 +140,6 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
-
-# VS config
-.vs
 
 # FckCensor Dev Files
 **/*.dev.*
