@@ -35,4 +35,4 @@ prepareSettings();
 prepareHooks();
 loadSources().then(() => { 
     invokeAddNodesListeners();
-})   
+})
