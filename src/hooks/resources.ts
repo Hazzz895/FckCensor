@@ -5,16 +5,16 @@ import { Album, OuterArtist, Playlist, SearchResponse, Track } from "@/types";
 import { insert } from "@/utils/common";
 import { getAlbums, getTracks } from "@/utils/music";
 import addonConfig from "../../addon.config.mjs";
-import { isLiteMode, listenSettings } from "@/utils/pulsesync";
 import { showNotificationSafe } from "@/utils/ui-utils";
 import { toggleSettingsHook } from "./ui/settings";
 import { FALLBACK_ENTITY } from "@/api/dto/fallback";
+import { settings } from "@/settings";
 
 const heavyMethodsUnhooks: string[] = []
 
 /** хук методов, которые должны отключаться при включении упрощённого режима */
 function hookHeavyMethods(obj: any, hook: Hook, ...methodNames: [string, ...string[]]): string[] | null {
-    if (isLiteMode()) return null;
+    if (settings.store.liteMode) return null;
 
     const unhooks = hookMethods(obj, hook, ...methodNames);
     if (unhooks) heavyMethodsUnhooks.push(...unhooks);
@@ -337,7 +337,7 @@ export function hookRotorResource(doubleRR: any) {
 }
 
 export function hookResources() { 
-    if (heavyMethodsUnhooks.length > 0 || isLiteMode()) return
+    if (heavyMethodsUnhooks.length > 0 || settings.store.liteMode) return
 
     hookDi({
         "TracksResource": hookTrackResource,

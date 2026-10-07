@@ -8,6 +8,8 @@ import { sources } from "@/api/main-api";
 import { Q_ALBUM_FIBER_ROOT, Q_ALBUM_STICKY_TITLE, Q_ARTIST_STICKY_TITLE, Q_META_TITLE_CONTAINER, Q_PLAYER_BAR } from "./constants";
 import { closestInTree, getAlbumFromNode, getAllTrackNodesById, getArtistFromNode, getTrackIdFromNode } from "@/utils/ui-utils";
 import { SpoofableType } from "@/types";
+import { onCurrentTrackChange } from "@/utils/pulsesync";
+import { useCurrentTrack } from "@pulsesync/addon-sdk";
 
 const PLAYERBAR_SELECTOR = `${Q_PLAYER_BAR}, [data-test-id="FULLSCREEN_PLAYER_FULLSCREEN_CONTENT"]`;
 
@@ -26,15 +28,13 @@ export function prepareBadges() {
         }
     });
 
-    window.pulsesyncApi?._waitForPlayer(() => {
-        updatePlayerBarBadge();
-        window?.sonataState?.queueState?.currentEntity?.onChange?.(() => {
-            try {
-                updatePlayerBarBadge();
-            } catch (e) {
-                error(e);
-            }
-        });
+    updatePlayerBarBadge();
+    onCurrentTrackChange(() => {
+        try {
+            updatePlayerBarBadge();
+        } catch (e) {
+            error(e);
+        }
     });
 }
 
@@ -49,7 +49,7 @@ export function updatePlayerBarBadge(playerBar?: HTMLElement) {
         return;
     }
     if (!playerBar) return;
-    const track = window.pulsesyncApi?.getCurrentTrack();
+    const track = useCurrentTrack();
     if (!track) return;
     return updateTrackBadge(playerBar, String(track.id));
 }

@@ -6,6 +6,7 @@ import { Album, Artist, OuterArtist, Track, TrackMST } from "@/types";
 import { createAlbumSpoofAlertFor, createArtistSpoofAlertFor, createTrackSpoofAlertFor } from "@/ui/components/alerts/spoof/spoof-alert";
 import { Q_TRACK_ROOT, Q_VIBE_CONTEXT_MENU } from "./constants";
 import { completeTutorial } from "./tutorial";
+import { useCurrentTrack } from "@pulsesync/addon-sdk";
 
 export function prepareOptions() {
     listenAddOptionsMenu((trackOptionsMenu) => {
@@ -33,7 +34,7 @@ export function prepareOptions() {
     }, "track");
 
     listenAddNodes((trackOptionsMenu) => {
-        const trackData = window.pulsesyncApi?.getCurrentTrack() as Track;
+        const trackData = useCurrentTrack() as Track;
         if (!trackData) return;
         const option = <SpoofOption label="Подменить трек" onclick={(el: HTMLElement) => createTrackSpoofAlertFor(el, trackOptionsMenu, trackData)}/>;
         trackOptionsMenu.appendChild(option);

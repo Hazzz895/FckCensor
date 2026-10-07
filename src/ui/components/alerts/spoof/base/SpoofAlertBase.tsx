@@ -18,8 +18,8 @@ import { report } from "@/api/reports-api";
 import { ReportCensorActionButton } from "./ReportCensorActionButton";
 import { Badge, updateBadgesByType } from "@/hooks/ui/badges";
 import { ADDON_FAQ_URI } from "@/hooks/ui/constants";
-import { isLiteMode } from "@/utils/pulsesync";
 import { LITE_MODE_WARNING, shouldShowTutorial, TutorialTooltip } from "@/hooks/ui/tutorial";
+import { settings } from "@/settings";
 
 export type SpoofRemoveAction = "remove" | "cancel" | "restore";
 
@@ -69,7 +69,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
     protected constructor(entity: T, type: SpoofableType, alertTitle: string, sourceNode?: HTMLElement, scrim?: HTMLElement) {
         this.realEntity = entity;
         entity = cloneEntity(entity);
-        if (isLiteMode()) {
+        if (settings.store.liteMode) {
             spoofEntity(type, entity);
         }
         this.entity = entity;
@@ -117,7 +117,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         let jsonStructure = JSON.stringify((this.realEntity as any)?.toJSON?.() || this.entity, null, 4).replace('\\n', '\n');
 
         let liteModeTooltip = null;
-        if (isLiteMode() && shouldShowTutorial(LITE_MODE_WARNING)) {
+        if (settings.store.liteMode && shouldShowTutorial(LITE_MODE_WARNING)) {
             liteModeTooltip = <TutorialTooltip id={LITE_MODE_WARNING} class="QhR4J536RmNHBB5bZYwF EditContentModal_field__rexIL">Включен упрощённый режим. Изменения{this.type === "track" ? " (кроме аудиопотока) " : ""} не будут применены на {localizeSpoofableType(this.type)} до отключения.{this.type === "track" ? " Подмена аудиопотока будет применена." : ""}</TutorialTooltip>
         }
 

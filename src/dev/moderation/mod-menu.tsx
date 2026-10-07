@@ -8,6 +8,8 @@ import { Track } from "@/types";
 import { debug, error } from "@/utils/logger";
 import { lrcLineToTimestamp } from "@/utils/music";
 import { getReports, Report } from "./api/moderation-reports-api";
+import { useCurrentTrack } from "@pulsesync/addon-sdk";
+import { setProgress } from "@/utils/pulsesync";
 
 let fullscreenListener: any = null;
 
@@ -161,7 +163,7 @@ class AiAnaliticsMenuWindow extends MenuWindow {
     }
     
     private async onCheck(ev: MouseEvent) {
-        const currentTrack = window.pulsesyncApi?.getCurrentTrack?.();
+        const currentTrack  = useCurrentTrack();
         if (!currentTrack) return;
 
         const button = ev.currentTarget as HTMLButtonElement;
@@ -190,7 +192,7 @@ class AiAnaliticsResultList extends ElementWrap {
     private onTimestampClick(ev: MouseEvent, result: CensoredFragment) {
         if (!result.timestamp) return;
         const parsed = lrcLineToTimestamp(result.timestamp) / 1000;
-        window.pulsesyncApi?.setProgress(parsed - 1);
+        setProgress(parsed - 1);
     }
 
     protected createElement(): HTMLElement {

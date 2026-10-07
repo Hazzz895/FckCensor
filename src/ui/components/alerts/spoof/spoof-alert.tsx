@@ -7,6 +7,7 @@ import { SpoofArtistAlert } from "./artist/SpoofArtistAlert";
 import { SpoofAlbumAlert } from "./album/SpoofAlbumAlert";
 import { localizeSpoofableType } from "@/utils/common";
 import addonConfig from "@/../addon.config.mjs";
+import { modals } from "@pulsesync/addon-sdk";
 
 export function createTrackSpoofAlertFor(scrim: HTMLElement, trackNode: HTMLElement, trackData?: Track | null) {
     if (trackData === undefined) {
@@ -37,10 +38,10 @@ export function createAlbumSpoofAlertFor(scrim: HTMLElement, albumData: Album | 
 }
 
 function showNoDataError(type: SpoofableType) {
-    window.pulsesyncApi?.showModal?.("alert", {
+    modals.alert({
         "title": "Ой!",
         "message": localizeSpoofableType(type) + " не найден... Скорее всего, это ошибка на стороне аддона, сообщите об этом в ветке аддона в дискорде. А сейчас стоит попытаться открыть это окно в другом месте.",
-    }, addonConfig?.id)
+    })
 }
 
 export interface CoverProps extends JSX.HTMLAttributes {

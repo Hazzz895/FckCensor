@@ -1,9 +1,9 @@
 import { JSX } from '@/jsx-runtime'
 import { listenAddNodes, unlistenAddNodes } from './observer'
-import { debug } from '@/utils/logger'
 import { localSource } from '@/api/db-api'
 import addonConfig from '../../../addon.config.mjs'
 import { formatBytes } from '@/utils/common'
+import { modals, notifications, openModal } from '@pulsesync/addon-sdk'
 
 let listener: null | ((el: HTMLElement) => void) = null
 
@@ -27,17 +27,14 @@ export function prepareSettingsOptions() {
 }
 
 async function showConfirmationModal() {
-    const confirmed = await window?.pulsesyncApi?.showModal?.(
-        'confirm',
-        {
-            title: `Вы действительно хотите очистить базу данных аддона ${addonConfig.name}?`,
-            message: `Это очистит все пользовательские данные аддона ${addonConfig.name}, а именно подмены информации о альбомах, исполнителях, треках (и их аудиопотоки), которые были подменены вручную через окна подмены. Это действие невозможно отменить.`,
-        },
-        addonConfig?.id,
-    )
+    const confirmed = await modals.confirm({
+        title: `Вы действительно хотите очистить базу данных аддона ${addonConfig.name}?`,
+        message: `Это очистит все пользовательские данные аддона ${addonConfig.name}, а именно подмены информации о альбомах, исполнителях, треках (и их аудиопотоки), которые были подменены вручную через окна подмены. Это действие невозможно отменить.`,
+    });
+
     if (confirmed) {
         await localSource.deleteDb()
-        window?.pulsesyncApi?.showNotification?.('База данных FckCensor очищена.', 'info')
+        notifications.info('База данных FckCensor очищена.')
     }
 }
 

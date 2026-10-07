@@ -6,6 +6,7 @@ import { Q_ARTIST_FIBER_ROOT, Q_ALBUM_FIBER_ROOT, Q_TRACK_ROOT, Q_TRACK_FIBER_RO
 import { putToBundle } from "@/dev/dev-utils";
 import { restoreOriginalValues } from "./music";
 import { convertRawMst } from "./spoofs";
+import { notifications, useCurrentTrack, NotificationOptions } from "@pulsesync/addon-sdk";
 
 export function getTrackIdFromNode(node: HTMLElement): string | null {
     return String(getTrackFromNode(node)?.id) ?? null;
@@ -140,7 +141,7 @@ export function spoofAllNodesFor(type: SpoofableType, id: string) {
     }
 
     if (type === "track") {
-        const currentTrack = window?.pulsesyncApi?.getCurrentTrack?.() as Track | undefined;
+        const currentTrack = useCurrentTrack() as Track;
         if (currentTrack && String(currentTrack.id) === id) {
             sources.spoofTrack(currentTrack);
         }
@@ -203,7 +204,7 @@ export function restoreAllNodesByType(type: SpoofableType, id: string) {
     }
 
     if (type === "track") {
-        const currentTrack = window?.pulsesyncApi?.getCurrentTrack?.() as Track | undefined;
+        const currentTrack = useCurrentTrack() as Track;
         if (currentTrack && String(currentTrack.id) === id) {
             restoreOriginalValues(currentTrack, { originalValues });
         }
@@ -263,10 +264,10 @@ export function getContextMenuSource(menu: HTMLElement, targetQ: string) {
 
 export const DUMMY_ELEMENT = document.createElement("div");
 
-export async function showNotificationSafe(message: string, kind: "info" | "error" = "info", data?: { icon?: any, coverUrl?: string, link?: { href: string, label: string }, durationMs?: number }, attempt = 1): Promise<void> {
+export async function showNotificationSafe(message: string, kind: "info" | "error" = "info", data?: NotificationOptions, attempt = 1): Promise<void> {
     if (window.__pulsesyncBridgeInitialized) {
         try {
-            await window.pulsesyncApi?.showNotification?.(message, kind, data);
+            await (kind === "error" ? notifications.error : notifications.info)(message, data);
         } catch (e) {
             if (attempt < 3 && e instanceof Error && e.message === `Native notification containers are not mounted`) {
                 setTimeout(() => showNotificationSafe(message, kind, data, attempt + 1), attempt * 1250);

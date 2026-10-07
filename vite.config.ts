@@ -11,9 +11,16 @@ const manifest = defineAddonManifest(addonConfig)
 
 export default defineConfig(({ mode }) => ({
     resolve: {
-        alias: {
-            '@': path.resolve(import.meta.dirname, 'src'),
-        },
+        alias: [
+            {
+                find: '@/jsx-runtime',
+                replacement: path.resolve(import.meta.dirname, 'src/ui/dom-factory.ts'),
+            },
+            {
+                find: '@',
+                replacement: path.resolve(import.meta.dirname, 'src'),
+            },
+        ],
     },
     plugins: [
         react(),

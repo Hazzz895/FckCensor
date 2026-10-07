@@ -1,4 +1,4 @@
-import { AddonSettingValue } from "@pulsesync/yamusic-types"
+import { PulseSyncTrackAlbum, PulseSyncTrackArtist, PulseSyncTrackMeta } from "@pulsesync/yamusic-types";
 
 //#region FckCensor Types
 export interface RemoteList {
@@ -60,14 +60,6 @@ export type Release = Album | Track
 
 export type SpoofableEntity = Release | Artist
 
-type AddonSettingValueT<T> = AddonSettingValue<T> | T
-
-export type FckCensorAddonSettings = ({
-    "lite_mode": AddonSettingValueT<boolean>
-}) & Record<FckCensorAddonSettingKey, AddonSettingValueT<boolean | number | string>>
-
-export type FckCensorAddonSettingKey = "lite_mode"
-
 //#endregion
 
 //#region  Yandex Music Types
@@ -95,7 +87,7 @@ export interface SearchResult {
   best_result_artist: Artist
 }
 
-export interface Album extends Spoofable {
+export interface Album extends Spoofable, PulseSyncTrackAlbum {
     id:                        number;
     title?:                    string;
     metaType?:                 string;
@@ -150,7 +142,7 @@ export interface OuterArtist extends Spoofable {
     hasTrailer?:          boolean;
 }
 
-export interface Artist extends Spoofable {
+export interface Artist extends Spoofable, PulseSyncTrackArtist {
     id:                string;
     name?:             string;
     various?:          boolean;
@@ -199,7 +191,7 @@ export interface DerivedColors {
     accent?:     string;
 }
 
-export interface Track extends Spoofable {
+export interface Track extends Spoofable, PulseSyncTrackMeta {
     id:                              TrackId;
     realId?:                         string;
     title?:                          string;
