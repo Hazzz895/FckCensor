@@ -30,7 +30,7 @@ export function Tooltip({ children }: React.PropsWithChildren) {
 export function createTooltip(description: string, x: Number, y: number) {
     const tooltip = <Tooltip>{description}</Tooltip>
     document.body.appendChild(tooltip)
-    tooltip.style.translate = `${x}px ${y}px`
+    tooltip.props.translate = `${x}px ${y}px`
     return tooltip
 }
 
