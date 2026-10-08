@@ -11,28 +11,21 @@ let _appRequire: AppRequire | null = null;
 
 function initAppRequire(): AppRequire | null {
     if (_appRequire === null) {
-        try {
-            const webpackGlobal = window.webpackChunk_N_E;
-            if (webpackGlobal === null || webpackGlobal === undefined) {
-                error("Failed to init app require: webpackChunks is " + webpackGlobal)
-                return null;
-            }
-
-            webpackGlobal.push([
-                [Symbol(addonConfig.id)],
-                {},
-                (internalRequire: AppRequire | null) => {
-                    _appRequire = internalRequire;
-                }
-            ])
-            webpackGlobal.pop()
-            if (!_appRequire) {
-                error("Failed to init app require: appRequire is " + _appRequire)
-                _appRequire = null;
-            }
+        const webpackGlobal = window.webpackChunk_N_E;
+        if (webpackGlobal === null || webpackGlobal === undefined) {
+            throw new Error("Failed to init app require: webpackChunks is " + webpackGlobal)
         }
-        catch (e) {
-            error("Failed to init app require: ", e)
+
+        webpackGlobal.push([
+            [Symbol(addonConfig.id)],
+            {},
+            (internalRequire: AppRequire | null) => {
+                _appRequire = internalRequire;
+            }
+        ])
+        webpackGlobal.pop()
+        if (!_appRequire) {
+            throw new Error("Failed to init app require: appRequire is " + _appRequire)
         }
     }
     return _appRequire;
@@ -198,7 +191,7 @@ export class FunctionHook {
 }
 export type Hook = FunctionHook | HookMethod;
 
-const unhooks: Record<string, [Function, any, string]> = {};
+let unhooks: Record<string, [Function, any, string]> = {};
 
 export function hookMethods(obj: any, hook: Hook, ...methodNames: [string, ...string[]]): string[] | null {
     if (!obj || !methodNames || !hook) {
@@ -259,6 +252,11 @@ export function unhook(...keys: string[]) {
         obj[methodName] = originalMethod;
         delete unhooks[key];
     }
+}
+
+export function unhookAllMethods() {
+    unhook(...Object.keys(unhooks));
+    unhooks = {};
 }
 
 export function getCurrentTraceLine() {
