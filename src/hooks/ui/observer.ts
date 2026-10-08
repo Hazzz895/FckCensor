@@ -69,3 +69,10 @@ export function listenAddTrackNodes(listener: (el: HTMLElement, trackId: string)
 export function invokeAddNodesListeners() {
     addedNodeCallbacks.forEach(([x, selector]) => selector && document.querySelectorAll(selector).forEach(node => safeExecute(x, node)))
 }
+
+export function destroyObserver() {
+    observer.disconnect();
+    mutationCallbacks = [];
+    addedNodeCallbacks = [];
+    removedNodeCallbacks = [];
+}
