@@ -1,18 +1,34 @@
+import { IS_DEVELOPMENT_BUILD, SECRET_GROQ_TOKEN } from "./build-info.js";
+ 
 const addonConfig = {
-    id: 'pulsesync-template',
-    directoryName: 'pulsesync-template',
-    name: 'PulseSync Addon Template',
-    description: 'Стартовый шаблон аддона PulseSync на Vite и TypeScript.',
-    version: '0.1.0',
-    author: 'forea.adoxid',
-    image: '',
-    banner: '',
+    id: 'fckcensor',
+    directoryName: 'fckcensor',
+    name: 'FckCensor [v2.0.0-beta.1]',
+    description: 'Автоматически убирает цензуру и позволяет делать это вручную.',
+    version: '2.0.90',
+    author: 'Hazzz895',
+    type: 'script',
+    image: 'image.png',
+    banner: 'banner.png',
     libraryLogo: '',
-    tags: ['template'],
+    tags: ["Info", "Script", "Tools"],
     dependencies: [],
-    allowedUrls: [],
+    allowedUrls: [
+        "https://github.com/",
+        "https://raw.githubusercontent.com/",
+        "https://pzomqvgckpgkshxhpite.supabase.co/",
+        "https://t2.genius.com/unsafe/",
+        "https://genius.com/",
+    ], 
     supportedVersions: [],
-    requirements: { minHostApi: 1, capabilities: ['lifecycle-v1', 'async-start-v1', 'net-per-addon-v1'] },
+}
+
+if (SECRET_GROQ_TOKEN) {
+    addonConfig.allowedUrls.push("https://api.groq.com/openai/v1");
+}
+
+if (IS_DEVELOPMENT_BUILD) {
+    addonConfig.name = "[DEV] " + addonConfig.name 
 }
 
 export default addonConfig
