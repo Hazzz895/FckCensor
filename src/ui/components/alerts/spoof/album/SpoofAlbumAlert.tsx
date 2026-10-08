@@ -9,7 +9,7 @@ import { SwitchField } from "@/ui/components/SwitchField";
 import { reloadAlbumPage } from "@/ui/albums";
 
 export class SpoofAlbumAlert extends SpoofEntityWithArtistsAlert<Album> {
-    public constructor(data: Album, scrim: HTMLElement, albumNode: HTMLElement) {
+    public constructor(data: Album, scrim?: HTMLElement, albumNode?: HTMLElement) {
         super(data, "album", "Подмена альбома", albumNode, scrim);
     }
 

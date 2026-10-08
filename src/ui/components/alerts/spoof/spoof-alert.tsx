@@ -9,9 +9,9 @@ import { localizeSpoofableType } from "@/utils/common";
 import addonConfig from "@/../addon.config.mjs";
 import { modals } from "@pulsesync/addon-sdk";
 
-export function createTrackSpoofAlertFor(scrim: HTMLElement, trackNode: HTMLElement, trackData?: Track | null) {
+export function createTrackSpoofAlertFor(scrim?: HTMLElement, trackNode?: HTMLElement, trackData?: Track | null) {
     if (trackData === undefined) {
-        trackData = getTrackFromNode(trackNode)!;
+        trackData = getTrackFromNode(trackNode!)!;
     }
 
     if (trackData !== null) {
@@ -21,16 +21,16 @@ export function createTrackSpoofAlertFor(scrim: HTMLElement, trackNode: HTMLElem
     showNoDataError("track");
 }
 
-export function createArtistSpoofAlertFor(scrim: HTMLElement, artistData: Artist | null) {
-    if (artistData !== null) {
+export function createArtistSpoofAlertFor(scrim?: HTMLElement, artistData?: Artist | null) {
+    if (artistData) {
         return new SpoofArtistAlert(artistData, scrim, scrim);
     }
 
     showNoDataError("artist");
 }
 
-export function createAlbumSpoofAlertFor(scrim: HTMLElement, albumData: Album | null) {
-    if (albumData !== null) {
+export function createAlbumSpoofAlertFor(scrim?: HTMLElement, albumData?: Album | null) {
+    if (albumData) {
         return new SpoofAlbumAlert(albumData, scrim, scrim);
     }
 
