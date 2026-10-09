@@ -71,9 +71,12 @@
     </tr>
   </tbody>
 </table>
+<br/>
+<details>
+  <summary><b>Скриншоты работы с аддоном</b></summary>
 
-## Скриншоты работы с аддоном
+  <img alt="Меню подмены трека" src="./images/spoof_track_menu.png" />
+  <img alt="Меню подмены исполнителя с вставками треков и альбомов" src="./images/spoof_artist_menu.png" />
+  <img alt="Меню подмены альбома с подменённым трек-листом" src="./images/spoof_album_menu.png" />
+</details>
 
-<img alt="Меню подмены трека" src="./images/spoof_track_menu.png" />
-<img alt="Меню подмены исполнителя с вставками треков и альбомов" src="./images/spoof_artist_menu.png" />
-<img alt="Меню подмены альбома с подменённым трек-листом" src="./images/spoof_album_menu.png" />

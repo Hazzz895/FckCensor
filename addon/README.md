@@ -67,9 +67,13 @@
     </tr>
   </tbody>
 </table>
+<br/>
+<details>
+  <summary><b>Скриншоты работы с аддоном</b></summary>
 
-## Скриншоты работы с аддоном
+  <img alt="Меню подмены трека" src="https://github.com/Hazzz895/FckCensor/blob/v2/images/spoof_track_menu.png?raw=true" />
+  <img alt="Меню подмены исполнителя с вставками треков и альбомов" src="https://github.com/Hazzz895/FckCensor/blob/v2/images/spoof_artist_menu.png?raw=true" />
+  <img alt="Меню подмены альбома с подменённым трек-листом" src="https://github.com/Hazzz895/FckCensor/blob/v2/images/spoof_album_menu.png?raw=true?raw=true" />
+</details>
 
-<img alt="Меню подмены трека" src="https://github.com/Hazzz895/FckCensor/blob/v2/images/spoof_track_menu.png?raw=true" />
-<img alt="Меню подмены исполнителя с вставками треков и альбомов" src="https://github.com/Hazzz895/FckCensor/blob/v2/images/spoof_artist_menu.png?raw=true" />
-<img alt="Меню подмены альбома с подменённым трек-листом" src="https://github.com/Hazzz895/FckCensor/blob/v2/images/spoof_album_menu.png?raw=true?raw=true" />
+## Благодарности
