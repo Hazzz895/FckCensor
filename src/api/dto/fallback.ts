@@ -1,6 +1,6 @@
 export const FALLBACK_ENTITY = {
     id: -2949112530959423,
-    title: "Без имени",
+    title: 'Без имени',
     available: false,
 }
 

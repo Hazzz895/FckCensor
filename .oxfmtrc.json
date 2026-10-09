@@ -1,0 +1,22 @@
+{
+    "bracketSpacing": true,
+    "jsxSingleQuote": false,
+    "semi": false,
+    "tabWidth": 4,
+    "trailingComma": "all",
+    "printWidth": 150,
+    "endOfLine": "lf",
+    "arrowParens": "avoid",
+    "singleQuote": true,
+    "sortPackageJson": false,
+    "ignorePatterns": [
+        "node_modules",
+        ".vite",
+        ".idea",
+        "dist",
+        "yarn.lock",
+        "*.md",
+        "*.json",
+        "*.yml"
+    ]
+}

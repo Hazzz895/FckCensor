@@ -1,66 +1,63 @@
-import { Release, Track } from "@/types";
-import { IGetValue } from "@/ui/components/IGetValue";
-import { SpoofAlertBase } from "../../SpoofAlertBase";
-import { SpoofAlertReleasesListField } from "../SpoofAlertReleasesListField";
-import { sources } from "@/api/main-api";
-import ElementWrap from "@/ui/components/ElementWrap";
-import { ReleaseNode } from "../ReleaseNode";
-import { getAlbums, getTracks } from "@/utils/music";
-import { Insertion } from "@/api/dto/artist-insertion";
+import { Release, Track } from '@/types'
+import { IGetValue } from '@/ui/components/IGetValue'
+import { SpoofAlertBase } from '../../SpoofAlertBase'
+import { SpoofAlertReleasesListField } from '../SpoofAlertReleasesListField'
+import { sources } from '@/api/main-api'
+import ElementWrap from '@/ui/components/ElementWrap'
+import { ReleaseNode } from '../ReleaseNode'
+import { getAlbums, getTracks } from '@/utils/music'
+import { Insertion } from '@/api/dto/artist-insertion'
 
-const norm = (x: Insertion): Insertion => ({ releaseId: String(x.releaseId), index: x.index ?? -1 });
+const norm = (x: Insertion): Insertion => ({ releaseId: String(x.releaseId), index: x.index ?? -1 })
 
 export class SpoofAlertArtistListField extends SpoofAlertReleasesListField<Insertion> {
     getValue(): Insertion[] {
-        return this.insertions ?? [];
+        return this.insertions ?? []
     }
 
-    public constructor(alert: SpoofAlertBase, type: "track" | "album") {
+    public constructor(alert: SpoofAlertBase, type: 'track' | 'album') {
         super(
             alert,
-            (type == "track" ? "Треки" : "Альбомы") + ", добавленные в профиль исполнителя",
+            (type == 'track' ? 'Треки' : 'Альбомы') + ', добавленные в профиль исполнителя',
             type,
-            (sources.getArtistInsertions(alert.artist.id)?.[(type + "s") as "tracks" | "albums"] ?? []).map(norm)
-        );
+            (sources.getArtistInsertions(alert.id)?.[(type + 's') as 'tracks' | 'albums'] ?? []).map(norm),
+        )
     }
 
-    public insertions?: Insertion[];
-    public releases?: Release[];
-    private getting = false;
+    public insertions?: Insertion[]
+    public releases?: Release[]
+    private getting = false
 
     protected fillElements() {
-        const t = sources.getArtistInsertions(this.alert.artist.id)?.[(this.type + "s") as "tracks" | "albums"];
+        const t = sources.getArtistInsertions(this.alert.id)?.[(this.type + 's') as 'tracks' | 'albums']
 
         if (!this.insertions) {
-            this.insertions = t?.map(norm) ?? [];
+            this.insertions = t?.map(norm) ?? []
         }
 
-        const missingIds = this.insertions
-            .filter(ins => !this.releases?.some(r => String(r.id) === ins.releaseId))
-            .map(ins => ins.releaseId);
+        const missingIds = this.insertions.filter(ins => !this.releases?.some(r => String(r.id) === ins.releaseId)).map(ins => ins.releaseId)
 
         if (missingIds.length && !this.getting) {
-            this.getting = true;
-            const method = this.type == "album" ? getAlbums : getTracks;
+            this.getting = true
+            const method = this.type == 'album' ? getAlbums : getTracks
             method(...missingIds).then(releases => {
-                this.releases = [...(this.releases ?? []), ...releases];
-                this.getting = false;
-                this.reRenderElement();
-            });
+                this.releases = [...(this.releases ?? []), ...releases]
+                this.getting = false
+                this.reRenderElement()
+            })
         }
 
         return this.insertions.map(ins => {
-            const release: Release =
-                this.releases?.find(r => String(r.id) === ins.releaseId) ?? { id: ins.releaseId };
-            return new ArtistReleaseNode(release, ins.index ?? -1, this);
-        });
+            const release: Release = this.releases?.find(r => String(r.id) === ins.releaseId) ?? { id: ins.releaseId }
+            return new ArtistReleaseNode(release, ins.index ?? -1, this)
+        })
     }
 
     protected onReleaseAdd(release: Release): void {
-        this.insertions ??= [];
-        this.releases ??= [];
-        this.insertions.push({ releaseId: String(release.id), index: -1 });
-        this.releases.push(release);
+        this.insertions ??= []
+        this.releases ??= []
+        this.insertions.push({ releaseId: String(release.id), index: -1 })
+        this.releases.push(release)
     }
 }
 
@@ -68,9 +65,9 @@ export class ArtistReleaseNode extends ElementWrap implements IGetValue<Insertio
     constructor(
         private readonly release: Release,
         private index: number,
-        private readonly field: SpoofAlertArtistListField
+        private readonly field: SpoofAlertArtistListField,
     ) {
-        super();
+        super()
     }
 
     protected createElement(): HTMLElement {
@@ -81,27 +78,27 @@ export class ArtistReleaseNode extends ElementWrap implements IGetValue<Insertio
                 onIndexChange={this.onIndexChange.bind(this)}
                 release={this.release as Release}
             />
-        );
+        )
     }
 
     private onRemove() {
-        const idx = this.field.insertions?.findIndex(x => x.releaseId === String(this.release.id)) ?? -1;
+        const idx = this.field.insertions?.findIndex(x => x.releaseId === String(this.release.id)) ?? -1
         if (idx > -1) {
-            this.field.insertions?.splice(idx, 1);
+            this.field.insertions?.splice(idx, 1)
         }
-        this.field.releases = this.field.releases?.filter(r => String(r.id) !== String(this.release.id));
-        this.field.reRenderElement();
+        this.field.releases = this.field.releases?.filter(r => String(r.id) !== String(this.release.id))
+        this.field.reRenderElement()
     }
 
     private onIndexChange(index: number) {
-        this.index = index;
-        const insertion = this.field.insertions?.find(x => x.releaseId === String(this.release.id));
+        this.index = index
+        const insertion = this.field.insertions?.find(x => x.releaseId === String(this.release.id))
         if (insertion) {
-            insertion.index = index;
+            insertion.index = index
         }
     }
 
     getValue(): Insertion {
-        return { releaseId: String(this.release.id), index: this.index };
+        return { releaseId: String(this.release.id), index: this.index }
     }
 }

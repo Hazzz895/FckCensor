@@ -1,6 +1,7 @@
-import { Track } from "@/types";
-import { getAnyTrackLyrics } from "@/utils/universal-lyrics";
-import Groq from "groq-sdk";
+import { net } from '@pulsesync/addon-sdk'
+import { Track } from '@/types'
+import { getAnyTrackLyrics } from '@/utils/universal-lyrics'
+import Groq from 'groq-sdk'
 
 const PROMPT = `Ты — детектор потенциально заблюриваемых фрагментов в текстах музыкальных произведений (треков).
 
@@ -132,27 +133,27 @@ export interface CensoredFragmentsResponse {
 }
 
 export interface CensoredFragment {
-    level: "low" | "medium" | "high" | "censored"
+    level: 'low' | 'medium' | 'high' | 'censored'
     text: string
     timestamp: string | null
-    category: "drugs" | "lgbt" | "suicide" | "childfree" | "goverment" | "military" | "censored" | "unknown";
+    category: 'drugs' | 'lgbt' | 'suicide' | 'childfree' | 'goverment' | 'military' | 'censored' | 'unknown'
     reason: string
 }
 
 const SCHEMA = {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "type": "object",
-    "properties":{
-        "dangerousFragments": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                    "level": {
-                        "type": "string",
-                        "enum": ["low", "medium", "high", "censored"],
-                        "description": `
+    $schema: 'https://json-schema.org/draft/2020-12/schema',
+    type: 'object',
+    properties: {
+        dangerousFragments: {
+            type: 'array',
+            items: {
+                type: 'object',
+                additionalProperties: false,
+                properties: {
+                    level: {
+                        type: 'string',
+                        enum: ['low', 'medium', 'high', 'censored'],
+                        description: `
                         Уровень уверенности и выраженности обнаруженной чувствительной тематики.
 
                         low — слабая или неоднозначная связь с темой.
@@ -163,75 +164,66 @@ const SCHEMA = {
                         Важно: уровень не определяет законность, наличие пропаганды или отношение автора к теме.
                         Любое упоминание наркотической тематики должно быть обнаружено независимо от того,
                         положительно, отрицательно или нейтрально оно представлено.
-                        `
+                        `,
                     },
-                    "text": {
-                        "type": "string",
-                        "description": "Фрагмент текста трека, который был определён как опасный."
+                    text: {
+                        type: 'string',
+                        description: 'Фрагмент текста трека, который был определён как опасный.',
                     },
-                    "timestamp": {
-                        "type": ["string", "null"],
-                        "description": "Опиционально. Временная метка текста трека, в котором был найден опасный фрагмент. Указывать только если текст был предотавлен в LRC формате. Формат временной метки: [mm:ss.xx] или [hh:mm:ss.xx]. Например: [00:01.23] или [01:02:03.45]."
+                    timestamp: {
+                        type: ['string', 'null'],
+                        description:
+                            'Опиционально. Временная метка текста трека, в котором был найден опасный фрагмент. Указывать только если текст был предотавлен в LRC формате. Формат временной метки: [mm:ss.xx] или [hh:mm:ss.xx]. Например: [00:01.23] или [01:02:03.45].',
                     },
-                    "category": {
-                        "type": "string",
-                        "enum": [
-                            "drugs",
-                            "lgbt",
-                            "suicide",
-                            "childfree",
-                            "goverment",
-                            "military",
-                            "censored",
-                            "unknown"
-                        ]
+                    category: {
+                        type: 'string',
+                        enum: ['drugs', 'lgbt', 'suicide', 'childfree', 'goverment', 'military', 'censored', 'unknown'],
                     },
-                    "reason": {
-                        "type": "string",
-                        "description": "Причина, по которой был определён фрагмент как опасный. 1 - 2 предложения."
-                    }
+                    reason: {
+                        type: 'string',
+                        description: 'Причина, по которой был определён фрагмент как опасный. 1 - 2 предложения.',
+                    },
                 },
-                "required": ["level", "text", "timestamp", "category", "reason"]
-            }
-        }
+                required: ['level', 'text', 'timestamp', 'category', 'reason'],
+            },
+        },
     },
-    "required": ["dangerousFragments"],
-    "additionalProperties": false
+    required: ['dangerousFragments'],
+    additionalProperties: false,
 }
 
-
-const groqClient = new Groq({ apiKey: import.meta.env.VITE_GROQ_TOKEN, dangerouslyAllowBrowser: true });
+const groqClient = new Groq({ apiKey: import.meta.env.VITE_GROQ_TOKEN, dangerouslyAllowBrowser: true, fetch: net.fetch })
 
 export async function generateCensoredLyricsFragments(text: string): Promise<CensoredFragment[]> {
     const response = await groqClient.chat.completions.create({
-        "messages": [
+        messages: [
             {
-                "role": "system",
-                "content": PROMPT
+                role: 'system',
+                content: PROMPT,
             },
             {
-                "role": "user",
-                "content": text
-            }
+                role: 'user',
+                content: text,
+            },
         ],
-        "model": "openai/gpt-oss-120b",
-        "stream": false,
-        "response_format": {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "dangerousFragments",
-                "schema": SCHEMA,
-                "strict": true
-            }
-        }
+        model: 'openai/gpt-oss-120b',
+        stream: false,
+        response_format: {
+            type: 'json_schema',
+            json_schema: {
+                name: 'dangerousFragments',
+                schema: SCHEMA,
+                strict: true,
+            },
+        },
     })
-    const aiResponse = response?.choices?.[0]?.message?.content;
-    const json = JSON.parse(aiResponse!) as CensoredFragmentsResponse;
-    return json.dangerousFragments ?? [];
+    const aiResponse = response?.choices?.[0]?.message?.content
+    const json = JSON.parse(aiResponse!) as CensoredFragmentsResponse
+    return json.dangerousFragments ?? []
 }
 
 export async function generateCensoredTrackLyricsFragments(track: Track) {
-    const lyrics = await getAnyTrackLyrics(track);
-    if (!lyrics) return [];
-    return generateCensoredLyricsFragments(lyrics);
+    const lyrics = await getAnyTrackLyrics(track)
+    if (!lyrics) return []
+    return generateCensoredLyricsFragments(lyrics)
 }

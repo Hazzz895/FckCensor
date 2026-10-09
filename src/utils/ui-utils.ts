@@ -1,292 +1,100 @@
-import { Album, Artist, OuterArtist, SpoofableEntity, SpoofableType, Track, TrackMST } from "@/types";
-import { debug, error } from "./logger";
-import { sources } from "@/api/main-api";
-import { httpsify, randomString } from "./common";
-import { Q_ARTIST_FIBER_ROOT, Q_ALBUM_FIBER_ROOT, Q_TRACK_ROOT, Q_TRACK_FIBER_ROOT } from "@/hooks/ui/constants";
-import { putToBundle } from "@/dev/dev-utils";
-import { restoreOriginalValues } from "./music";
-import { convertRawMst } from "./spoofs";
-import { notifications, useCurrentTrack, NotificationOptions } from "@pulsesync/addon-sdk";
+import { getSdkApi } from '@/sdk/lifecycle'
+import { requestSdkSync, flushSdk, rememberResponse } from '@/sdk/bridge'
+import { SpoofableEntity, SpoofableType } from '@/types'
+import { getEntityCoverUri, httpsify } from './common'
+import { Q_ARTIST_FIBER_ROOT, Q_ALBUM_FIBER_ROOT, Q_TRACK_FIBER_ROOT } from '@/hooks/ui/constants'
+import { notifications, NotificationOptions } from '@pulsesync/addon-sdk'
 
+function entityIdFromUrl(url: URL, type: SpoofableType): string | null {
+    const path = url.pathname.replace(/\/$/, '')
+    if (path === `/${type}` || (path === '/album/track' && type !== 'artist')) {
+        const id = url.searchParams.get(`${type}Id`)
+        if (id) return id
+    }
+    const match = new RegExp(`/${type}/([^/?#]+)`).exec(path)
+    return match && match[1] !== 'track' ? decodeURIComponent(match[1]) : null
+}
+
+export function getEntityIdFromNode(node: HTMLElement | null | undefined, type: SpoofableType): string | null {
+    if (!node) return null
+    const track = type === 'track' ? closestInTree(node, '[data-pulsesync-track-id]') : null
+    if (track?.getAttribute('data-pulsesync-track-id')) return track.getAttribute('data-pulsesync-track-id')
+    if (type !== 'track') {
+        const id = entityIdFromUrl(new URL(location.href), type)
+        if (id) return id
+    }
+    for (const link of node.querySelectorAll<HTMLAnchorElement>('a[href]')) {
+        const id = entityIdFromUrl(new URL(link.href, location.href), type)
+        if (id) return id
+    }
+    return null
+}
 export function getTrackIdFromNode(node: HTMLElement): string | null {
-    return String(getTrackFromNode(node)?.id) ?? null;
-}
-
-export function walkFiber<T>(node: HTMLElement | null, callback: (obj: any, depth: number) => any | null, maxDepth: number = 4): T | null {
-    if (!node) return null;
-    let result = null;
-    const reactFiberProp = Object.keys(node).find(key => key.startsWith("__reactFiber"));
-    if (reactFiberProp) {
-        const fiber = (node as Record<string, any>)[reactFiberProp];
-        let depth = 0;
-        if (fiber !== undefined && fiber !== null) {
-            const walk = (fiberNode: any, currentDepth: number): T | null => {
-                if (!fiberNode || currentDepth >= maxDepth) return null;
-                
-                const result = callback(fiberNode, currentDepth);
-                if (result !== undefined) {
-                    return result;
-                }
-                
-                const children = fiberNode.memoizedProps?.children;
-                if (children) {
-                    if (Array.isArray(children)) {
-                        for (const child of children) {
-                            const result = walk(child, currentDepth + 1);
-                            if (result) return result;
-                        }
-                    } else {
-                        const result = walk(children, currentDepth + 1);
-                        if (result) return result;
-                    }
-                }
-                
-                if (fiberNode.child) {
-                    const result = walk(fiberNode.child, currentDepth + 1);
-                    if (result) return result;
-                }
-                
-                return null;
-            };
-            
-            result = walk(fiber, depth);
-        }
-    }
-    return result;
-}
-
-export function getTrackFromNode(node: HTMLElement): TrackMST | null {
-    return walkFiber(closestInTree(node, Q_TRACK_FIBER_ROOT), (obj) => obj?.props?.track);
-}
-
-putToBundle("walkFiber", walkFiber);
-
-export function getAlbumFromNode(node: HTMLElement): Album | null {
-    return walkFiber(closestInTree(node, Q_ALBUM_FIBER_ROOT), (obj) => obj?.props?.album)
-}
-
-export function getArtistFromNode(node: HTMLElement): Artist | null {
-    const a: Artist | OuterArtist | null = walkFiber(closestInTree(node, Q_ARTIST_FIBER_ROOT), (obj) => obj?.props?.artistMeta)
-    if (!a) {
-        return null;
-    }
-
-    if ("artist" in a) {
-        return a.artist;
-    }
-    else {
-        return a;
-    }
-}
-
-export function spoofNode(node: HTMLElement, entity: SpoofableEntity | SpoofableType) {
-    let e;
-    let m: any;
-    if (typeof entity === "string") {
-        switch (entity) {
-            case "track": e = getTrackFromNode(node); m = sources.spoofTrack; break;
-            case "album": e = getAlbumFromNode(node); m = sources.spoofAlbum; break;
-            case "artist": e = getArtistFromNode(node); m = sources.spoofArtist; break;
-        }
-    }
-    else {
-        e = entity
-        if ("volumes" in e) {
-            m = sources.spoofAlbum;
-        }
-        else if ("albums" in e) {
-            m = sources.spoofTrack;
-        }
-        else {
-            m = sources.spoofArtist;
-        }
-    }
-
-    if (!e) return;
-
-    m = m.bind(sources);
-
-    runUnprotected(e, () => {
-        m(e);
-        convertRawMst(e, true);
-    });
+    return getEntityIdFromNode(node, 'track')
 }
 
 export function getAllTrackNodesById(trackId: string): HTMLElement[] {
-    return Array.from(document.querySelectorAll<HTMLElement>(Q_TRACK_FIBER_ROOT))
-        .filter(node => getTrackIdFromNode(node) === trackId);
+    return Array.from(document.querySelectorAll<HTMLElement>(Q_TRACK_FIBER_ROOT)).filter(node => getTrackIdFromNode(node) === trackId)
 }
 
 export function getAllAlbumNodesById(albumId: string): HTMLElement[] {
-    return Array.from(document.querySelectorAll<HTMLElement>(Q_ALBUM_FIBER_ROOT))
-        .filter(node => String(getAlbumFromNode(node)?.id) === albumId);
+    return Array.from(document.querySelectorAll<HTMLElement>(Q_ALBUM_FIBER_ROOT)).filter(node => getEntityIdFromNode(node, 'album') === albumId)
 }
 
 export function getAllArtistNodesById(artistId: string): HTMLElement[] {
-    return Array.from(document.querySelectorAll<HTMLElement>(Q_ARTIST_FIBER_ROOT))
-        .filter(node => String(getArtistFromNode(node)?.id) === artistId);
+    return Array.from(document.querySelectorAll<HTMLElement>(Q_ARTIST_FIBER_ROOT)).filter(node => getEntityIdFromNode(node, 'artist') === artistId)
 }
 
 export function getEntityNodesById(type: SpoofableType, id: string): HTMLElement[] {
     switch (type) {
-        case "track": return getAllTrackNodesById(id);
-        case "album": return getAllAlbumNodesById(id);
-        case "artist": return getAllArtistNodesById(id);
+        case 'track':
+            return getAllTrackNodesById(id)
+        case 'album':
+            return getAllAlbumNodesById(id)
+        case 'artist':
+            return getAllArtistNodesById(id)
     }
 }
 
-export function spoofAllNodesFor(type: SpoofableType, id: string) {
-    for (const node of getEntityNodesById(type, id)) {
-        spoofNode(node, type);
-    }
-
-    if (type === "track") {
-        const currentTrack = useCurrentTrack() as Track;
-        if (currentTrack && String(currentTrack.id) === id) {
-            sources.spoofTrack(currentTrack);
-        }
-    }
-}
-
-export interface MstNode {
-    storedValue?: any;
-    parent?: MstNode | null;
-    root?: MstNode;
-    environment?: Record<string, any>;
-    type?: { name?: string };
-}
-
-export function getMstNode(target: any): MstNode | null {
-    if (!target || typeof target !== "object") return null;
-    return (target as Record<string, any>).$treenode ?? null;
-}
-
-export function findMstAncestor<T = any>(target: any, predicate: (value: any, node: MstNode) => boolean): T | null {
-    let node = getMstNode(target);
-    while (node) {
-        try {
-            if (node.storedValue !== undefined && predicate(node.storedValue, node)) {
-                return node.storedValue as T;
-            }
-        } catch (e) {
-            error(e);
-        }
-        node = node.parent ?? null;
-    }
-    return null;
-}
-
-export function getMstRootStore<T = any>(target: any): T | null {
-    const node = getMstNode(target);
-    if (!node) return null;
-
-    const rootNode = node.root ?? node;
-    const root = rootNode.storedValue;
-
-    if (root?.isRootModel === true) {
-        return root as T;
-    }
-
-    return (rootNode.environment?.rootStore as T) ?? (root as T) ?? null;
-}
-
-export function restoreAllNodesByType(type: SpoofableType, id: string) {
-    const originalValues = sources.getFckCensorData(type, id)?.originalValues;
-    if (!originalValues) return;
-
-    for (const node of getEntityNodesById(type, id)) {
-        const entity = type === "track" ? getTrackFromNode(node)
-                      : type === "album" ? getAlbumFromNode(node)
-                      : getArtistFromNode(node);
-        if (entity) {
-            restoreOriginalValues(entity, { originalValues });
-        }
-    }
-
-    if (type === "track") {
-        const currentTrack = useCurrentTrack() as Track;
-        if (currentTrack && String(currentTrack.id) === id) {
-            restoreOriginalValues(currentTrack, { originalValues });
-        }
-    }
-}
-
-/* thx gemini */
-export function runUnprotected(target: any, callback: () => void) {
-    const node = target?.$treenode;
-    if (node) {
-        const nodesToPatch = [node];
-        if (node.root) {
-            nodesToPatch.push(node.root);
-        }
-
-        const originalAssertWritables = new Map<any, any>();
-        const originalProtections = new Map<any, any>();
-
-        for (const n of nodesToPatch) {
-            if (typeof n.assertWritable === "function") {
-                originalAssertWritables.set(n, n.assertWritable);
-                n.assertWritable = function () { };
-            }
-
-            const wasProtected = n.isProtected;
-            originalProtections.set(n, wasProtected);
-
-            n.isProtected = false;
-        }
-
-        try {
-            callback();
-        } finally {
-            for (const n of nodesToPatch) {
-                if (originalAssertWritables.has(n)) {
-                    n.assertWritable = originalAssertWritables.get(n);
-                } else {
-                    delete n.assertWritable;
-                }
-
-                const wasProtected = originalProtections.get(n);
-                n.isProtected = wasProtected;
-            }
-        }
-    } else {
-        callback();
-    }
+export async function spoofAllNodesFor(_type: SpoofableType, _id: string) {
+    rememberResponse({ id: _id }, _type)
+    requestSdkSync()
+    await flushSdk()
 }
 
 export function closestInTree<T extends Element = HTMLElement>(node: Element, selector: string) {
-    return node.closest<T>(selector) || node.querySelector<T>(selector);
+    return node.closest<T>(selector) || node.querySelector<T>(selector)
 }
 
 export function getContextMenuSource(menu: HTMLElement, targetQ: string) {
-    return document.getElementById(menu.closest<HTMLElement>('[aria-labelledby]')!.getAttribute('aria-labelledby')!)!.closest<HTMLElement>(targetQ)!
+    const id = menu.closest<HTMLElement>('[aria-labelledby]')?.getAttribute('aria-labelledby')
+    return id ? (document.getElementById(id)?.closest<HTMLElement>(targetQ) ?? null) : null
 }
 
-export const DUMMY_ELEMENT = document.createElement("div");
+export const DUMMY_ELEMENT = document.createElement('div')
 
-export async function showNotificationSafe(message: string, kind: "info" | "error" = "info", data?: NotificationOptions, attempt = 1): Promise<void> {
-    if (window.__pulsesyncBridgeInitialized) {
-        try {
-            await (kind === "error" ? notifications.error : notifications.info)(message, data);
-        } catch (e) {
-            if (attempt < 3 && e instanceof Error && e.message === `Native notification containers are not mounted`) {
-                setTimeout(() => showNotificationSafe(message, kind, data, attempt + 1), attempt * 1250);
-            }
+export async function showNotificationSafe(message: string, kind: 'info' | 'error' = 'info', data?: NotificationOptions, attempt = 1): Promise<void> {
+    const api = getSdkApi()
+    if (!api || api.signal.aborted) return
+    try {
+        await (kind === 'error' ? notifications.error : notifications.info)(message, data)
+    } catch (e) {
+        if (attempt < 3 && e instanceof Error && e.message === 'Native notification containers are not mounted') {
+            const timer = setTimeout(() => void showNotificationSafe(message, kind, data, attempt + 1), attempt * 1250)
+            api.onCleanup(() => clearTimeout(timer))
         }
     }
-    else {
-        document.addEventListener(
-            "pulsesync:runtime-ready", 
-            () => showNotificationSafe(message, kind, data, attempt), 
-            { once: true }
-        );
-    }
 }
 
-export async function showNotificationWithCover(entity: SpoofableEntity, message: string, kind: "info" | "error", data?: { icon?: any, coverUrl?: string, link?: { href: string, label: string }, durationMs?: number }) {
-    let coverUri = entity.coverUri ?? entity.ogImage;
-    if (!coverUri) return;
-    coverUri = httpsify(coverUri).replace('%%', '100x100');
+export async function showNotificationWithCover(
+    entity: SpoofableEntity,
+    message: string,
+    kind: 'info' | 'error',
+    data?: { icon?: any; coverUrl?: string; link?: { href: string; label: string }; durationMs?: number },
+) {
+    let coverUri = getEntityCoverUri(entity)
+    if (!coverUri) return
+    coverUri = httpsify(coverUri).replace('%%', '100x100')
 
-    await showNotificationSafe(message, kind, { ...data, coverUrl: coverUri });
+    await showNotificationSafe(message, kind, { ...data, coverUrl: coverUri })
 }

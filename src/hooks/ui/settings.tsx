@@ -30,7 +30,7 @@ async function showConfirmationModal() {
     const confirmed = await modals.confirm({
         title: `Вы действительно хотите очистить базу данных аддона ${addonConfig.name}?`,
         message: `Это очистит все пользовательские данные аддона ${addonConfig.name}, а именно подмены информации о альбомах, исполнителях, треках (и их аудиопотоки), которые были подменены вручную через окна подмены. Это действие невозможно отменить.`,
-    });
+    })
 
     if (confirmed) {
         await localSource.deleteDb()
@@ -40,7 +40,7 @@ async function showConfirmationModal() {
 
 export function SettingsItem({ children, onclick }: JSX.HTMLAttributes) {
     return (
-        <li class="Settings_item__Ksa9h">
+        <li fckcensorsettings class="Settings_item__Ksa9h">
             <button
                 class="cpeagBA1_PblpJn8Xgtv UDMYhpDjiAFT3xUx268O dgV08FKVLZKFsucuiryn IlG7b1K0AD7E7AMx6F5p j1jXIVckFgZECecFzZMe qU2apWBO1yyEK0lZ3lPO BbCxxIjBGupN28bq2lSP et24Jf7pT_X9Fvc7TznR SettingsListButtonItem_root__3dtV2 SettingsListButtonItem_important__AcEon"
                 type="button"

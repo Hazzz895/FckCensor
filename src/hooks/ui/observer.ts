@@ -1,38 +1,61 @@
-import { debug, error } from "@/utils/logger";
-import { getTrackIdFromNode } from "@/utils/ui-utils";
-import { Q_TRACK_ROOT } from "./constants";
+import { debug, error } from '@/utils/logger'
+import { getTrackIdFromNode } from '@/utils/ui-utils'
+import { Q_TRACK_ROOT } from './constants'
+import { removeTooltip } from '@/ui/tooltips'
 
 let mutationCallbacks: ((mutation: MutationRecord) => void)[] = []
-let addedNodeCallbacks: [((el: HTMLElement) => void), selector?: string][] = []
-let removedNodeCallbacks: [((el: HTMLElement) => void), selector?: string][] = []
+let addedNodeCallbacks: [(el: HTMLElement) => void, selector?: string][] = []
+let removedNodeCallbacks: [(el: HTMLElement) => void, selector?: string][] = []
 
 function safeExecute(x: Function, ...args: any[]) {
-    try { x(...args) } catch (e) { error("Error in mutation observer", e) }
+    try {
+        x(...args)
+    } catch (e) {
+        error('Error in mutation observer', e)
+    }
 }
 
 const observer = new MutationObserver(mutations => {
     mutations.forEach(mutation => {
         mutationCallbacks.forEach(x => safeExecute(x, mutation))
 
-        removedNodeCallbacks.forEach(([x, selector]) => mutation.removedNodes.forEach(node => {
-            if (!(node instanceof HTMLElement)) return;
-            if (!selector) { safeExecute(x, node); return; }
-            if (node.matches(selector)) safeExecute(x, node);
-            node.querySelectorAll(selector).forEach(el => safeExecute(x, el));
-        }))
+        removedNodeCallbacks.forEach(([x, selector]) =>
+            mutation.removedNodes.forEach(node => {
+                if (!(node instanceof HTMLElement)) return
+                if (!selector) {
+                    safeExecute(x, node)
+                    return
+                }
+                if (node.matches(selector)) safeExecute(x, node)
+                node.querySelectorAll(selector).forEach(el => safeExecute(x, el))
+            }),
+        )
 
-        addedNodeCallbacks.forEach(([x, selector]) => mutation.addedNodes.forEach(node => {
-            if (!(node instanceof HTMLElement)) return;
-            if (!selector) { safeExecute(x, node); return; }
-            if (node.matches(selector)) safeExecute(x, node);
-            node.querySelectorAll(selector).forEach(el => safeExecute(x, el));
-        }))
-    });
+        addedNodeCallbacks.forEach(([x, selector]) =>
+            mutation.addedNodes.forEach(node => {
+                if (!(node instanceof HTMLElement)) return
+                if (!selector) {
+                    safeExecute(x, node)
+                    return
+                }
+                if (node.matches(selector)) safeExecute(x, node)
+                node.querySelectorAll(selector).forEach(el => safeExecute(x, el))
+            }),
+        )
+    })
 })
-observer.observe(document.body, { childList: true, subtree: true })
+export function startObserver() {
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: ['href', 'data-pulsesync-track-id'],
+    })
+}
 
 export function listenMutations(listener: (mutation: MutationRecord) => void) {
-    mutationCallbacks.push(listener); 
+    mutationCallbacks.push(listener)
     return listener
 }
 
@@ -41,7 +64,7 @@ export function unlistenMutations(listener: (mutation: MutationRecord) => void) 
 }
 
 export function listenAddNodes(listener: (el: HTMLElement) => void, selector?: string) {
-    addedNodeCallbacks.push([listener, selector]);
+    addedNodeCallbacks.push([listener, selector])
     return listener
 }
 
@@ -50,7 +73,7 @@ export function unlistenAddNodes(listener: (el: HTMLElement) => void) {
 }
 
 export function listenRemovedNodes(listener: (el: HTMLElement) => void, selector?: string) {
-    removedNodeCallbacks.push([listener, selector]);
+    removedNodeCallbacks.push([listener, selector])
     return listener
 }
 
@@ -59,11 +82,14 @@ export function unlistenRemovedNodes(listener: (el: HTMLElement) => void) {
 }
 
 export function listenAddTrackNodes(listener: (el: HTMLElement, trackId: string) => void, selector?: string) {
-    return listenAddNodes((el) => {
-        const trackId = getTrackIdFromNode(el);
-        if (!trackId) return;
-        listener(el, String(trackId));
-    }, Q_TRACK_ROOT + (selector ?? ""))
+    return listenAddNodes(
+        el => {
+            const trackId = getTrackIdFromNode(el)
+            if (!trackId) return
+            listener(el, String(trackId))
+        },
+        Q_TRACK_ROOT + (selector ?? ''),
+    )
 }
 
 export function invokeAddNodesListeners() {
@@ -71,8 +97,11 @@ export function invokeAddNodesListeners() {
 }
 
 export function destroyObserver() {
-    observer.disconnect();
-    mutationCallbacks = [];
-    addedNodeCallbacks = [];
-    removedNodeCallbacks = [];
+    observer.disconnect()
+    removeTooltip()
+    document.querySelectorAll('[fckcensoroption], [fckcensorsettings]').forEach(node => node.remove())
+    document.querySelectorAll('[data-fckcensor-badge]').forEach(node => node.remove())
+    mutationCallbacks = []
+    addedNodeCallbacks = []
+    removedNodeCallbacks = []
 }

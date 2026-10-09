@@ -1,88 +1,111 @@
-import { JSX, legacyCreateElement } from "@/jsx-runtime";
-import { listenAddNodes, listenAddTrackNodes, listenMutations, unlistenMutations } from "./observer";
-import addonConfig from "../../../addon.config.mjs";
-import { debug, error } from "@/utils/logger";
-import styles from "@/styles.module.scss";
-import { eventHandlerForTooltip } from "@/ui/tooltips";
-import { sources } from "@/api/main-api";
-import { Q_ALBUM_FIBER_ROOT, Q_ALBUM_STICKY_TITLE, Q_ARTIST_STICKY_TITLE, Q_META_TITLE_CONTAINER, Q_PLAYER_BAR } from "./constants";
-import { closestInTree, getAlbumFromNode, getAllTrackNodesById, getArtistFromNode, getTrackIdFromNode } from "@/utils/ui-utils";
-import { SpoofableType } from "@/types";
-import { onCurrentTrackChange } from "@/utils/pulsesync";
-import { useCurrentTrack } from "@pulsesync/addon-sdk";
+import { JSX } from '@/jsx-runtime'
+import { listenAddNodes, listenAddTrackNodes, listenMutations } from './observer'
+import addonConfig from '../../../addon.config.mjs'
+import { error } from '@/utils/logger'
+import styles from '@/styles.module.scss'
+import { createNativeBadge, type YandexMusicIconName } from '@pulsesync/addon-sdk'
+import { sources } from '@/api/main-api'
+import { Q_ALBUM_STICKY_TITLE, Q_ARTIST_STICKY_TITLE, Q_META_TITLE_CONTAINER, Q_PLAYER_BAR, Q_TRACK_ROOT } from './constants'
+import { closestInTree, getEntityIdFromNode, getAllTrackNodesById, getTrackIdFromNode } from '@/utils/ui-utils'
+import { SpoofableType } from '@/types'
+import { onCurrentTrackChange } from '@/utils/pulsesync'
+import { getSdkApi } from '@/sdk/lifecycle'
 
-const PLAYERBAR_SELECTOR = `${Q_PLAYER_BAR}, [data-test-id="FULLSCREEN_PLAYER_FULLSCREEN_CONTENT"]`;
+let currentTrackId: string | undefined
+
+const PLAYERBAR_SELECTOR = `${Q_PLAYER_BAR}, [data-test-id="FULLSCREEN_PLAYER_FULLSCREEN_CONTENT"]`
 
 export function prepareBadges() {
-    listenAddTrackNodes((el) => updateTrackBadge(el, getTrackIdFromNode(el) ?? ""), `:has(${Q_META_TITLE_CONTAINER})`);
+    listenAddTrackNodes(el => {
+        updateTrackBadge(el, getTrackIdFromNode(el) ?? '')
+    }, `:has(${Q_META_TITLE_CONTAINER})`)
 
-    listenAddNodes((el) => updateAlbumBadge(el, String(getAlbumFromNode(el.closest('.PageHeaderBase_content___DNyv')?.querySelector(Q_ALBUM_FIBER_ROOT)!)?.id)), Q_ALBUM_STICKY_TITLE)
+    listenAddNodes(el => updateAlbumBadge(el, getEntityIdFromNode(el, 'album') ?? ''), Q_ALBUM_STICKY_TITLE)
 
-    listenAddNodes((el) => updateArtistBadge(el, String(getArtistFromNode(el.closest('.ArtistPage_content__iZHVN')!)?.id)), Q_ARTIST_STICKY_TITLE)
+    listenAddNodes(el => updateArtistBadge(el, getEntityIdFromNode(el, 'artist') ?? ''), Q_ARTIST_STICKY_TITLE)
 
-    listenAddNodes(updatePlayerBarBadge, PLAYERBAR_SELECTOR);
+    listenAddNodes(updatePlayerBarBadge, PLAYERBAR_SELECTOR)
 
-    const playerBarMutationListener = listenMutations((mutation) => {
-        if (updatePlayerBarBadge(mutation.target as HTMLElement)) {
-            unlistenMutations(playerBarMutationListener);
-        }
-    });
+    listenMutations(mutation => {
+        const target = mutation.target instanceof HTMLElement ? mutation.target : mutation.target.parentElement
+        const row = target?.closest<HTMLElement>(Q_TRACK_ROOT)
+        if (row) updateTrackBadge(row, getTrackIdFromNode(row) ?? '')
+    })
 
-    updatePlayerBarBadge();
-    onCurrentTrackChange(() => {
+    listenMutations(mutation => {
+        const target = mutation.target instanceof HTMLElement ? mutation.target : mutation.target.parentElement
+        const playerBar = target?.closest<HTMLElement>(PLAYERBAR_SELECTOR)
+        if (playerBar) updatePlayerBarBadge(playerBar)
+    })
+
+    currentTrackId = undefined
+    const api = getSdkApi()
+    void api?.player
+        .getSnapshot()
+        .then(snapshot => {
+            if (getSdkApi() !== api) return
+            currentTrackId = snapshot.track ? String(snapshot.track.id) : undefined
+            updatePlayerBarBadge()
+        })
+        .catch(error)
+    onCurrentTrackChange(track => {
+        currentTrackId = track ? String(track.id) : undefined
         try {
-            updatePlayerBarBadge();
+            updatePlayerBarBadge()
         } catch (e) {
-            error(e);
+            error(e)
         }
-    });
+    })
 }
 
 export function updatePlayerBarBadge(playerBar?: HTMLElement) {
     if (!playerBar) {
-        const nodes = document.querySelectorAll<HTMLElement>(PLAYERBAR_SELECTOR) ?? undefined;
+        const nodes = document.querySelectorAll<HTMLElement>(PLAYERBAR_SELECTOR) ?? undefined
         if (nodes && nodes.length > 0) {
             for (const node of nodes) {
-                updatePlayerBarBadge(node);
+                updatePlayerBarBadge(node)
             }
         }
-        return;
+        return
     }
-    if (!playerBar) return;
-    const track = useCurrentTrack();
-    if (!track) return;
-    return updateTrackBadge(playerBar, String(track.id));
+    if (!playerBar) return
+    if (!playerBar.isConnected) return
+    return updateTrackBadge(playerBar, currentTrackId ?? '')
 }
 
 export function updateTrackBadge(container: HTMLElement, trackId: string) {
-    const title = closestInTree(container, Q_META_TITLE_CONTAINER);
+    const title = closestInTree(container, Q_META_TITLE_CONTAINER)
 
-    if (!title) return false;
+    if (!title) return false
 
-    title.querySelector<HTMLElement>(`.${styles.FckCensorBadge}`)?.remove();
-
-    if (sources.hasPlayerReplacement(trackId) || sources.hasTrackSpoof(trackId)) {
-        const options = title.querySelector<HTMLElement>('div:has([data-test-id="PLAYERBAR_DESKTOP_CONTEXT_MENU_BUTTON"])');
-        if (options) {
-            title.insertBefore(<ReplacedBadge type="track"/>, options);
-        } else {
-            title.appendChild(<ReplacedBadge type="track"/>);
-        }
+    let badge = title.querySelector<HTMLElement>(`.${styles.FckCensorBadge}`)
+    const replaced = !!trackId && (sources.hasPlayerReplacement(trackId) || sources.hasTrackSpoof(trackId))
+    if (!replaced) {
+        badge?.remove()
+        return true
+    }
+    badge ??= <ReplacedBadge type="track" />
+    const options = title.querySelector<HTMLElement>('div:has([data-test-id="PLAYERBAR_DESKTOP_CONTEXT_MENU_BUTTON"])')
+    // Native marks can mount after our badge during a React rerender.
+    if (options) {
+        if (badge.nextElementSibling !== options) title.insertBefore(badge, options)
+    } else if (title.lastElementChild !== badge) {
+        title.appendChild(badge)
     }
 
-    return true;
+    return true
 }
 
 function updateAlbumOrArtistBadge(container: HTMLElement, hasSpoof: boolean) {
     const title = closestInTree(container, '.PageHeaderTitle_stickyTitle__CL1m4')
 
-    if (!title) return;
+    if (!title) return
 
-    title.querySelector<HTMLElement>(`.${styles.FckCensorBadge}`)?.remove();
+    title.querySelector<HTMLElement>(`.${styles.FckCensorBadge}`)?.remove()
 
     if (hasSpoof) {
-        title.style = "display: flex; align-items: center";
-        title.appendChild(<ReplacedBadge type="album"/>)
+        title.style = 'display: flex; align-items: center'
+        title.appendChild(<ReplacedBadge type="album" />)
     }
 }
 
@@ -96,44 +119,53 @@ export function updateArtistBadge(container: HTMLElement, artistId: string) {
 
 export function updateBadgesByType(type: SpoofableType, id: string) {
     switch (type) {
-        case "track":
-            getAllTrackNodesById(id).forEach(node => updateTrackBadge(node, id));
-            break;
-        case "album":
-            document.querySelectorAll<HTMLElement>(Q_ALBUM_STICKY_TITLE).forEach(el => updateAlbumBadge(el, id));
-            break;
-        case "artist":
-            document.querySelectorAll<HTMLElement>(Q_ARTIST_STICKY_TITLE).forEach(el => updateArtistBadge(el, id));
-            break;
+        case 'track':
+            getAllTrackNodesById(id).forEach(node => updateTrackBadge(node, id))
+            break
+        case 'album':
+            document.querySelectorAll<HTMLElement>(Q_ALBUM_STICKY_TITLE).forEach(el => updateAlbumBadge(el, id))
+            break
+        case 'artist':
+            document.querySelectorAll<HTMLElement>(Q_ARTIST_STICKY_TITLE).forEach(el => updateArtistBadge(el, id))
+            break
     }
 }
 
 export interface BadgeProps extends JSX.HTMLAttributes {
-    icon: string;
+    icon: string
     description: string
 }
- 
+
 export function Badge({ icon, description, ...props }: BadgeProps) {
+    const nativeBadge = createNativeBadge({
+        icon: icon.replace(/_(xxxs|xxs|xs|s|m|l|xl|xxl|xxxl)$/, '') as YandexMusicIconName,
+        label: description,
+    })
     return (
-        <span aria-label={description} {...props} class={`Meta_explicitMarkContainer__BxMQg ${styles.FckCensorBadge}`} onmouseenter={eventHandlerForTooltip}>
-            <svg class="ExplicitMarkIcon_explicitMark__0BPeQ Meta_explicitMark__ocnCV Rkdd2vKC_3xa1eUdRdHP" 
-                 focusable="false" 
-                 data-test-id="FCKCENSOR_BADGE_ICON"
-                 aria-hidden="false">
-                <use xlink:href={`/icons/sprite.svg#${icon}`}></use>
-            </svg>
+        <span {...props} class={styles.FckCensorBadge} style="display: contents" data-fckcensor-badge>
+            {nativeBadge}
         </span>
-    );
+    )
 }
 
 export function createMetadataBadge() {
-    return <Badge icon="addToPlaylist_xxs" description={"Информация о треке была подменена аддоном " + addonConfig.name}/>
-} 
+    return <Badge icon="addToPlaylist_xxs" description={'Информация о треке была подменена аддоном ' + addonConfig.name} />
+}
 
 export interface ReplacedBadgeProps extends JSX.HTMLAttributes {
-    type: SpoofableType;
+    type: SpoofableType
 }
 
 export function ReplacedBadge({ type, ...props }: ReplacedBadgeProps) {
-    return <Badge {...props} icon="edit_xxs" description={(type == "album" ? "Альбом" : type == "artist" ? "Исполнитель" : type == "track" ? "Трек" : "") + " был подменен аддоном " + addonConfig.name}/>
+    return (
+        <Badge
+            {...props}
+            icon="edit_xxs"
+            description={
+                (type == 'album' ? 'Альбом' : type == 'artist' ? 'Исполнитель' : type == 'track' ? 'Трек' : '') +
+                ' был подменен аддоном ' +
+                addonConfig.name
+            }
+        />
+    )
 }

@@ -1,89 +1,99 @@
-import { SpoofableType } from "@/types";
+import { SpoofableType } from '@/types'
 
-export const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
+export const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val))
 
 export function numberToHsl(number: number) {
-    const phi = 0.618033988749895; 
+    const phi = 0.618033988749895
 
-    let hash = number * phi;
-    hash -= Math.floor(hash);
-    
-    const hue = Math.floor(hash * 360);
-    
-    return `hsl(${hue}, 85%, 80%)`;
+    let hash = number * phi
+    hash -= Math.floor(hash)
+
+    const hue = Math.floor(hash * 360)
+
+    return `hsl(${hue}, 85%, 80%)`
 }
 
-export const httpsify = (url: string) => url.includes("://") ? url : "https://" + url;
+export const httpsify = (url: string) => (url.includes('://') ? url : 'https://' + url)
+
+export function getEntityCoverUri(entity: { coverUri?: string | null; ogImage?: string | null; cover?: { uri?: string | null } | null }) {
+    return entity.coverUri || entity.ogImage || entity.cover?.uri || undefined
+}
 
 /* obj is null or {} */
 export function isEmptyObject(obj?: object | null) {
-    if (!obj) return true;
+    if (!obj) return true
 
     if (Array.isArray(obj)) {
-        return obj.length === 0;
+        return obj.length === 0
     }
 
-    for (let _ in obj) 
-        return false;
+    for (let _ in obj) return false
 
-    return true;
+    return true
 }
 
-export const randomString = () => Math.random().toString(36).slice(2);
+export const randomString = () => Math.random().toString(36).slice(2)
 
-export const insert = <T>(list: T[], object: T, index: number = -1): T[] => list.splice(clamp(index < 0 ? list.length + index + 1 : index, 0, list.length), 0, object);
+export const insert = <T>(list: T[], object: T, index: number = -1): T[] =>
+    list.splice(clamp(index < 0 ? list.length + index + 1 : index, 0, list.length), 0, object)
 
 export function localizeSpoofableType(type: SpoofableType) {
     switch (type) {
-        case "album": return "альбом"
-        case "artist": return "исполнитель"
-        case "track": return "трек"
+        case 'album':
+            return 'альбом'
+        case 'artist':
+            return 'исполнитель'
+        case 'track':
+            return 'трек'
     }
 }
 
 export function isNumeric(str: string) {
-    return !Number.isNaN(Number(str));
+    return !Number.isNaN(Number(str))
 }
 
 export function getJsonValidationError(str: string) {
     try {
-        JSON.parse(str);
-        return null;
+        JSON.parse(str)
+        return null
     } catch (e: any) {
-        return e.message as string;
+        return e.message as string
     }
 }
 
 export function cloneEntity<T>(value: T): T {
-    if (value === null || typeof value !== "object") {
-        return value;
+    if (value === null || typeof value !== 'object') {
+        return value
     }
     if (value instanceof File || value instanceof Blob) {
-        return value;
+        return value
     }
     if (Array.isArray(value)) {
-        return value.map(cloneEntity) as unknown as T;
+        return value.map(cloneEntity) as unknown as T
     }
-    const result: Record<string, unknown> = {};
+    const result: Record<string, unknown> = {}
     for (const key of Object.keys(value as object)) {
-        result[key] = cloneEntity((value as Record<string, unknown>)[key]);
+        result[key] = cloneEntity((value as Record<string, unknown>)[key])
     }
-    return result as T;
+    return result as T
 }
 
-export const fitArtists = (target: object, artists?: any[]) => (target as any).$treenode ? artists?.map(a => ({
-    id: String(a.id),
-    name: a.name,
-    various: a.various,
-    isComposer: a.isComposer ?? a.composer,
-    isAvailable: a.isAvailable ?? a.available ?? true,
-    coverUri: a.coverUri ?? a.cover?.uri
-})) : artists;
+export const fitArtists = (target: object, artists?: any[]) =>
+    (target as any).$treenode
+        ? artists?.map(a => ({
+              id: String(a.id),
+              name: a.name,
+              various: a.various,
+              isComposer: a.isComposer ?? a.composer,
+              isAvailable: a.isAvailable ?? a.available ?? true,
+              coverUri: a.coverUri ?? a.cover?.uri,
+          }))
+        : artists
 
 export function formatBytes(value: number) {
-    if ('number' != typeof value || value < 0) return '0 B';
+    if ('number' != typeof value || value < 0) return '0 B'
     let units = ['B', 'KB', 'MB', 'GB'],
-        unitIndex = 0;
-    for (;value >= 1024 && unitIndex < units.length - 1;) (value /= 1024), unitIndex++;
-    return ''.concat(value.toFixed(2), ' ').concat(units[unitIndex]);
+        unitIndex = 0
+    for (; value >= 1024 && unitIndex < units.length - 1;) ((value /= 1024), unitIndex++)
+    return ''.concat(value.toFixed(2), ' ').concat(units[unitIndex])
 }

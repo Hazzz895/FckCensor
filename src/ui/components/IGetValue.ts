@@ -1,3 +1,3 @@
 export interface IGetValue<T> {
-    getValue(): T;
+    getValue(): T
 }

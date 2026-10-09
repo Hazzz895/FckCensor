@@ -1,86 +1,96 @@
-import { JSX } from "@/jsx-runtime";
-import { listenAddNodes } from "./observer";
-import { getAlbumFromNode, getArtistFromNode, getContextMenuSource, getTrackFromNode, walkFiber } from "@/utils/ui-utils";
-import { debug, error } from "@/utils/logger";
-import { Album, Artist, OuterArtist, Track, TrackMST } from "@/types";
-import { createAlbumSpoofAlertFor, createArtistSpoofAlertFor, createTrackSpoofAlertFor } from "@/ui/components/alerts/spoof/spoof-alert";
-import { Q_TRACK_ROOT, Q_VIBE_CONTEXT_MENU } from "./constants";
-import { completeTutorial } from "./tutorial";
-import { useCurrentTrack } from "@pulsesync/addon-sdk";
+import { JSX } from '@/jsx-runtime'
+import { listenAddNodes } from './observer'
+import { getEntityIdFromNode, getContextMenuSource } from '@/utils/ui-utils'
+import { createAlbumSpoofAlertFor, createArtistSpoofAlertFor, createTrackSpoofAlertFor } from '@/ui/components/alerts/spoof/spoof-alert'
+import type { TrackMenuItem, AlbumMenuItem, PlayerBarButton } from '@pulsesync/addon-sdk'
+import { getTracks, getAlbumTracks, getArtist } from '@/utils/music'
 
+async function editTrack(id: string) {
+    const [track] = await getTracks(id)
+    createTrackSpoofAlertFor(undefined, undefined, track ?? null)
+}
+export async function editAlbum(id: string) {
+    createAlbumSpoofAlertFor(undefined, await getAlbumTracks(id))
+}
+export const trackMenuItems: TrackMenuItem[] = [
+    {
+        id: 'spoof-track',
+        label: 'Подменить трек',
+        icon: 'edit',
+        position: 3,
+        onClick: ({ track }) => editTrack(track.id),
+    },
+]
+export const albumMenuItems: AlbumMenuItem[] = [
+    {
+        id: 'spoof-album',
+        label: 'Подменить альбом',
+        icon: 'edit',
+        position: 3,
+        onClick: ({ album }) => editAlbum(album.id),
+    },
+]
+export const playerBarButtons: PlayerBarButton[] = [
+    {
+        id: 'spoof-current-track',
+        label: 'Подменить трек',
+        icon: 'edit',
+        onClick: async ({ currentTrack }) => {
+            if (currentTrack) await editTrack(String(currentTrack.id))
+        },
+    },
+]
 export function prepareOptions() {
-    listenAddOptionsMenu((trackOptionsMenu) => {
-        const trackData = walkFiber<TrackMST>(trackOptionsMenu, (obj) => {
-            if (!Array.isArray(obj)) {
-                return obj?.props?.track;
-            }
-            
-            for (const o of obj) {
-                if (o?.props?.track) {
-                    return o.props.track;
-                }
-            }
-        });
-        if (!trackData) return;
-        const trackNode = getContextMenuSource(trackOptionsMenu, Q_TRACK_ROOT);
-        const beforeItem = trackOptionsMenu.querySelector<HTMLElement>('[data-test-id="CONTEXT_MENU_DOWNLOAD_BUTTON"]')
-        const option = <SpoofOption label="Подменить трек" onclick={(el: HTMLElement) => createTrackSpoofAlertFor(el, trackNode, trackData)}/>
-        if (beforeItem) {
-            beforeItem.parentElement?.insertBefore(option, beforeItem);
-        }
-        else {
-            trackOptionsMenu.appendChild(option);
-        }
-    }, "track");
-
-    listenAddNodes((trackOptionsMenu) => {
-        const trackData = useCurrentTrack() as Track;
-        if (!trackData) return;
-        const option = <SpoofOption label="Подменить трек" onclick={(el: HTMLElement) => createTrackSpoofAlertFor(el, trackOptionsMenu, trackData)}/>;
-        trackOptionsMenu.appendChild(option);
-    }, `${Q_VIBE_CONTEXT_MENU}:not(:has([fckcensoroption]))`);
-
-    listenAddOptionsMenu((artistOptionsMenu) => {
-        const artistHeaderRoot = getContextMenuSource(artistOptionsMenu, '.ArtistPage_content__iZHVN');
-        if (!artistHeaderRoot) return;
-        const artistData = getArtistFromNode(artistHeaderRoot);
-        if (!artistData) return;
-        const option = <SpoofOption label="Подменить исполнителя" onclick={(el: HTMLElement) => createArtistSpoofAlertFor(el, artistData)}/>
-        artistOptionsMenu.appendChild(option)
-    }, "artist")
-
-    listenAddOptionsMenu((albumOptionsMenu) => {
-        const albumControlsRoot = getContextMenuSource(albumOptionsMenu, '.CommonPageHeader_controls__c27E_');
-        if (!albumControlsRoot) return;
-        const albumData = getAlbumFromNode(albumControlsRoot);
-        if (!albumData) return;
-        const option = <SpoofOption label="Подменить альбом" onclick={(el: HTMLElement) => createAlbumSpoofAlertFor(el, albumData)}/>
-        albumOptionsMenu.appendChild(option)
-    }, "album")
+    listenAddOptionsMenu(artistOptionsMenu => {
+        const artistHeaderRoot = getContextMenuSource(artistOptionsMenu, '.ArtistPage_content__iZHVN')
+        if (!artistHeaderRoot) return
+        const artistId = getEntityIdFromNode(artistHeaderRoot, 'artist')
+        if (!artistId) return
+        const option = (
+            <SpoofOption
+                label="Подменить исполнителя"
+                onclick={async (el: HTMLElement) => createArtistSpoofAlertFor(el, await getArtist(artistId))}
+            />
+        )
+        const nextItem = artistOptionsMenu.querySelectorAll('[role="menuitem"]')[3]
+        if (nextItem) nextItem.before(option)
+        else artistOptionsMenu.appendChild(option)
+    }, 'artist')
 }
 
-function listenAddOptionsMenu(listener: (el: HTMLElement) => void, type: "artist" | "track" | "album") {
+function listenAddOptionsMenu(listener: (el: HTMLElement) => void, type: 'artist' | 'track' | 'album') {
     listenAddNodes(listener, `[data-test-id="${type.toUpperCase()}_CONTEXT_MENU"]:not(:has([fckcensoroption]))`)
 }
 
 export interface OptionAttributes extends JSX.HTMLAttributes {
-    label: string;
-    icon: string;
-    onclick?: (ev: MouseEvent) => void;
+    label: string
+    icon: string
+    onclick?: (ev: MouseEvent) => void
 }
 
 function SpoofOption({ label, onclick, ...props }: any) {
-    return <Option label={label} onclick={(ev) => onclick(ev.currentTarget)} icon="edit_xxs" {...props}/>
+    return <Option label={label} onclick={ev => onclick(ev.currentTarget)} icon="edit_xxs" {...props} />
 }
 
-export function Option({ label, icon, onclick}: OptionAttributes) {
+export function Option({ label, icon, onclick }: OptionAttributes) {
     return (
-    <button onclick={onclick} fckcensoroption class="cpeagBA1_PblpJn8Xgtv UDMYhpDjiAFT3xUx268O dgV08FKVLZKFsucuiryn IlG7b1K0AD7E7AMx6F5p HbaqudSqu7Q3mv3zMPGr qU2apWBO1yyEK0lZ3lPO kc5CjvU5hT9KEj0iTt3C EiyUV4aCJzpfNzuihfMM" type="button" role="menuitem" data-test-id="CONTEXT_MENU_SPOOF_BUTTON" tabindex="-1" aria-live="off" aria-busy="false">
-        <span class="JjlbHZ4FaP9EAcR_1DxF">
-            <svg class="J9wTKytjOWG73QMoN5WP elJfazUBui03YWZgHCbW vqAVPWFJlhAOleK_SLk4 l3tE1hAMmBj2aoPPwU08" focusable="false" aria-hidden="true">
-                <use xlink:href={`/icons/sprite.svg#${icon}`}></use>
-            </svg>
-            {label}
-        </span>
-    </button>)
+        <button
+            onclick={onclick}
+            fckcensoroption
+            class="cpeagBA1_PblpJn8Xgtv UDMYhpDjiAFT3xUx268O dgV08FKVLZKFsucuiryn IlG7b1K0AD7E7AMx6F5p HbaqudSqu7Q3mv3zMPGr qU2apWBO1yyEK0lZ3lPO kc5CjvU5hT9KEj0iTt3C EiyUV4aCJzpfNzuihfMM"
+            type="button"
+            role="menuitem"
+            data-test-id="CONTEXT_MENU_SPOOF_BUTTON"
+            tabindex="-1"
+            aria-live="off"
+            aria-busy="false"
+        >
+            <span class="JjlbHZ4FaP9EAcR_1DxF">
+                <svg class="J9wTKytjOWG73QMoN5WP elJfazUBui03YWZgHCbW vqAVPWFJlhAOleK_SLk4 l3tE1hAMmBj2aoPPwU08" focusable="false" aria-hidden="true">
+                    <use xlink:href={`/icons/sprite.svg#${icon}`}></use>
+                </svg>
+                {label}
+            </span>
+        </button>
+    )
 }
