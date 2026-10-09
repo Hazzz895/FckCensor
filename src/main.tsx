@@ -10,7 +10,7 @@ import { localSource } from './api/db-api'
 import { destroyObserver, invokeAddNodesListeners, startObserver } from './hooks/ui/observer'
 import { prepareBadges } from './hooks/ui/badges'
 import { prepareTutorials } from './hooks/ui/tutorial'
-import { prepareOptions, trackMenuItems, albumMenuItems, playerBarButtons } from './hooks/ui/options'
+import { prepareOptions, trackMenuItems, albumMenuItems } from './hooks/ui/options'
 import { prepareDisabledTracksObserver } from './hooks/ui/disabled-tracks'
 import { prepareSettingsOptions } from './hooks/ui/settings'
 import { settings } from './settings'
@@ -23,7 +23,6 @@ export default defineAddon({
     settings,
     trackMenuItems,
     albumMenuItems,
-    playerBarButtons,
     start: async api => {
         debug('Starting')
         let stopUserDev: (() => void) | undefined
