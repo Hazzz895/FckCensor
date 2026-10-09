@@ -1,20 +1,16 @@
-import { JSX } from '@/jsx-runtime';
-import styles from '@/styles.module.scss';
+import { JSX } from '@/jsx-runtime'
+import styles from '@/styles.module.scss'
 
 export function AlertRoot({ children }: JSX.HTMLAttributes) {
     return (
-        <div
-            tabindex="-1"
-            role="dialog"
-            class="ifxS_8bgSnwBoCsyow0E t7tk8IYH3tGrhDZJpi3Z GKgBufCxWa9erUCTU3Fp mjhMCLd6OX1d1_cJo5Cm"
-        >
+        <div tabindex="-1" role="dialog" class="ifxS_8bgSnwBoCsyow0E t7tk8IYH3tGrhDZJpi3Z GKgBufCxWa9erUCTU3Fp mjhMCLd6OX1d1_cJo5Cm">
             {children}
         </div>
-    );
+    )
 }
 
 interface AlertHeaderProps extends JSX.HTMLAttributes {
-    title?: string;
+    title?: string
 }
 
 export function CloseButton({ onclick, ...props }: Record<string, any>) {
@@ -35,34 +31,28 @@ export function CloseButton({ onclick, ...props }: Record<string, any>) {
                 </svg>
             </span>
         </button>
-    );
+    )
 }
 
 export function AlertHeader({ title, children }: AlertHeaderProps) {
     return (
         <header class="EditContentModal_header__F6BJQ" data-scrim-header="true">
-            <h3 class="_MWOVuZRvUQdXKTMcOPx _sd8Q9d_Ttn0Ufe4ISWS nSU6fV9y80WrZEfafvww xuw9gha2dQiGgdRcHNgU">
-                {title ?? children}
-            </h3>
+            <h3 class="_MWOVuZRvUQdXKTMcOPx _sd8Q9d_Ttn0Ufe4ISWS nSU6fV9y80WrZEfafvww xuw9gha2dQiGgdRcHNgU">{title ?? children}</h3>
             <CloseButton />
         </header>
-    );
+    )
 }
 
 export function AlertContentRoot({ children }: JSX.HTMLAttributes) {
-    return (
-        <div class={`EditContentModal_content__6yEGM ${styles.AlertContent}`}>
-            {children}
-        </div>
-    );
+    return <div class={`EditContentModal_content__6yEGM ${styles.AlertContent}`}>{children}</div>
 }
 
 export function AlertButtons({ children }: JSX.HTMLAttributes) {
-    return <div class="EditContentModal_buttons__bHzfS">{children}</div>;
+    return <div class="EditContentModal_buttons__bHzfS">{children}</div>
 }
 
 export interface ActionButtonProps extends JSX.HTMLAttributes {
-    onclick?: (ev: MouseEvent) => void;
+    onclick?: (ev: MouseEvent) => void
 }
 
 export function ActionButton({ children, onclick, class: className, ...props }: ActionButtonProps) {
@@ -77,7 +67,7 @@ export function ActionButton({ children, onclick, class: className, ...props }: 
         >
             {children}
         </button>
-    );
+    )
 }
 
 export function AlertBackground() {
@@ -88,152 +78,136 @@ export function AlertBackground() {
             aria-hidden="true"
             data-scrim-backdrop="true"
         />
-    );
+    )
 }
 
 interface ScrimAlertProps extends JSX.HTMLAttributes {
-    scrimElement?: JSX.Element;
-    x?: number;
-    y?: number;
-    height?: number;
-    width?: number;
+    scrimElement?: JSX.Element
+    x?: number
+    y?: number
+    height?: number
+    width?: number
 }
 
 export function closeAlert(el: HTMLElement) {
-    const target = el.closest('[data-open]') || el.querySelector('[data-open]');
-    if (target?.getAttribute('data-open') !== 'true') return;
-    target.removeAttribute('data-open');
+    const target = el.closest('[data-open]') || el.querySelector('[data-open]')
+    if (target?.getAttribute('data-open') !== 'true') return
+    target.removeAttribute('data-open')
 }
 
 function forceReflow(el: HTMLElement) {
-    void el.offsetWidth;
+    void el.offsetWidth
 }
-
 
 export function ScrimAlert({ scrimElement, x, y, width, height, children }: ScrimAlertProps) {
-    return (
-        <div
-            class={styles.AlertFromScrim}
-        >
-            {children}
-        </div>
-    );
+    return <div class={styles.AlertFromScrim}>{children}</div>
 }
 
-export function createScrimAlert(
-    scrimElement: JSX.Element,
-    title: string,
-    content?: JSX.Child,
-    onClose?: () => void
-) {  
+export function createScrimAlert(scrimElement: JSX.Element, title: string, content?: JSX.Child, onClose?: () => void) {
     const container = (
         <div>
             <AlertBackground />
             <ScrimAlert scrimElement={scrimElement}>
                 <AlertRoot>
                     <AlertHeader title={title} />
-                    <AlertContentRoot>
-                        {content}
-                    </AlertContentRoot>
+                    <AlertContentRoot>{content}</AlertContentRoot>
                 </AlertRoot>
             </ScrimAlert>
         </div>
-    );
+    )
 
-    document.body.appendChild(container);
+    document.body.appendChild(container)
 
-    const scrimNode = container.querySelector<HTMLElement>('.' + CSS.escape(styles.AlertFromScrim));
-    const headerNode = container.querySelector<HTMLElement>('[data-scrim-header]');
-    const closeButton = container.querySelector<HTMLElement>('[data-scrim-close-button]');
-    const backdropNode = container.querySelector<HTMLElement>('[data-scrim-backdrop]');
+    const scrimNode = container.querySelector<HTMLElement>('.' + CSS.escape(styles.AlertFromScrim))
+    const headerNode = container.querySelector<HTMLElement>('[data-scrim-header]')
+    const closeButton = container.querySelector<HTMLElement>('[data-scrim-close-button]')
+    const backdropNode = container.querySelector<HTMLElement>('[data-scrim-backdrop]')
 
     if (!scrimNode) {
-        return container;
+        return container
     }
 
     if (headerNode) {
-        scrimNode.style.setProperty('--header-height', `${headerNode.offsetHeight}px`);
+        scrimNode.style.setProperty('--header-height', `${headerNode.offsetHeight}px`)
     }
 
-    scrimNode.style.transition = 'none';
+    scrimNode.style.transition = 'none'
 
     if (scrimElement instanceof Element) {
-        const scrimRect = scrimElement.getBoundingClientRect();
-        const targetWidth = scrimNode.offsetWidth || window.innerWidth * 0.75;
-        const targetHeight = scrimNode.offsetHeight || window.innerHeight * 0.75;
+        const scrimRect = scrimElement.getBoundingClientRect()
+        const targetWidth = scrimNode.offsetWidth || window.innerWidth * 0.75
+        const targetHeight = scrimNode.offsetHeight || window.innerHeight * 0.75
 
-        const scrimCenterX = scrimRect.left + scrimRect.width / 2;
-        const scrimCenterY = scrimRect.top + scrimRect.height / 2;
+        const scrimCenterX = scrimRect.left + scrimRect.width / 2
+        const scrimCenterY = scrimRect.top + scrimRect.height / 2
 
-        const dx = scrimCenterX - window.innerWidth / 2;
-        const dy = scrimCenterY - window.innerHeight / 2;
-        const scaleX = scrimRect.width ? scrimRect.width / targetWidth : 1;
-        const scaleY = scrimRect.height ? scrimRect.height / targetHeight : 1;
+        const dx = scrimCenterX - window.innerWidth / 2
+        const dy = scrimCenterY - window.innerHeight / 2
+        const scaleX = scrimRect.width ? scrimRect.width / targetWidth : 1
+        const scaleY = scrimRect.height ? scrimRect.height / targetHeight : 1
 
-        scrimNode.style.setProperty('--scrim-dx', `${dx}px`);
-        scrimNode.style.setProperty('--scrim-dy', `${dy}px`);
-        scrimNode.style.setProperty('--scrim-scale-x', `${scaleX}`);
-        scrimNode.style.setProperty('--scrim-scale-y', `${scaleY}`);
+        scrimNode.style.setProperty('--scrim-dx', `${dx}px`)
+        scrimNode.style.setProperty('--scrim-dy', `${dy}px`)
+        scrimNode.style.setProperty('--scrim-scale-x', `${scaleX}`)
+        scrimNode.style.setProperty('--scrim-scale-y', `${scaleY}`)
     }
 
-    forceReflow(scrimNode);
+    forceReflow(scrimNode)
 
-    scrimNode.style.transition = '';
+    scrimNode.style.transition = ''
 
-    const close = () => closeAlert(scrimNode);
+    const close = () => closeAlert(scrimNode)
 
     const onTransitionEnd = (ev: TransitionEvent) => {
-        if (ev.target !== scrimNode || ev.propertyName !== 'transform') return;
-        if (scrimNode.getAttribute('data-open') === 'true') return;
-        document.removeEventListener('keydown', onKeyDown);
-        window.removeEventListener('wheel', onWheel, true);
-        scrimNode.removeEventListener('transitionend', onTransitionEnd);
-        container.remove();
+        if (ev.target !== scrimNode || ev.propertyName !== 'transform') return
+        if (scrimNode.getAttribute('data-open') === 'true') return
+        document.removeEventListener('keydown', onKeyDown)
+        window.removeEventListener('wheel', onWheel, true)
+        scrimNode.removeEventListener('transitionend', onTransitionEnd)
+        container.remove()
         if (onClose) {
-            onClose();
+            onClose()
         }
-    };
+    }
 
     const onKeyDown = (ev: KeyboardEvent) => {
-        if (ev.key === 'Escape') close();
-    };
+        if (ev.key === 'Escape') close()
+    }
 
     const onWheel = (ev: WheelEvent) => {
         if (ev.target instanceof Node && scrimNode.contains(ev.target)) {
-            ev.stopPropagation();
+            ev.stopPropagation()
         }
-    };
+    }
 
-    closeButton?.addEventListener('click', close);
-    backdropNode?.addEventListener('click', close);
-    document.addEventListener('keydown', onKeyDown);
-    window.addEventListener('wheel', onWheel, true);
-    scrimNode.addEventListener('transitionend', onTransitionEnd);
+    closeButton?.addEventListener('click', close)
+    backdropNode?.addEventListener('click', close)
+    document.addEventListener('keydown', onKeyDown)
+    window.addEventListener('wheel', onWheel, true)
+    scrimNode.addEventListener('transitionend', onTransitionEnd)
 
     requestAnimationFrame(() => {
-        scrimNode.setAttribute('data-open', 'true');
-    });
+        scrimNode.setAttribute('data-open', 'true')
+    })
 
-    return container;
+    return container
 }
 
 export interface TextFieldProps extends JSX.HTMLAttributes {
-    header?: JSX.Child | null;
-    placeholder?: string;
-    multiline?: boolean;
+    header?: JSX.Child | null
+    placeholder?: string
+    multiline?: boolean
 }
 
 export function TextField({ header, placeholder, multiline, children, ...props }: TextFieldProps) {
-    const Tag = (props as any).Tag ? (props as any).Tag : multiline ? "textarea" : "input"; 
-    delete props.Tag;
+    const Tag = (props as any).Tag ? (props as any).Tag : multiline ? 'textarea' : 'input'
+    delete props.Tag
     return (
-    <div class="EditContentModal_field__rexIL">
-        {header ?(
-        <div class="_MWOVuZRvUQdXKTMcOPx g3qWNP6xl__7qxNmtrvd _3_Mxw7Si7j2g4kWjlpR EditContentModal_label__Cf3Kp">
-            {header}
-        </div>) : ""}
-        <Tag {...props} class={"kAYDswAvA1AJoAzRV4rY EditContentModal_input__8O8GH " + styles.i} placeholder={placeholder ?? ""}>
-            {children}
-        </Tag>
-    </div>)
+        <div class="EditContentModal_field__rexIL">
+            {header ? <div class="_MWOVuZRvUQdXKTMcOPx g3qWNP6xl__7qxNmtrvd _3_Mxw7Si7j2g4kWjlpR EditContentModal_label__Cf3Kp">{header}</div> : ''}
+            <Tag {...props} class={'kAYDswAvA1AJoAzRV4rY EditContentModal_input__8O8GH ' + styles.i} placeholder={placeholder ?? ''}>
+                {children}
+            </Tag>
+        </div>
+    )
 }

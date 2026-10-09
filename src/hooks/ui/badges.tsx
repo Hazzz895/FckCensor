@@ -1,88 +1,91 @@
-import { JSX, legacyCreateElement } from "@/jsx-runtime";
-import { listenAddNodes, listenAddTrackNodes, listenMutations, unlistenMutations } from "./observer";
-import addonConfig from "../../../addon.config.mjs";
-import { debug, error } from "@/utils/logger";
-import styles from "@/styles.module.scss";
-import { eventHandlerForTooltip } from "@/ui/tooltips";
-import { sources } from "@/api/main-api";
-import { Q_ALBUM_FIBER_ROOT, Q_ALBUM_STICKY_TITLE, Q_ARTIST_STICKY_TITLE, Q_META_TITLE_CONTAINER, Q_PLAYER_BAR } from "./constants";
-import { closestInTree, getAlbumFromNode, getAllTrackNodesById, getArtistFromNode, getTrackIdFromNode } from "@/utils/ui-utils";
-import { SpoofableType } from "@/types";
-import { onCurrentTrackChange } from "@/utils/pulsesync";
-import { useCurrentTrack } from "@pulsesync/addon-sdk";
+import { JSX, legacyCreateElement } from '@/jsx-runtime'
+import { listenAddNodes, listenAddTrackNodes, listenMutations, unlistenMutations } from './observer'
+import addonConfig from '../../../addon.config.mjs'
+import { debug, error } from '@/utils/logger'
+import styles from '@/styles.module.scss'
+import { eventHandlerForTooltip } from '@/ui/tooltips'
+import { sources } from '@/api/main-api'
+import { Q_ALBUM_FIBER_ROOT, Q_ALBUM_STICKY_TITLE, Q_ARTIST_STICKY_TITLE, Q_META_TITLE_CONTAINER, Q_PLAYER_BAR } from './constants'
+import { closestInTree, getAlbumFromNode, getAllTrackNodesById, getArtistFromNode, getTrackIdFromNode } from '@/utils/ui-utils'
+import { SpoofableType } from '@/types'
+import { onCurrentTrackChange } from '@/utils/pulsesync'
+import { useCurrentTrack } from '@pulsesync/addon-sdk'
 
-const PLAYERBAR_SELECTOR = `${Q_PLAYER_BAR}, [data-test-id="FULLSCREEN_PLAYER_FULLSCREEN_CONTENT"]`;
+const PLAYERBAR_SELECTOR = `${Q_PLAYER_BAR}, [data-test-id="FULLSCREEN_PLAYER_FULLSCREEN_CONTENT"]`
 
 export function prepareBadges() {
-    listenAddTrackNodes((el) => updateTrackBadge(el, getTrackIdFromNode(el) ?? ""), `:has(${Q_META_TITLE_CONTAINER})`);
+    listenAddTrackNodes(el => updateTrackBadge(el, getTrackIdFromNode(el) ?? ''), `:has(${Q_META_TITLE_CONTAINER})`)
 
-    listenAddNodes((el) => updateAlbumBadge(el, String(getAlbumFromNode(el.closest('.PageHeaderBase_content___DNyv')?.querySelector(Q_ALBUM_FIBER_ROOT)!)?.id)), Q_ALBUM_STICKY_TITLE)
+    listenAddNodes(
+        el => updateAlbumBadge(el, String(getAlbumFromNode(el.closest('.PageHeaderBase_content___DNyv')?.querySelector(Q_ALBUM_FIBER_ROOT)!)?.id)),
+        Q_ALBUM_STICKY_TITLE,
+    )
 
-    listenAddNodes((el) => updateArtistBadge(el, String(getArtistFromNode(el.closest('.ArtistPage_content__iZHVN')!)?.id)), Q_ARTIST_STICKY_TITLE)
+    listenAddNodes(el => updateArtistBadge(el, String(getArtistFromNode(el.closest('.ArtistPage_content__iZHVN')!)?.id)), Q_ARTIST_STICKY_TITLE)
 
-    listenAddNodes(updatePlayerBarBadge, PLAYERBAR_SELECTOR);
+    listenAddNodes(updatePlayerBarBadge, PLAYERBAR_SELECTOR)
 
-    const playerBarMutationListener = listenMutations((mutation) => {
+    const playerBarMutationListener = listenMutations(mutation => {
         if (updatePlayerBarBadge(mutation.target as HTMLElement)) {
-            unlistenMutations(playerBarMutationListener);
+            unlistenMutations(playerBarMutationListener)
         }
-    });
+    })
 
-    updatePlayerBarBadge();
+    updatePlayerBarBadge()
     onCurrentTrackChange(() => {
         try {
-            updatePlayerBarBadge();
+            updatePlayerBarBadge()
         } catch (e) {
-            error(e);
+            error(e)
         }
-    });
+    })
 }
 
 export function updatePlayerBarBadge(playerBar?: HTMLElement) {
     if (!playerBar) {
-        const nodes = document.querySelectorAll<HTMLElement>(PLAYERBAR_SELECTOR) ?? undefined;
+        const nodes = document.querySelectorAll<HTMLElement>(PLAYERBAR_SELECTOR) ?? undefined
         if (nodes && nodes.length > 0) {
             for (const node of nodes) {
-                updatePlayerBarBadge(node);
+                updatePlayerBarBadge(node)
             }
         }
-        return;
+        return
     }
-    if (!playerBar) return;
-    const track = useCurrentTrack();
-    if (!track) return;
-    return updateTrackBadge(playerBar, String(track.id));
+    if (!playerBar) return
+    const track = useCurrentTrack()
+    if (!track) return
+    return updateTrackBadge(playerBar, String(track.id))
 }
 
 export function updateTrackBadge(container: HTMLElement, trackId: string) {
-    const title = closestInTree(container, Q_META_TITLE_CONTAINER);
+    const title = closestInTree(container, Q_META_TITLE_CONTAINER)
 
-    if (!title) return false;
+    if (!title) return false
 
-    title.querySelector<HTMLElement>(`.${styles.FckCensorBadge}`)?.remove();
+    title.querySelector<HTMLElement>(`.${styles.FckCensorBadge}`)?.remove()
 
     if (sources.hasPlayerReplacement(trackId) || sources.hasTrackSpoof(trackId)) {
-        const options = title.querySelector<HTMLElement>('div:has([data-test-id="PLAYERBAR_DESKTOP_CONTEXT_MENU_BUTTON"])');
+        const options = title.querySelector<HTMLElement>('div:has([data-test-id="PLAYERBAR_DESKTOP_CONTEXT_MENU_BUTTON"])')
         if (options) {
-            title.insertBefore(<ReplacedBadge type="track"/>, options);
+            title.insertBefore(<ReplacedBadge type="track" />, options)
         } else {
-            title.appendChild(<ReplacedBadge type="track"/>);
+            title.appendChild(<ReplacedBadge type="track" />)
         }
     }
 
-    return true;
+    return true
 }
 
 function updateAlbumOrArtistBadge(container: HTMLElement, hasSpoof: boolean) {
     const title = closestInTree(container, '.PageHeaderTitle_stickyTitle__CL1m4')
 
-    if (!title) return;
+    if (!title) return
 
-    title.querySelector<HTMLElement>(`.${styles.FckCensorBadge}`)?.remove();
+    title.querySelector<HTMLElement>(`.${styles.FckCensorBadge}`)?.remove()
 
     if (hasSpoof) {
-        title.style = "display: flex; align-items: center";
-        title.appendChild(<ReplacedBadge type="album"/>)
+        title.style = 'display: flex; align-items: center'
+        title.appendChild(<ReplacedBadge type="album" />)
     }
 }
 
@@ -96,44 +99,61 @@ export function updateArtistBadge(container: HTMLElement, artistId: string) {
 
 export function updateBadgesByType(type: SpoofableType, id: string) {
     switch (type) {
-        case "track":
-            getAllTrackNodesById(id).forEach(node => updateTrackBadge(node, id));
-            break;
-        case "album":
-            document.querySelectorAll<HTMLElement>(Q_ALBUM_STICKY_TITLE).forEach(el => updateAlbumBadge(el, id));
-            break;
-        case "artist":
-            document.querySelectorAll<HTMLElement>(Q_ARTIST_STICKY_TITLE).forEach(el => updateArtistBadge(el, id));
-            break;
+        case 'track':
+            getAllTrackNodesById(id).forEach(node => updateTrackBadge(node, id))
+            break
+        case 'album':
+            document.querySelectorAll<HTMLElement>(Q_ALBUM_STICKY_TITLE).forEach(el => updateAlbumBadge(el, id))
+            break
+        case 'artist':
+            document.querySelectorAll<HTMLElement>(Q_ARTIST_STICKY_TITLE).forEach(el => updateArtistBadge(el, id))
+            break
     }
 }
 
 export interface BadgeProps extends JSX.HTMLAttributes {
-    icon: string;
+    icon: string
     description: string
 }
- 
+
 export function Badge({ icon, description, ...props }: BadgeProps) {
     return (
-        <span aria-label={description} {...props} class={`Meta_explicitMarkContainer__BxMQg ${styles.FckCensorBadge}`} onmouseenter={eventHandlerForTooltip}>
-            <svg class="ExplicitMarkIcon_explicitMark__0BPeQ Meta_explicitMark__ocnCV Rkdd2vKC_3xa1eUdRdHP" 
-                 focusable="false" 
-                 data-test-id="FCKCENSOR_BADGE_ICON"
-                 aria-hidden="false">
+        <span
+            aria-label={description}
+            {...props}
+            class={`Meta_explicitMarkContainer__BxMQg ${styles.FckCensorBadge}`}
+            onmouseenter={eventHandlerForTooltip}
+        >
+            <svg
+                class="ExplicitMarkIcon_explicitMark__0BPeQ Meta_explicitMark__ocnCV Rkdd2vKC_3xa1eUdRdHP"
+                focusable="false"
+                data-test-id="FCKCENSOR_BADGE_ICON"
+                aria-hidden="false"
+            >
                 <use xlink:href={`/icons/sprite.svg#${icon}`}></use>
             </svg>
         </span>
-    );
+    )
 }
 
 export function createMetadataBadge() {
-    return <Badge icon="addToPlaylist_xxs" description={"Информация о треке была подменена аддоном " + addonConfig.name}/>
-} 
+    return <Badge icon="addToPlaylist_xxs" description={'Информация о треке была подменена аддоном ' + addonConfig.name} />
+}
 
 export interface ReplacedBadgeProps extends JSX.HTMLAttributes {
-    type: SpoofableType;
+    type: SpoofableType
 }
 
 export function ReplacedBadge({ type, ...props }: ReplacedBadgeProps) {
-    return <Badge {...props} icon="edit_xxs" description={(type == "album" ? "Альбом" : type == "artist" ? "Исполнитель" : type == "track" ? "Трек" : "") + " был подменен аддоном " + addonConfig.name}/>
+    return (
+        <Badge
+            {...props}
+            icon="edit_xxs"
+            description={
+                (type == 'album' ? 'Альбом' : type == 'artist' ? 'Исполнитель' : type == 'track' ? 'Трек' : '') +
+                ' был подменен аддоном ' +
+                addonConfig.name
+            }
+        />
+    )
 }

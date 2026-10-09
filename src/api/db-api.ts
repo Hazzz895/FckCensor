@@ -1,579 +1,581 @@
-import { debug, error, log } from "@/utils/logger";
-import ISource, { Source } from "./dto/sources/source";
-import { Track, Album, Artist, SpoofableType, SpoofableEntity } from "@/types";
-import TrackReplacement from "./dto/track-replacement";
-import { list } from "./remote-api";
-import { collectAutoInsertions, inheritAlbumCovers, sources } from "./main-api";
-import { reloadPlayer } from "@/utils/music";
-import { getTrackAvaiableSpoof } from "@/utils/spoofs";
-import { ArtistInsertions } from "./dto/artist-insertion";
-import { isEmptyObject } from "@/utils/common";
-import { putToBundle } from "@/dev/dev-utils";
+import { debug, error, log } from '@/utils/logger'
+import ISource, { Source } from './dto/sources/source'
+import { Track, Album, Artist, SpoofableType, SpoofableEntity } from '@/types'
+import TrackReplacement from './dto/track-replacement'
+import { list } from './remote-api'
+import { collectAutoInsertions, inheritAlbumCovers, sources } from './main-api'
+import { reloadPlayer } from '@/utils/music'
+import { getTrackAvaiableSpoof } from '@/utils/spoofs'
+import { ArtistInsertions } from './dto/artist-insertion'
+import { isEmptyObject } from '@/utils/common'
+import { putToBundle } from '@/dev/dev-utils'
 
-export type LocalSpoofState = "none" | "own" | "exception";
+export type LocalSpoofState = 'none' | 'own' | 'exception'
 
-let dbPromise: Promise<IDBDatabase> | null = null;
+let dbPromise: Promise<IDBDatabase> | null = null
 
-const TRACKS_AUDIO_SIZE = "FCK_CENSOR_TRACKS_AUDIO_SIZE"
-const DATABASE_NAME = "FckCensor" + "Data" 
+const TRACKS_AUDIO_SIZE = 'FCK_CENSOR_TRACKS_AUDIO_SIZE'
+const DATABASE_NAME = 'FckCensor' + 'Data'
 
-const TRACKS = "tracks"
-const REMOTE_EXCEPTIONS = "remote_exceptions"
-const REPORTED_TRACKS = "reported_tracks"
-const REPORTED_ENTITIES = "reported_entities"
-const TRACK_SPOOFS = "track_spoofs"
-const ALBUM_SPOOFS = "album_spoofs"
-const ARTIST_SPOOFS = "artists_spoofs"
-const ARTIST_INSERTIONS = "artists_insertions"
+const TRACKS = 'tracks'
+const REMOTE_EXCEPTIONS = 'remote_exceptions'
+const REPORTED_TRACKS = 'reported_tracks'
+const REPORTED_ENTITIES = 'reported_entities'
+const TRACK_SPOOFS = 'track_spoofs'
+const ALBUM_SPOOFS = 'album_spoofs'
+const ARTIST_SPOOFS = 'artists_spoofs'
+const ARTIST_INSERTIONS = 'artists_insertions'
 
 export function getDb(): Promise<IDBDatabase> {
     if (!dbPromise) {
         dbPromise = new Promise((resolve, reject) => {
-            const request = indexedDB.open(DATABASE_NAME, 5);
+            const request = indexedDB.open(DATABASE_NAME, 5)
 
-            request.onupgradeneeded = (event) => {
-                if (!event.target) return;
-                const db = (event.target as IDBOpenDBRequest).result;
+            request.onupgradeneeded = event => {
+                if (!event.target) return
+                const db = (event.target as IDBOpenDBRequest).result
 
                 if (db.objectStoreNames.contains(REMOTE_EXCEPTIONS)) {
-                    db.deleteObjectStore(REMOTE_EXCEPTIONS);
+                    db.deleteObjectStore(REMOTE_EXCEPTIONS)
                 }
 
-                const key = { keyPath: "id" };
+                const key = { keyPath: 'id' }
                 function createIfNotExist(...tables: string[]) {
                     for (const table of tables) {
                         if (!db.objectStoreNames.contains(table)) {
-                            db.createObjectStore(table, key);
+                            db.createObjectStore(table, key)
                         }
                     }
                 }
 
-                createIfNotExist(
-                    TRACKS,
-                    REPORTED_ENTITIES,
-                    TRACK_SPOOFS,
-                    ALBUM_SPOOFS,
-                    ARTIST_SPOOFS,
-                    ARTIST_INSERTIONS
-                );
+                createIfNotExist(TRACKS, REPORTED_ENTITIES, TRACK_SPOOFS, ALBUM_SPOOFS, ARTIST_SPOOFS, ARTIST_INSERTIONS)
 
                 if (db.objectStoreNames.contains(REPORTED_TRACKS)) {
-                    const tx = (event.target as IDBOpenDBRequest).transaction;
+                    const tx = (event.target as IDBOpenDBRequest).transaction
                     if (tx) {
-                        const oldStore = tx.objectStore(REPORTED_TRACKS);
-                        const newStore = tx.objectStore(REPORTED_ENTITIES);
-                        const oldKeysReq = oldStore.getAllKeys();
+                        const oldStore = tx.objectStore(REPORTED_TRACKS)
+                        const newStore = tx.objectStore(REPORTED_ENTITIES)
+                        const oldKeysReq = oldStore.getAllKeys()
 
                         oldKeysReq.onsuccess = () => {
                             for (const trackId of oldKeysReq.result.map(String)) {
-                                newStore.put({ id: `track_${trackId}`, type: "track", entityId: trackId });
+                                newStore.put({ id: `track_${trackId}`, type: 'track', entityId: trackId })
                             }
-                            db.deleteObjectStore(REPORTED_TRACKS);
-                        };
+                            db.deleteObjectStore(REPORTED_TRACKS)
+                        }
                         oldKeysReq.onerror = () => {
-                            error("Failed to migrate reported_tracks:", oldKeysReq.error);
-                        };
+                            error('Failed to migrate reported_tracks:', oldKeysReq.error)
+                        }
                     } else {
-                        db.deleteObjectStore(REPORTED_TRACKS);
+                        db.deleteObjectStore(REPORTED_TRACKS)
                     }
                 }
-            };
+            }
 
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-        });
+            request.onsuccess = () => resolve(request.result)
+            request.onerror = () => reject(request.error)
+        })
     }
-    return dbPromise;
+    return dbPromise
 }
 
 export function deleteDb() {
     return new Promise(async (resolve, reject) => {
-        localStorage.removeItem(TRACKS_AUDIO_SIZE);
-        await getDb().then((db) => db.close());
+        localStorage.removeItem(TRACKS_AUDIO_SIZE)
+        await getDb().then(db => db.close())
 
-        const req = indexedDB.deleteDatabase(DATABASE_NAME);
+        const req = indexedDB.deleteDatabase(DATABASE_NAME)
 
-        req.onsuccess = () => resolve(true);
-        req.onerror = () => reject(req.error);
-        req.onblocked = () => reject(req.error);
+        req.onsuccess = () => resolve(true)
+        req.onerror = () => reject(req.error)
+        req.onblocked = () => reject(req.error)
 
         dbPromise = null
-    });
+    })
 }
 
-putToBundle("deleteDb", deleteDb)
+putToBundle('deleteDb', deleteDb)
 
 export async function loadLocalDb() {
     try {
-        const db = await getDb();
-        const tx = db.transaction(
-            [TRACKS, TRACK_SPOOFS, ALBUM_SPOOFS, ARTIST_SPOOFS, ARTIST_INSERTIONS, REPORTED_ENTITIES],
-            "readonly"
-        );
+        const db = await getDb()
+        const tx = db.transaction([TRACKS, TRACK_SPOOFS, ALBUM_SPOOFS, ARTIST_SPOOFS, ARTIST_INSERTIONS, REPORTED_ENTITIES], 'readonly')
 
-        const tracksStore = tx.objectStore(TRACKS);
-        const trackSpoofsStore = tx.objectStore(TRACK_SPOOFS);
-        const albumSpoofsStore = tx.objectStore(ALBUM_SPOOFS);
-        const artistSpoofsStore = tx.objectStore(ARTIST_SPOOFS);
-        const artistInsertionsStore = tx.objectStore(ARTIST_INSERTIONS);
-        const reportedEntitiesStore = tx.objectStore(REPORTED_ENTITIES);
+        const tracksStore = tx.objectStore(TRACKS)
+        const trackSpoofsStore = tx.objectStore(TRACK_SPOOFS)
+        const albumSpoofsStore = tx.objectStore(ALBUM_SPOOFS)
+        const artistSpoofsStore = tx.objectStore(ARTIST_SPOOFS)
+        const artistInsertionsStore = tx.objectStore(ARTIST_INSERTIONS)
+        const reportedEntitiesStore = tx.objectStore(REPORTED_ENTITIES)
 
-        const tracksReq = tracksStore.getAll();
-        const trackSpoofsReq = trackSpoofsStore.getAll();
-        const albumSpoofsReq = albumSpoofsStore.getAll();
-        const artistSpoofsReq = artistSpoofsStore.getAll();
-        const artistInsertionsReq = artistInsertionsStore.getAll();
-        const reportedEntitiesReq = reportedEntitiesStore.getAll();
+        const tracksReq = tracksStore.getAll()
+        const trackSpoofsReq = trackSpoofsStore.getAll()
+        const albumSpoofsReq = albumSpoofsStore.getAll()
+        const artistSpoofsReq = artistSpoofsStore.getAll()
+        const artistInsertionsReq = artistInsertionsStore.getAll()
+        const reportedEntitiesReq = reportedEntitiesStore.getAll()
 
         await new Promise<void>((resolve, reject) => {
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error);
-        });
+            tx.oncomplete = () => resolve()
+            tx.onerror = () => reject(tx.error)
+        })
 
-        localSource.replacementsTrackIds = [];
-        localSource.replacementExceptionsTrackIds = [];
-        for (const item of tracksReq.result as { id: string, data?: Blob | null }[]) {
-            (item.data ? localSource.replacementsTrackIds : localSource.replacementExceptionsTrackIds).push(String(item.id));
+        localSource.replacementsTrackIds = []
+        localSource.replacementExceptionsTrackIds = []
+        for (const item of tracksReq.result as { id: string; data?: Blob | null }[]) {
+            ;(item.data ? localSource.replacementsTrackIds : localSource.replacementExceptionsTrackIds).push(String(item.id))
         }
 
-        localSource.trackSpoofs.clear();
+        localSource.trackSpoofs.clear()
         for (const item of trackSpoofsReq.result as (Track & { id: string })[]) {
             if (item.coverUri && (item.coverUri as any) instanceof Blob) {
-                item.coverUri = URL.createObjectURL(item.coverUri as any);
+                item.coverUri = URL.createObjectURL(item.coverUri as any)
             }
-            localSource.trackSpoofs.set(item.id, item);
-            delete (item as any).id;
+            localSource.trackSpoofs.set(item.id, item)
+            delete (item as any).id
         }
 
-        localSource.albumSpoofs.clear();
+        localSource.albumSpoofs.clear()
         for (const item of albumSpoofsReq.result as (Album & { id: string })[]) {
             if (item.coverUri && (item.coverUri as any) instanceof Blob) {
-                item.coverUri = URL.createObjectURL(item.coverUri as any);
+                item.coverUri = URL.createObjectURL(item.coverUri as any)
             }
-            localSource.albumSpoofs.set(item.id, item);
-            delete (item as any).id;
+            localSource.albumSpoofs.set(item.id, item)
+            delete (item as any).id
         }
 
-        localSource.artistSpoofs.clear();
+        localSource.artistSpoofs.clear()
         for (const item of artistSpoofsReq.result as (Artist & { id: string })[]) {
             const rawCoverFile =
                 ((item.coverUri as any) instanceof Blob && (item.coverUri as any)) ||
                 ((item.cover?.uri as any) instanceof Blob && (item.cover!.uri as any)) ||
-                null;
+                null
             if (rawCoverFile) {
-                const url = URL.createObjectURL(rawCoverFile);
-                item.coverUri = url;
-                item.cover = { ...item.cover, uri: url };
+                const url = URL.createObjectURL(rawCoverFile)
+                item.coverUri = url
+                item.cover = { ...item.cover, uri: url }
             }
-            localSource.artistSpoofs.set(item.id, item);
-            delete (item as any).id;
+            localSource.artistSpoofs.set(item.id, item)
+            delete (item as any).id
         }
 
-        localSource.artistsInsertions.clear();
+        localSource.artistsInsertions.clear()
         for (const item of artistInsertionsReq.result as (ArtistInsertions & { id: string })[]) {
-            localSource.artistsInsertions.set(item.id, item);
+            localSource.artistsInsertions.set(item.id, item)
         }
 
-        localSource.reportedEntities = { track: [], album: [], artist: [] };
-        for (const item of reportedEntitiesReq.result as ({ type: SpoofableType, entityId: string } & { id: string })[]) {
-            localSource.reportedEntities[item.type].push(item.entityId);
+        localSource.reportedEntities = { track: [], album: [], artist: [] }
+        for (const item of reportedEntitiesReq.result as ({ type: SpoofableType; entityId: string } & { id: string })[]) {
+            localSource.reportedEntities[item.type].push(item.entityId)
         }
 
-        inheritAlbumCovers(localSource.trackSpoofs, localSource.albumSpoofs);
-        localSource.bumpSpoofs();
-        sources.pushSource(localSource);
-        sources.pushSource(automaticLocalInsertionsSource);
+        inheritAlbumCovers(localSource.trackSpoofs, localSource.albumSpoofs)
+        localSource.bumpSpoofs()
+        sources.pushSource(localSource)
+        sources.pushSource(automaticLocalInsertionsSource)
 
-        log("Loaded local data:", {
+        log('Loaded local data:', {
             tracks: localSource.replacementsTrackIds.length,
             trackSpoofs: Object.keys(localSource.trackSpoofs).length,
             albumSpoofs: Object.keys(localSource.albumSpoofs).length,
             artistSpoofs: Object.keys(localSource.artistSpoofs).length,
-        });
+        })
     } catch (err) {
-        error("Failed to load local DB:", err);
+        error('Failed to load local DB:', err)
     }
 }
 
-const MAX_TRACKS_CACHE_LENGTH = 4;
+const MAX_TRACKS_CACHE_LENGTH = 4
 
 export class LocalSource extends Source {
-    private readonly playerReplacementsCache: Map<string, TrackReplacement> = new Map<string, TrackReplacement>();
-    
-    public replacementsTrackIds: string[] = [];
-    public replacementExceptionsTrackIds: string[] = [];
-    public artistsInsertions: Map<string, ArtistInsertions> = new Map();
-    public trackSpoofs: Map<string, Track> = new Map();
-    public albumSpoofs: Map<string, Album> = new Map();
-    public artistSpoofs: Map<string, Artist> = new Map();
-    public reportedEntities: Record<SpoofableType, string[]> = { track: [], album: [], artist: [] };
+    private readonly playerReplacementsCache: Map<string, TrackReplacement> = new Map<string, TrackReplacement>()
 
-    private _spoofsRevision = 0;
-    public get spoofsRevision(): number { return this._spoofsRevision }
-    public bumpSpoofs() { this._spoofsRevision++ }
+    public replacementsTrackIds: string[] = []
+    public replacementExceptionsTrackIds: string[] = []
+    public artistsInsertions: Map<string, ArtistInsertions> = new Map()
+    public trackSpoofs: Map<string, Track> = new Map()
+    public albumSpoofs: Map<string, Album> = new Map()
+    public artistSpoofs: Map<string, Artist> = new Map()
+    public reportedEntities: Record<SpoofableType, string[]> = { track: [], album: [], artist: [] }
+
+    private _spoofsRevision = 0
+    public get spoofsRevision(): number {
+        return this._spoofsRevision
+    }
+    public bumpSpoofs() {
+        this._spoofsRevision++
+    }
 
     async buildPlayerReplacement(trackId: string): Promise<TrackReplacement | null> {
         if (this.hasPlayerReplacementException(trackId)) {
-            return new TrackReplacement(this, null);
+            return new TrackReplacement(this, null)
         }
         if (this.playerReplacementsCache.has(trackId)) {
-            return this.playerReplacementsCache.get(trackId)!;
+            return this.playerReplacementsCache.get(trackId)!
         }
-        const db = await getDb();
+        const db = await getDb()
         return new Promise((resolve, reject) => {
-            const tx = db.transaction(TRACKS, "readonly");
-            const store = tx.objectStore(TRACKS);
-            const request = store.get(trackId);
+            const tx = db.transaction(TRACKS, 'readonly')
+            const store = tx.objectStore(TRACKS)
+            const request = store.get(trackId)
 
             request.onsuccess = () => {
                 if (request.result && request.result.data) {
-                    const url = URL.createObjectURL(request.result.data);
-                    const replacement = new TrackReplacement(this, url);
+                    const url = URL.createObjectURL(request.result.data)
+                    const replacement = new TrackReplacement(this, url)
                     if (this.playerReplacementsCache.size > MAX_TRACKS_CACHE_LENGTH) {
-                        const oldestKey = this.playerReplacementsCache.keys().next().value!;
-                        const oldestUrl = this.playerReplacementsCache.get(oldestKey);
-                        URL.revokeObjectURL(oldestUrl!.url!);
-                        this.playerReplacementsCache.delete(oldestKey);
+                        const oldestKey = this.playerReplacementsCache.keys().next().value!
+                        const oldestUrl = this.playerReplacementsCache.get(oldestKey)
+                        URL.revokeObjectURL(oldestUrl!.url!)
+                        this.playerReplacementsCache.delete(oldestKey)
                     }
-                    this.playerReplacementsCache.set(trackId, replacement);
-                    resolve((replacement));
+                    this.playerReplacementsCache.set(trackId, replacement)
+                    resolve(replacement)
                 } else {
-                    resolve(null);
+                    resolve(null)
                 }
-            };
-            request.onerror = () => reject(request.error);
-        });
+            }
+            request.onerror = () => reject(request.error)
+        })
     }
 
     hasPlayerReplacement(trackId: string): boolean | null {
-        const id = String(trackId);
+        const id = String(trackId)
         if (this.replacementsTrackIds.includes(id) || this.playerReplacementsCache.has(id)) {
-            return true;
+            return true
         }
         if (this.hasPlayerReplacementException(id)) {
-            return false;
+            return false
         }
-        return null;
+        return null
     }
 
     hasPlayerReplacementException(trackId: string): boolean {
-        return this.replacementExceptionsTrackIds.includes(String(trackId));
+        return this.replacementExceptionsTrackIds.includes(String(trackId))
     }
 
     hasPlayerReplacementChanges(trackId: string): boolean {
-        return this.replacementsTrackIds.includes(trackId) || this.hasPlayerReplacementException(trackId);
+        return this.replacementsTrackIds.includes(trackId) || this.hasPlayerReplacementException(trackId)
     }
 
     getTrackSpoof(trackId: string): Track | null {
         const track = {}
         if (this.hasPlayerReplacement(trackId)) {
-            Object.assign(track, getTrackAvaiableSpoof());
+            Object.assign(track, getTrackAvaiableSpoof())
         }
         if (this.trackSpoofs.has(trackId)) {
-            Object.assign(track, this.trackSpoofs.get(trackId));
-        }
-        else {
-            return null;
+            Object.assign(track, this.trackSpoofs.get(trackId))
+        } else {
+            return null
         }
 
-        return track as Track;
+        return track as Track
     }
 
     getAlbumSpoof(albumId: string): Album | null {
-        return this.albumSpoofs.get(albumId) ?? null;
+        return this.albumSpoofs.get(albumId) ?? null
     }
 
     getArtistSpoof(artistId: string): Artist | null {
-        return this.artistSpoofs.get(artistId) ?? null;
+        return this.artistSpoofs.get(artistId) ?? null
     }
 
     getArtistInsertions(artistId: string): ArtistInsertions | null {
-        return this.artistsInsertions.get(artistId) ?? null;
+        return this.artistsInsertions.get(artistId) ?? null
     }
 
     async pushTrackReplacement(trackId: string, file: File | null) {
-        const id = String(trackId);
+        const id = String(trackId)
 
-        this.forgetTrackReplacement(id);
-        (file ? this.replacementsTrackIds : this.replacementExceptionsTrackIds).push(id);
+        this.forgetTrackReplacement(id)
+        ;(file ? this.replacementsTrackIds : this.replacementExceptionsTrackIds).push(id)
 
-        await this.pushToDb(TRACKS, id, { data: file });
+        await this.pushToDb(TRACKS, id, { data: file })
         if (file) {
-            await this.calculateTracksAudioSize();
+            await this.calculateTracksAudioSize()
         }
     }
 
     pushTrackReplacementException(trackId: string) {
-        return this.pushTrackReplacement(trackId, null);
+        return this.pushTrackReplacement(trackId, null)
     }
 
     async removeTrackReplacement(trackId: string) {
-        const id = String(trackId);
+        const id = String(trackId)
 
-        this.forgetTrackReplacement(id);
+        this.forgetTrackReplacement(id)
 
-        await this.removeFromDb(TRACKS, id);
-        await this.calculateTracksAudioSize();
+        await this.removeFromDb(TRACKS, id)
+        await this.calculateTracksAudioSize()
     }
 
     private forgetTrackReplacement(trackId: string) {
-        this.replacementsTrackIds = this.replacementsTrackIds.filter(x => x !== trackId);
-        this.replacementExceptionsTrackIds = this.replacementExceptionsTrackIds.filter(x => x !== trackId);
+        this.replacementsTrackIds = this.replacementsTrackIds.filter(x => x !== trackId)
+        this.replacementExceptionsTrackIds = this.replacementExceptionsTrackIds.filter(x => x !== trackId)
 
-        const cached = this.playerReplacementsCache.get(trackId);
+        const cached = this.playerReplacementsCache.get(trackId)
         if (cached) {
             if (cached.url) {
-                URL.revokeObjectURL(cached.url);
+                URL.revokeObjectURL(cached.url)
             }
-            this.playerReplacementsCache.delete(trackId);
+            this.playerReplacementsCache.delete(trackId)
         }
     }
 
     pushTrackSpoof(track: Track, trackId?: string) {
-        const id = String(trackId || track.id);
+        const id = String(trackId || track.id)
 
-        const oldTrack = this.trackSpoofs.get(id);
-        if (typeof oldTrack?.coverUri === "string" && oldTrack.coverUri.startsWith("blob:")) {
-            URL.revokeObjectURL(oldTrack.coverUri);
+        const oldTrack = this.trackSpoofs.get(id)
+        if (typeof oldTrack?.coverUri === 'string' && oldTrack.coverUri.startsWith('blob:')) {
+            URL.revokeObjectURL(oldTrack.coverUri)
         }
 
-        const dbTrack = { ...track };
+        const dbTrack = { ...track }
         if (track.coverUri && (track.coverUri as any) instanceof Blob) {
-            track.coverUri = URL.createObjectURL(track.coverUri as any);
+            track.coverUri = URL.createObjectURL(track.coverUri as any)
         }
 
-        this.trackSpoofs.set(id, track);
-        this.bumpSpoofs();
-        return this.pushToDb(TRACK_SPOOFS, id, dbTrack);
+        this.trackSpoofs.set(id, track)
+        this.bumpSpoofs()
+        return this.pushToDb(TRACK_SPOOFS, id, dbTrack)
     }
 
     removeTrackSpoof(trackId: string) {
-        const spoof = this.trackSpoofs.get(trackId);
-        if (typeof spoof?.coverUri === "string" && spoof?.coverUri?.startsWith("blob:")) {
-            URL.revokeObjectURL(spoof.coverUri);
+        const spoof = this.trackSpoofs.get(trackId)
+        if (typeof spoof?.coverUri === 'string' && spoof?.coverUri?.startsWith('blob:')) {
+            URL.revokeObjectURL(spoof.coverUri)
         }
-        this.trackSpoofs.delete(trackId);
-        this.bumpSpoofs();
-        return this.removeFromDb(TRACK_SPOOFS, trackId);
+        this.trackSpoofs.delete(trackId)
+        this.bumpSpoofs()
+        return this.removeFromDb(TRACK_SPOOFS, trackId)
     }
 
     pushAlbumSpoof(album: Album, albumId?: string) {
-        const id = String(albumId || album.id);
+        const id = String(albumId || album.id)
 
-        const oldAlbum = this.albumSpoofs.get(id);
-        if (typeof oldAlbum?.coverUri === "string" && oldAlbum.coverUri.startsWith("blob:")) {
-            URL.revokeObjectURL(oldAlbum.coverUri);
+        const oldAlbum = this.albumSpoofs.get(id)
+        if (typeof oldAlbum?.coverUri === 'string' && oldAlbum.coverUri.startsWith('blob:')) {
+            URL.revokeObjectURL(oldAlbum.coverUri)
         }
 
-        const dbAlbum = { ...album };
+        const dbAlbum = { ...album }
         if (album.coverUri && (album.coverUri as any) instanceof Blob) {
-            album.coverUri = URL.createObjectURL(album.coverUri as any);
+            album.coverUri = URL.createObjectURL(album.coverUri as any)
         }
 
-        this.albumSpoofs.set(id, album);
-        this.bumpSpoofs();
-        return this.pushToDb(ALBUM_SPOOFS, id, dbAlbum);
+        this.albumSpoofs.set(id, album)
+        this.bumpSpoofs()
+        return this.pushToDb(ALBUM_SPOOFS, id, dbAlbum)
     }
 
     removeAlbumSpoof(albumId: string) {
-        this.albumSpoofs.delete(albumId);
-        this.bumpSpoofs();
-        return this.removeFromDb(ALBUM_SPOOFS, albumId);
+        this.albumSpoofs.delete(albumId)
+        this.bumpSpoofs()
+        return this.removeFromDb(ALBUM_SPOOFS, albumId)
     }
 
     pushArtistSpoof(artist: Artist, artistId?: string) {
-        const id = String(artistId || artist.id);
+        const id = String(artistId || artist.id)
 
-        const oldArtist = this.artistSpoofs.get(id);
-        if (typeof oldArtist?.coverUri === "string" && oldArtist.coverUri.startsWith("blob:")) {
-            URL.revokeObjectURL(oldArtist.coverUri);
+        const oldArtist = this.artistSpoofs.get(id)
+        if (typeof oldArtist?.coverUri === 'string' && oldArtist.coverUri.startsWith('blob:')) {
+            URL.revokeObjectURL(oldArtist.coverUri)
         }
 
-        const dbArtist = { ...artist };
+        const dbArtist = { ...artist }
 
         const rawCoverFile =
             ((artist.coverUri as any) instanceof Blob && (artist.coverUri as any)) ||
             ((artist.cover?.uri as any) instanceof Blob && (artist.cover!.uri as any)) ||
-            null;
+            null
         if (rawCoverFile) {
-            const url = URL.createObjectURL(rawCoverFile);
-            artist.coverUri = url;
-            artist.cover = { ...artist.cover, uri: url };
+            const url = URL.createObjectURL(rawCoverFile)
+            artist.coverUri = url
+            artist.cover = { ...artist.cover, uri: url }
         }
 
-        this.artistSpoofs.set(id, artist);
-        return this.pushToDb(ARTIST_SPOOFS, id, dbArtist);
+        this.artistSpoofs.set(id, artist)
+        return this.pushToDb(ARTIST_SPOOFS, id, dbArtist)
     }
 
     removeArtistSpoof(artistId: string) {
-        this.artistSpoofs.delete(artistId);
-        return this.removeFromDb(ARTIST_SPOOFS, artistId);
+        this.artistSpoofs.delete(artistId)
+        return this.removeFromDb(ARTIST_SPOOFS, artistId)
     }
 
     pushArtistInsertions(artistId: string, insertions: ArtistInsertions) {
-        this.artistsInsertions.set(artistId, insertions);
-        return this.pushToDb(ARTIST_INSERTIONS, artistId, insertions);
+        this.artistsInsertions.set(artistId, insertions)
+        return this.pushToDb(ARTIST_INSERTIONS, artistId, insertions)
     }
 
     removeArtistInsertions(artistId: string) {
-        this.artistsInsertions.delete(artistId);
-        return this.removeFromDb(ARTIST_INSERTIONS, artistId);
+        this.artistsInsertions.delete(artistId)
+        return this.removeFromDb(ARTIST_INSERTIONS, artistId)
     }
 
     isReported(id: number, type: SpoofableType): boolean {
-        return this.reportedEntities[type].includes(String(id));
+        return this.reportedEntities[type].includes(String(id))
     }
 
     pushReported(id: number, type: SpoofableType) {
-        const strId = String(id);
-        this.reportedEntities[type].push(strId);
-        return this.pushToDb(REPORTED_ENTITIES, `${type}_${strId}`, { type, entityId: strId });
+        const strId = String(id)
+        this.reportedEntities[type].push(strId)
+        return this.pushToDb(REPORTED_ENTITIES, `${type}_${strId}`, { type, entityId: strId })
     }
 
     pushSpoof(spoof: any, id: string, type: SpoofableType) {
-        return (type == "album" ? this.pushAlbumSpoof : type == "artist" ? this.pushArtistSpoof : this.pushTrackSpoof).bind(this)(spoof, id);
+        return (type == 'album' ? this.pushAlbumSpoof : type == 'artist' ? this.pushArtistSpoof : this.pushTrackSpoof).bind(this)(spoof, id)
     }
 
     hasOwnArtistInsertions(artistId: string): boolean {
-        const insertions = this.artistsInsertions.get(String(artistId));
-        return !!(insertions?.tracks?.length || insertions?.albums?.length);
+        const insertions = this.artistsInsertions.get(String(artistId))
+        return !!(insertions?.tracks?.length || insertions?.albums?.length)
     }
 
     hasArtistInsertionsException(artistId: string): boolean {
-        const insertions = this.artistsInsertions.get(String(artistId));
-        return !!insertions && !this.hasOwnArtistInsertions(artistId);
+        const insertions = this.artistsInsertions.get(String(artistId))
+        return !!insertions && !this.hasOwnArtistInsertions(artistId)
     }
 
     getSpoofState(type: SpoofableType, id: string): LocalSpoofState {
-        const strId = String(id);
-        const spoof = this.getSpoof(type, id);
-        let hasException = false;
+        const strId = String(id)
+        const spoof = this.getSpoof(type, id)
+        let hasException = false
 
         if (spoof) {
             if (!isEmptyObject(spoof)) {
-                return "own";
+                return 'own'
             }
-            hasException = true;
+            hasException = true
         }
 
-        if (type == "track") {
+        if (type == 'track') {
             if (this.hasPlayerReplacement(strId) === true) {
-                return "own";
+                return 'own'
             }
             if (this.hasPlayerReplacementException(strId)) {
-                hasException = true;
+                hasException = true
             }
-        }
-        else if (type == "artist") {
+        } else if (type == 'artist') {
             if (this.hasOwnArtistInsertions(strId)) {
-                return "own";
+                return 'own'
             }
             if (this.hasArtistInsertionsException(strId)) {
-                hasException = true;
+                hasException = true
             }
         }
 
-        return hasException ? "exception" : "none";
+        return hasException ? 'exception' : 'none'
     }
 
-    private async openStore(table_name: string, mode: IDBTransactionMode = "readwrite") {
-        const db = await getDb();
-        return db.transaction(table_name, mode)
-                 .objectStore(table_name);
+    private async openStore(table_name: string, mode: IDBTransactionMode = 'readwrite') {
+        const db = await getDb()
+        return db.transaction(table_name, mode).objectStore(table_name)
     }
 
     private async removeFromDb(table_name: string, id: string) {
-        return this.requestDb(table_name, (store) => store.delete(id));
+        return this.requestDb(table_name, store => store.delete(id))
     }
 
     private async pushToDb(table_name: string, id: string, value: any) {
-        return this.requestDb(table_name, (store) => store.put({ ...value, id }));
+        return this.requestDb(table_name, store => store.put({ ...value, id }))
     }
 
     private async getFromDb<T>(table_name: string, id: string) {
-        return this.requestDb<T>(table_name, (store) => store.get(id));
+        return this.requestDb<T>(table_name, store => store.get(id))
     }
 
     private async requestDb<T>(table_name: string, callback: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
         return new Promise(async (resolve, reject) => {
-            const store = await this.openStore(table_name);
-            const request = callback(store);
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
+            const store = await this.openStore(table_name)
+            const request = callback(store)
+            request.onsuccess = () => resolve(request.result)
+            request.onerror = () => reject(request.error)
         })
     }
 
     async deleteDb() {
-        const result = await deleteDb();
+        const result = await deleteDb()
         if (result) {
-            this.albumSpoofs.clear();
-            this.artistSpoofs.clear();
+            this.albumSpoofs.clear()
+            this.artistSpoofs.clear()
             this.trackSpoofs.clear()
             this.artistsInsertions.clear()
-            this.bumpSpoofs();
-            this.replacementsTrackIds = [];
-            this.replacementExceptionsTrackIds = [];
+            this.bumpSpoofs()
+            this.replacementsTrackIds = []
+            this.replacementExceptionsTrackIds = []
         }
     }
 
     private async calculateTracksAudioSize() {
-        const tracks: { data?: File, id: string }[] = await this.requestDb(TRACKS, (store) => store.getAll());
+        const tracks: { data?: File; id: string }[] = await this.requestDb(TRACKS, store => store.getAll())
 
-        let result = 0;
+        let result = 0
         for (const track of tracks) {
-            if (!track.data) continue;
+            if (!track.data) continue
             result += track.data.size
         }
 
-        localStorage.setItem(TRACKS_AUDIO_SIZE, String(result));
+        localStorage.setItem(TRACKS_AUDIO_SIZE, String(result))
 
-        return result;
+        return result
     }
 
     public getTracksAudioSize() {
-        const cached = localStorage.getItem(TRACKS_AUDIO_SIZE);
+        const cached = localStorage.getItem(TRACKS_AUDIO_SIZE)
         if (!cached) {
-            return 0;
+            return 0
         }
-        const result = Number(cached);
-        return isNaN(result) ? 0 : result;
+        const result = Number(cached)
+        return isNaN(result) ? 0 : result
     }
 
     public async getCustomCover(type: SpoofableType, id: string): Promise<Blob | null> {
-        const coverUri = (await this.getFromDb<SpoofableEntity>(type == "album" ? ALBUM_SPOOFS : type == "artist" ? ARTIST_SPOOFS : TRACK_SPOOFS, id))?.coverUri as any;
-        return coverUri instanceof Blob ? coverUri : null;
+        const coverUri = (await this.getFromDb<SpoofableEntity>(type == 'album' ? ALBUM_SPOOFS : type == 'artist' ? ARTIST_SPOOFS : TRACK_SPOOFS, id))
+            ?.coverUri as any
+        return coverUri instanceof Blob ? coverUri : null
     }
 }
 
 export class AutomaticLocalInsertionsSource implements ISource {
-    private readonly local: LocalSource;
-    private cache: Map<string, ArtistInsertions> | null = null;
-    private lastRevision = -1;
+    private readonly local: LocalSource
+    private cache: Map<string, ArtistInsertions> | null = null
+    private lastRevision = -1
 
     constructor(local: LocalSource) {
-        this.local = local;
+        this.local = local
     }
 
-    buildPlayerReplacement(trackId: string): Promise<TrackReplacement | null> { return Promise.resolve(null); }
-    hasPlayerReplacement(trackId: string): boolean | null { return null; }
-    getTrackSpoof(trackId: string): Track | null { return null; }
-    getAlbumSpoof(albumId: string): Album | null { return null; }
-    getArtistSpoof(artistId: string): Artist | null { return null; }
+    buildPlayerReplacement(trackId: string): Promise<TrackReplacement | null> {
+        return Promise.resolve(null)
+    }
+    hasPlayerReplacement(trackId: string): boolean | null {
+        return null
+    }
+    getTrackSpoof(trackId: string): Track | null {
+        return null
+    }
+    getAlbumSpoof(albumId: string): Album | null {
+        return null
+    }
+    getArtistSpoof(artistId: string): Artist | null {
+        return null
+    }
 
     getArtistInsertions(artistId: string): ArtistInsertions | null {
-        return this.getInsertions().get(String(artistId)) ?? null;
+        return this.getInsertions().get(String(artistId)) ?? null
     }
 
     private getInsertions(): Map<string, ArtistInsertions> {
-        const revision = this.local.spoofsRevision;
+        const revision = this.local.spoofsRevision
         if (!this.cache || this.lastRevision !== revision) {
-            this.cache = new Map();
-            collectAutoInsertions(this.cache, this.local.trackSpoofs, this.local.albumSpoofs);
-            this.lastRevision = revision;
+            this.cache = new Map()
+            collectAutoInsertions(this.cache, this.local.trackSpoofs, this.local.albumSpoofs)
+            this.lastRevision = revision
         }
-        return this.cache;
+        return this.cache
     }
 }
 
-export const localSource = new LocalSource();
-export const automaticLocalInsertionsSource = new AutomaticLocalInsertionsSource(localSource);
+export const localSource = new LocalSource()
+export const automaticLocalInsertionsSource = new AutomaticLocalInsertionsSource(localSource)

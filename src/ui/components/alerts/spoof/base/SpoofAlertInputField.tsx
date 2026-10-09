@@ -1,25 +1,24 @@
-import { TextField } from "@/ui/components/alerts/alerts";
-import { SpoofAlertBase } from "./SpoofAlertBase";
-import { SpoofAlertEntityPropertyField } from "./SpoofAlertEntityPropertyField";
-
+import { TextField } from '@/ui/components/alerts/alerts'
+import { SpoofAlertBase } from './SpoofAlertBase'
+import { SpoofAlertEntityPropertyField } from './SpoofAlertEntityPropertyField'
 
 export class SpoofAlertInputField extends SpoofAlertEntityPropertyField<string> {
-    readonly label;
+    readonly label
 
     public constructor(alert: SpoofAlertBase, propertyName: string, label?: string, value?: string) {
-        super(alert, propertyName, value);
-        this.label = label;
+        super(alert, propertyName, value)
+        this.label = label
     }
 
     getValue() {
-        return this.element.querySelector<HTMLInputElement | HTMLTextAreaElement>('input, textarea')?.value ?? this.originalValue ?? "";
+        return this.element.querySelector<HTMLInputElement | HTMLTextAreaElement>('input, textarea')?.value ?? this.originalValue ?? ''
     }
 
     hasDiffs(prop: string) {
-        return prop != this.originalValue;
+        return prop != this.originalValue
     }
 
     createElement(): HTMLElement {
-        return <TextField header={this.label} placeholder={this.originalValue} value={this.originalValue} />;
+        return <TextField header={this.label} placeholder={this.originalValue} value={this.originalValue} />
     }
 }

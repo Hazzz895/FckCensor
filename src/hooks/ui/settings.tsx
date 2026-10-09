@@ -30,7 +30,7 @@ async function showConfirmationModal() {
     const confirmed = await modals.confirm({
         title: `Вы действительно хотите очистить базу данных аддона ${addonConfig.name}?`,
         message: `Это очистит все пользовательские данные аддона ${addonConfig.name}, а именно подмены информации о альбомах, исполнителях, треках (и их аудиопотоки), которые были подменены вручную через окна подмены. Это действие невозможно отменить.`,
-    });
+    })
 
     if (confirmed) {
         await localSource.deleteDb()

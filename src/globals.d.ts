@@ -1,5 +1,5 @@
 import '@pulsesync/yamusic-types/global'
-import { h } from "@/ui/dom-factory"
+import { h } from '@/ui/dom-factory'
 
 declare global {
     interface Window {
@@ -9,4 +9,4 @@ declare global {
         __pulsesyncBridgeInitialized?: boolean
     }
     type TrackId = number | string
-} 
+}

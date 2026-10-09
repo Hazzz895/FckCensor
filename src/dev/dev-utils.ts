@@ -1,15 +1,15 @@
-import { hookDi } from "@/utils/hook-utils";
-import { error } from "@/utils/logger";
-import addonConfig from "../../addon.config.mjs";
+import { hookDi } from '@/utils/hook-utils'
+import { error } from '@/utils/logger'
+import addonConfig from '../../addon.config.mjs'
 
 let _isDev: boolean | null = null
 
 if (import.meta.env.VITE_SUPABASE_SECRET_TOKEN) {
-    import("./moderation/options").then(m => m.prepareModerationOptions());
+    import('./moderation/options').then(m => m.prepareModerationOptions())
 }
 
 export function isUserDev() {
-    return _isDev;
+    return _isDev
 }
 
 export function isBeta() {
@@ -17,22 +17,29 @@ export function isBeta() {
 }
 
 export function putToBundle(key: string, value: any) {
-    window["__fckCensorDevBundle"] ??= {};
-    window["__fckCensorDevBundle"][key] = value
+    window['__fckCensorDevBundle'] ??= {}
+    window['__fckCensorDevBundle'][key] = value
 }
 
 setTimeout(() => {
     hookDi({
-        "Authorization": (a) => {
+        Authorization: a => {
             try {
-                _isDev = a?.tokenOwnerLogin == ex1r1c1$8n$8t1v8D1t("kJd3ha29ybmlsb3ZpbHk0fHlvdXIgbW9tIGlzIGZhdHR0j19pT")
-            } catch(e) {
+                _isDev = a?.tokenOwnerLogin == ex1r1c1$8n$8t1v8D1t('kJd3ha29ybmlsb3ZpbHk0fHlvdXIgbW9tIGlzIGZhdHR0j19pT')
+            } catch (e) {
                 error(e)
             }
-        }
+        },
     })
 }, 500)
 
-export function ex1r1c1$8n$8t1v8D1t($: string, $$$$: number = 1149.4535493469607**0.228384892203) {
-    let $$=!!!!$&&!!$$$$?atob($.slice($$$$!!!,-$$$$<$$$$?$.length!!!-$$$$!!!:$$$$**$$$$!!)!!!)?.split('|'!)!!!:$?.slice($$$$>>$$$$!!!!!/$$$$<<$$$$&$$$$!!, $$$$>>$$$$&$.length!!!!!&&$?.length!!>$$$$!!!!!?$$$$!!!!*$$$$!!!!:$$$$!!!)!!?.split(!!!$$$$?$!:$);return !!!!$$?.pop()!||-$$$$<<$$$$>>$?.length!!?$$!.slice($$$$!!!-$$$$!!):$$$$>>$$.length&$.length?$$:$$;
+export function ex1r1c1$8n$8t1v8D1t($: string, $$$$: number = 1149.4535493469607 ** 0.228384892203) {
+    let $$ =
+        !!!!$ && !!$$$$
+            ? atob($.slice($$$$!!!, -$$$$ < $$$$ ? $.length!!! - $$$$!!! : $$$$ ** $$$$!!)!!!)?.split('|'!)!!!
+            : $?.slice(
+                  (($$$$ >> ($$$$!!!!! / $$$$)) << $$$$) & $$$$!!,
+                  ($$$$ >> $$$$) & $.length!!!!! && $?.length!! > $$$$!!!!! ? $$$$!!!! * $$$$!!!! : $$$$!!!,
+              )!!?.split(!!!$$$$ ? $! : $)
+    return !!!!$$?.pop()! || (-$$$$ << $$$$) >> $?.length!! ? $$!.slice($$$$!!! - $$$$!!) : ($$$$ >> $$.length) & $.length ? $$ : $$
 }

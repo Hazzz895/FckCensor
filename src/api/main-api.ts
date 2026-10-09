@@ -1,168 +1,160 @@
-import { loadRemoteList } from "./remote-api";
-import { getDb, loadLocalDb } from "./db-api";
+import { loadRemoteList } from './remote-api'
+import { getDb, loadLocalDb } from './db-api'
 
 import { Track, Album, OuterArtist, Artist, TrackMST, SpoofableEntity, Release, FckCensorSpoofData, SpoofableType } from '@/types'
-import { debug, log } from '@/utils/logger';
-import { isEmptyObject, cloneEntity, fitArtists } from '@/utils/common';
-import { AutomaticLocalInsertionsSource, LocalSource } from '@/api/db-api';
-import { ArtistInsertions } from "./dto/artist-insertion";
-import ISource, { Source } from "./dto/sources/source";
-import TrackReplacement from "./dto/track-replacement";
-import { putToBundle } from "@/dev/dev-utils";
-import { RKN_BLOCKED_DISCLAIMER_ID } from "@/hooks/ui/constants";
-import { FALLBACK_ENTITY } from "./dto/fallback";
+import { debug, log } from '@/utils/logger'
+import { isEmptyObject, cloneEntity, fitArtists } from '@/utils/common'
+import { AutomaticLocalInsertionsSource, LocalSource } from '@/api/db-api'
+import { ArtistInsertions } from './dto/artist-insertion'
+import ISource, { Source } from './dto/sources/source'
+import TrackReplacement from './dto/track-replacement'
+import { putToBundle } from '@/dev/dev-utils'
+import { RKN_BLOCKED_DISCLAIMER_ID } from '@/hooks/ui/constants'
+import { FALLBACK_ENTITY } from './dto/fallback'
 
-type Constructor<T> = new (...args: any[]) => T;
+type Constructor<T> = new (...args: any[]) => T
 
 let loaded = false
 export async function loadSources() {
-    if (loaded) return Promise.resolve();
-    
-    await Promise.all([loadRemoteList(), loadLocalDb()])
-        .then(() => {
-            loaded = true;
-        });
+    if (loaded) return Promise.resolve()
+
+    await Promise.all([loadRemoteList(), loadLocalDb()]).then(() => {
+        loaded = true
+    })
 }
 
 export class SourcesCollection {
-    private localSources: LocalSource[] = [];
-    private nonLocalSources: ISource[] = [];
+    private localSources: LocalSource[] = []
+    private nonLocalSources: ISource[] = []
 
-    public get sources(): ISource[] { return [...this.localSources, ...this.nonLocalSources] }
+    public get sources(): ISource[] {
+        return [...this.localSources, ...this.nonLocalSources]
+    }
 
     public push(source: ISource) {
         if (source instanceof LocalSource) {
-            this.localSources.push(source);
+            this.localSources.push(source)
         } else {
-            this.nonLocalSources.push(source);
+            this.nonLocalSources.push(source)
         }
     }
 
     public getSource<T extends ISource>(targetClass: Constructor<T>): T | null {
         for (const source of this.sources) {
             if (source instanceof targetClass) {
-                return source;
+                return source
             }
         }
-        return null;
+        return null
     }
 
-    public get automaticSources(): ISource[] { return this.nonLocalSources }
+    public get automaticSources(): ISource[] {
+        return this.nonLocalSources
+    }
 
-    public collect<T>(
-        acc: T,
-        collector: (acc: T, source: ISource) => boolean
-    ): T {
-        let foundLocal = false;
+    public collect<T>(acc: T, collector: (acc: T, source: ISource) => boolean): T {
+        let foundLocal = false
 
         for (const source of this.localSources) {
             if (collector(acc, source)) {
-                foundLocal = true;
+                foundLocal = true
             }
         }
 
         if (foundLocal) {
-            return acc;
+            return acc
         }
 
         for (const source of this.nonLocalSources) {
-            collector(acc, source);
+            collector(acc, source)
         }
 
-        return acc;
+        return acc
     }
 
-    public reduceSpoof<T extends object>(
-        initial: T,
-        getSpoof: (source: ISource) => T | null | undefined
-    ): T {
-        const acc = initial;
+    public reduceSpoof<T extends object>(initial: T, getSpoof: (source: ISource) => T | null | undefined): T {
+        const acc = initial
 
-        let foundLocal = false;
+        let foundLocal = false
         for (const source of this.localSources) {
-            const data = getSpoof(source);
+            const data = getSpoof(source)
             if (data != null) {
-                Object.assign(acc, data);
-                foundLocal = true;
+                Object.assign(acc, data)
+                foundLocal = true
             }
         }
 
         if (foundLocal) {
-            return acc;
+            return acc
         }
 
         for (const source of this.nonLocalSources) {
-            const data = getSpoof(source);
+            const data = getSpoof(source)
             if (data != null) {
-                Object.assign(acc, data);
+                Object.assign(acc, data)
             }
         }
 
-        return acc;
+        return acc
     }
 
-    public first<T>(
-        callback: (source: ISource) => T | null | undefined,
-        matches: (value: T) => boolean = (value) => !!value
-    ): T | null {
+    public first<T>(callback: (source: ISource) => T | null | undefined, matches: (value: T) => boolean = value => !!value): T | null {
         function walk(sources: ISource[]): T | null {
             for (const source of sources) {
-                const result = callback(source);
+                const result = callback(source)
                 if (result != null && matches(result)) {
-                    return result;
+                    return result
                 }
             }
-            return null;
-        };
-
-        const localResult = walk(this.localSources);
-        if (localResult !== null) {
-            return localResult;
+            return null
         }
-        return walk(this.nonLocalSources);
+
+        const localResult = walk(this.localSources)
+        if (localResult !== null) {
+            return localResult
+        }
+        return walk(this.nonLocalSources)
     }
 
     public async firstAsync<T>(
         callback: (source: ISource) => Promise<T | null | undefined>,
-        matches: (value: T) => boolean = (value) => !!value
+        matches: (value: T) => boolean = value => !!value,
     ): Promise<T | null> {
         async function walk(sources: ISource[]): Promise<T | null> {
             for (const source of sources) {
-                const result = await callback(source);
+                const result = await callback(source)
                 if (result != null && matches(result)) {
-                    return result;
+                    return result
                 }
             }
-            return null;
-        };
-
-        const localResult = await walk(this.localSources);
-        if (localResult !== null) {
-            return localResult;
+            return null
         }
-        return walk(this.nonLocalSources);
+
+        const localResult = await walk(this.localSources)
+        if (localResult !== null) {
+            return localResult
+        }
+        return walk(this.nonLocalSources)
     }
 }
 
-
-
 export function collectAutoInsertions(insertions: Map<string, ArtistInsertions>, tracks: Map<string, Track>, albums: Map<string, Album>) {
     for (const [i, entityRecord] of [tracks, albums].entries()) {
-        const entityType = i === 0 ? "tracks" : "albums";
+        const entityType = i === 0 ? 'tracks' : 'albums'
         for (const [id, entity] of entityRecord.entries()) {
             if (entity.artists?.length && entity.__fckCensor?.insertionIndex !== null) {
-                const data = { 
-                    releaseId: id, 
-                    index: entity.__fckCensor?.insertionIndex ?? undefined 
-                };
+                const data = {
+                    releaseId: id,
+                    index: entity.__fckCensor?.insertionIndex ?? undefined,
+                }
 
                 entity.artists.forEach((a: Release) => {
-                    if (!a.id) return;
-                    if (!insertions.has(String(a.id))) insertions.set(String(a.id),{ tracks: [], albums: [] });
-                    const insertion = insertions.get(String(a.id))!;
-                    if (!insertion[entityType]) insertion[entityType] = [];
+                    if (!a.id) return
+                    if (!insertions.has(String(a.id))) insertions.set(String(a.id), { tracks: [], albums: [] })
+                    const insertion = insertions.get(String(a.id))!
+                    if (!insertion[entityType]) insertion[entityType] = []
                     insertion[entityType]!.push(data)
-                }); 
+                })
             }
         }
     }
@@ -170,68 +162,70 @@ export function collectAutoInsertions(insertions: Map<string, ArtistInsertions>,
 
 export function inheritAlbumCovers(tracks: Map<string, Track>, albums: Map<string, Album>) {
     for (const entity of albums.values()) {
-        if ("volumes" in entity && entity.volumes && entity.coverUri) {
-            entity.volumes.forEach(v => v.forEach(t => {
-                let trackSpoof = tracks.get(String(t.id));
-                if (!trackSpoof || isEmptyObject(trackSpoof)) {
-                    return; // обложка из альбома подтягивается только для треков которые имеют спуф чтобы не подменивать обложки для треков которые уже были в альбоме
-                }
-                
-                if (!("coverUri" in trackSpoof)) {
-                    trackSpoof.coverUri = entity.coverUri;
-                }
-            }))
+        if ('volumes' in entity && entity.volumes && entity.coverUri) {
+            entity.volumes.forEach(v =>
+                v.forEach(t => {
+                    let trackSpoof = tracks.get(String(t.id))
+                    if (!trackSpoof || isEmptyObject(trackSpoof)) {
+                        return // обложка из альбома подтягивается только для треков которые имеют спуф чтобы не подменивать обложки для треков которые уже были в альбоме
+                    }
+
+                    if (!('coverUri' in trackSpoof)) {
+                        trackSpoof.coverUri = entity.coverUri
+                    }
+                }),
+            )
         }
     }
 }
 
 export function postProcess(insertions: Map<string, ArtistInsertions>, tracks: Map<string, Track>, albums: Map<string, Album>) {
-    collectAutoInsertions(insertions, tracks, albums);
-    inheritAlbumCovers(tracks, albums);
+    collectAutoInsertions(insertions, tracks, albums)
+    inheritAlbumCovers(tracks, albums)
 }
 
 export default class MainSource extends Source {
-    private sourcesCollection = new SourcesCollection();
+    private sourcesCollection = new SourcesCollection()
 
-    private fckCensorData: Map<string, FckCensorSpoofData> = new Map();
+    private fckCensorData: Map<string, FckCensorSpoofData> = new Map()
 
     private static fckCensorKey(type: SpoofableType, id: string): string {
-        return `${type}:${id}`;
+        return `${type}:${id}`
     }
 
     private rememberFckCensorData(type: SpoofableType, id: string, data: FckCensorSpoofData) {
-        this.fckCensorData.set(MainSource.fckCensorKey(type, id), data);
+        this.fckCensorData.set(MainSource.fckCensorKey(type, id), data)
     }
 
     public getFckCensorData(type: SpoofableType, id: string): FckCensorSpoofData | null {
-        return this.fckCensorData.get(MainSource.fckCensorKey(type, id)) ?? null;
+        return this.fckCensorData.get(MainSource.fckCensorKey(type, id)) ?? null
     }
 
     public forgetFckCensorData(type: SpoofableType, id: string) {
-        this.fckCensorData.delete(MainSource.fckCensorKey(type, id));
+        this.fckCensorData.delete(MainSource.fckCensorKey(type, id))
     }
 
-    public getSourcesCollection() { return this.sourcesCollection }
+    public getSourcesCollection() {
+        return this.sourcesCollection
+    }
 
     getSource<T extends ISource>(targetClass: Constructor<T>): T | null {
-        return this.sourcesCollection.getSource(targetClass);
+        return this.sourcesCollection.getSource(targetClass)
     }
 
     async buildPlayerReplacement(trackId: string): Promise<TrackReplacement | null> {
-        return this.sourcesCollection.firstAsync(
-            source => source.buildPlayerReplacement(trackId)
-        );
+        return this.sourcesCollection.firstAsync(source => source.buildPlayerReplacement(trackId))
     }
 
     hasPlayerReplacement(trackId: string): boolean {
         for (const source of this.sourcesCollection.sources) {
-            const replacementState = source.hasPlayerReplacement(trackId);
+            const replacementState = source.hasPlayerReplacement(trackId)
             if (replacementState !== null) {
-                return replacementState;
+                return replacementState
             }
         }
 
-        return false;
+        return false
     }
 
     private internalSpoof<T extends SpoofableEntity>(
@@ -239,253 +233,239 @@ export default class MainSource extends Source {
         getSpoofData: (id: string) => T | null | undefined,
         id: string,
         fillOriginalValues = true,
-        type?: SpoofableType
+        type?: SpoofableType,
     ): T | null {
-        const spoofData = getSpoofData(id);
+        const spoofData = getSpoofData(id)
 
         if (!spoofData || isEmptyObject(spoofData)) {
-            return null;
+            return null
         }
 
         if (!fillOriginalValues) {
-            Object.assign(data, spoofData);
-            return spoofData;
+            Object.assign(data, spoofData)
+            return spoofData
         }
 
         if (!data.__fckCensor) {
-            data.__fckCensor = {};
+            data.__fckCensor = {}
         }
 
         if (!data.__fckCensor.originalValues) {
-            data.__fckCensor.originalValues = {};
+            data.__fckCensor.originalValues = {}
         }
 
-        const originalValues = data.__fckCensor.originalValues;
+        const originalValues = data.__fckCensor.originalValues
         for (const key of Object.keys(spoofData)) {
-            if (key === "__fckCensor") continue;
+            if (key === '__fckCensor') continue
             if (!(key in originalValues)) {
-                originalValues[key] = cloneEntity((data as Record<string, any>)[key]);
+                originalValues[key] = cloneEntity((data as Record<string, any>)[key])
             }
         }
-        if (type === "artist" && originalValues.coverUri === undefined && originalValues.cover?.uri) originalValues.coverUri = originalValues.cover.uri;
+        if (type === 'artist' && originalValues.coverUri === undefined && originalValues.cover?.uri)
+            originalValues.coverUri = originalValues.cover.uri
 
-        const { __fckCensor: spoofMeta, ...spoofContent } = spoofData as Record<string, any>;
-        if (spoofContent.artists) spoofContent.artists = fitArtists(data, spoofContent.artists);
-        Object.assign(data, spoofContent);
+        const { __fckCensor: spoofMeta, ...spoofContent } = spoofData as Record<string, any>
+        if (spoofContent.artists) spoofContent.artists = fitArtists(data, spoofContent.artists)
+        Object.assign(data, spoofContent)
 
         if (spoofMeta) {
-            Object.assign(data.__fckCensor, spoofMeta);
+            Object.assign(data.__fckCensor, spoofMeta)
         }
 
         if (type) {
-            const prev = this.getFckCensorData(type, id)?.originalValues;
-            if (prev) for (const k in prev) if (originalValues[k] === undefined) originalValues[k] = prev[k];
-            this.rememberFckCensorData(type, id, data.__fckCensor);
+            const prev = this.getFckCensorData(type, id)?.originalValues
+            if (prev) for (const k in prev) if (originalValues[k] === undefined) originalValues[k] = prev[k]
+            this.rememberFckCensorData(type, id, data.__fckCensor)
         }
 
-        return spoofData;
+        return spoofData
     }
 
     getTrackSpoof(trackId: string): Track | null {
-        const track = this.sourcesCollection.reduceSpoof<Track>(
-            {} as Track,
-            (source) => source.getTrackSpoof(trackId)
-        );
+        const track = this.sourcesCollection.reduceSpoof<Track>({} as Track, source => source.getTrackSpoof(trackId))
 
         if (this.hasPlayerReplacement(trackId)) {
-            track.error = undefined;
-            track.available = true;
+            track.error = undefined
+            track.available = true
         }
 
         if (track.coverUri && !track.ogImage) {
-            track.ogImage = track.coverUri;
+            track.ogImage = track.coverUri
         }
 
         if (isEmptyObject(track)) {
-            return null;
+            return null
         }
 
         return track
     }
 
     spoofTrack(track: Track): Track | null {
-        const spoof: Track | null = this.internalSpoof(track, this.getTrackSpoof.bind(this), String(track.id), true, "track") as Track
+        const spoof: Track | null = this.internalSpoof(track, this.getTrackSpoof.bind(this), String(track.id), true, 'track') as Track
 
-        track.artists?.forEach(this.spoofArtist.bind(this));
+        track.artists?.forEach(this.spoofArtist.bind(this))
         if (Array.isArray(track.albums) && track.albums.length > 0) {
-            let spoofedAlbum = !!spoof?.albums?.length;
-            track.albums.forEach((album) => {
+            let spoofedAlbum = !!spoof?.albums?.length
+            track.albums.forEach(album => {
                 if (!isEmptyObject(this.spoofAlbum(album)) && !spoofedAlbum) {
-                    spoofedAlbum = true;
+                    spoofedAlbum = true
                 }
             })
-            
+
             if (spoofedAlbum) {
                 for (const a of track.albums) {
-                    const uri = a.cover?.uri || a.coverUri || a.ogImage;
+                    const uri = a.cover?.uri || a.coverUri || a.ogImage
                     if (spoof?.coverUri === undefined && spoof?.ogImage === undefined && uri) {
-                        track.coverUri = track.ogImage = uri;
+                        track.coverUri = track.ogImage = uri
                     }
                     if (spoof?.artists === undefined && a.artists) {
                         if (a.__fckCensor?.replaceArtistsInAlbumVolumes) {
-                            track.artists = fitArtists(track, a.artists);
+                            track.artists = fitArtists(track, a.artists)
                         }
                     }
                 }
             }
-        }
-        else if (spoof) {
+        } else if (spoof) {
             track.albums = [FALLBACK_ENTITY]
         }
 
         if (!isEmptyObject(spoof) && track.available) {
-            track.disclaimers = track.disclaimers?.filter(d => !d.includes(RKN_BLOCKED_DISCLAIMER_ID));
+            track.disclaimers = track.disclaimers?.filter(d => !d.includes(RKN_BLOCKED_DISCLAIMER_ID))
         }
 
         return spoof
-    } 
+    }
 
     getAlbumSpoof(albumId: string): Album | null {
-        const album = this.sourcesCollection.reduceSpoof<Album>(
-            {} as Album,
-            (source) => source.getAlbumSpoof(albumId)
-        );
+        const album = this.sourcesCollection.reduceSpoof<Album>({} as Album, source => source.getAlbumSpoof(albumId))
 
         if (album.volumes) {
-            album.trackCount = album.volumes.reduce((acc, v) => acc + v.length, 0);
+            album.trackCount = album.volumes.reduce((acc, v) => acc + v.length, 0)
             if (album.trackCount > 1) {
-                album.type = "album";
-            }
-            else {
-                album.type = "single";
+                album.type = 'album'
+            } else {
+                album.type = 'single'
             }
         }
 
         if (album.coverUri) {
             if (!album.ogImage) {
-                album.ogImage = album.coverUri;
+                album.ogImage = album.coverUri
             }
             if (!album.cover) {
                 album.cover = {
-                    "uri": album.coverUri
+                    uri: album.coverUri,
                 }
             }
         }
 
         if (album.year === undefined && album.releaseDate) {
-            album.year = new Date(album.releaseDate).getFullYear();
-        }
-        else if (album.releaseDate === undefined && album.year) {
-            album.releaseDate = new Date(album.year, 0, 1, 11).toJSON();
+            album.year = new Date(album.releaseDate).getFullYear()
+        } else if (album.releaseDate === undefined && album.year) {
+            album.releaseDate = new Date(album.year, 0, 1, 11).toJSON()
         }
 
         if (isEmptyObject(album)) {
-            return null;
+            return null
         }
 
-        return album;
+        return album
     }
 
     spoofAlbum(album: Album): Album | null {
-        const albumSpoof = this.internalSpoof(album, this.getAlbumSpoof.bind(this), String(album.id), true, "album");
+        const albumSpoof = this.internalSpoof(album, this.getAlbumSpoof.bind(this), String(album.id), true, 'album')
 
         if (album.volumes?.length == 1 && album.volumes[0].length == 1) {
-            const track = album.volumes[0][0];
-            const trackSpoof = this.getTrackSpoof(String(track.id));
+            const track = album.volumes[0][0]
+            const trackSpoof = this.getTrackSpoof(String(track.id))
             if (trackSpoof) {
-                const keys = ['coverUri', 'title', 'artists'];
+                const keys = ['coverUri', 'title', 'artists']
 
                 keys.forEach(key => {
                     if (key in trackSpoof) {
-                        (album as any)[key] = key === 'artists' ? fitArtists(album, trackSpoof.artists) : (trackSpoof as any)[key];
+                        ;(album as any)[key] = key === 'artists' ? fitArtists(album, trackSpoof.artists) : (trackSpoof as any)[key]
                     }
-                });
+                })
             }
         }
 
-        return albumSpoof;
+        return albumSpoof
     }
 
     getArtistSpoof(artistId: string): Artist | null {
-        const artist = this.sourcesCollection.reduceSpoof<Artist>(
-            {} as Artist,
-            (source) => source.getArtistSpoof(artistId)
-        );
+        const artist = this.sourcesCollection.reduceSpoof<Artist>({} as Artist, source => source.getArtistSpoof(artistId))
 
         if (isEmptyObject(artist)) {
-            return null;
+            return null
         }
 
-        return artist;
+        return artist
     }
 
     spoofArtist(artist: Artist): Artist | null {
-        return this.internalSpoof(artist, this.getArtistSpoof.bind(this), String(artist.id), true, "artist")
+        return this.internalSpoof(artist, this.getArtistSpoof.bind(this), String(artist.id), true, 'artist')
     }
 
     private static insertionsPriority(source: ISource): number {
-        if (source instanceof LocalSource) return 0;
-        if (source instanceof AutomaticLocalInsertionsSource) return 1;
-        return 2;
+        if (source instanceof LocalSource) return 0
+        if (source instanceof AutomaticLocalInsertionsSource) return 1
+        return 2
     }
 
     getArtistInsertions(artistId: string): ArtistInsertions | null {
-        const layers = this.sourcesCollection.collect<{ source: ISource, data: ArtistInsertions }[]>(
-            [],
-            (acc, source) => {
-                const data = source.getArtistInsertions(artistId);
-                if (!data) {
-                    return false;
-                }
-
-                acc.push({ source, data });
-                return true;
+        const layers = this.sourcesCollection.collect<{ source: ISource; data: ArtistInsertions }[]>([], (acc, source) => {
+            const data = source.getArtistInsertions(artistId)
+            if (!data) {
+                return false
             }
-        );
 
-        layers.sort((a, b) => MainSource.insertionsPriority(a.source) - MainSource.insertionsPriority(b.source));
+            acc.push({ source, data })
+            return true
+        })
 
-        const insertions: Required<ArtistInsertions> = { tracks: [], albums: [] };
-        for (const key of ["tracks", "albums"] as const) {
-            const seen = new Set<string>();
+        layers.sort((a, b) => MainSource.insertionsPriority(a.source) - MainSource.insertionsPriority(b.source))
+
+        const insertions: Required<ArtistInsertions> = { tracks: [], albums: [] }
+        for (const key of ['tracks', 'albums'] as const) {
+            const seen = new Set<string>()
             for (const { data } of layers) {
                 for (const insertion of data[key] ?? []) {
-                    const releaseId = String(insertion.releaseId);
-                    if (seen.has(releaseId)) continue;
+                    const releaseId = String(insertion.releaseId)
+                    if (seen.has(releaseId)) continue
 
-                    seen.add(releaseId);
-                    insertions[key].push(insertion);
+                    seen.add(releaseId)
+                    insertions[key].push(insertion)
                 }
             }
         }
 
         if (insertions.tracks.length === 0 && insertions.albums.length === 0) {
-            return null;
+            return null
         }
 
-        return insertions;
+        return insertions
     }
 
     spoofAnyArtist(artist: Artist | OuterArtist): Artist | null {
-        let a: Artist;
-        if ("artist" in artist) { // artist instanceof OuterArtist
-            a = artist.artist;
-        }
-        else {
-            a = artist;
+        let a: Artist
+        if ('artist' in artist) {
+            // artist instanceof OuterArtist
+            a = artist.artist
+        } else {
+            a = artist
         }
 
-        const insertions = this.getArtistInsertions(a.id);
+        const insertions = this.getArtistInsertions(a.id)
         if (insertions) {
             if (a.counts?.tracks) {
-                a.counts.tracks += insertions.tracks?.length ?? 0;
+                a.counts.tracks += insertions.tracks?.length ?? 0
             }
             if (a.counts?.directAlbums) {
-                a.counts.directAlbums += insertions.albums?.length ?? 0;
+                a.counts.directAlbums += insertions.albums?.length ?? 0
             }
         }
-        
-        return this.spoofArtist(a);
+
+        return this.spoofArtist(a)
     }
 
     pushSource(source: ISource) {
@@ -494,57 +474,60 @@ export default class MainSource extends Source {
 
     private static getSourceSpoof(source: ISource, type: SpoofableType, id: string): SpoofableEntity | null {
         switch (type) {
-            case "album": return source.getAlbumSpoof(id);
-            case "artist": return source.getArtistSpoof(id);
-            case "track": return source.getTrackSpoof(id);
+            case 'album':
+                return source.getAlbumSpoof(id)
+            case 'artist':
+                return source.getArtistSpoof(id)
+            case 'track':
+                return source.getTrackSpoof(id)
         }
     }
 
     hasAutomaticSpoof(type: SpoofableType, id: string): boolean {
         for (const source of this.sourcesCollection.automaticSources) {
             if (source instanceof AutomaticLocalInsertionsSource) {
-                continue;
+                continue
             }
 
             if (!isEmptyObject(MainSource.getSourceSpoof(source, type, id))) {
-                return true;
+                return true
             }
 
-            if (type === "track" && source.hasPlayerReplacement(id) === true) {
-                return true;
+            if (type === 'track' && source.hasPlayerReplacement(id) === true) {
+                return true
             }
 
-            if (type === "artist") {
-                const insertions = source.getArtistInsertions(id);
+            if (type === 'artist') {
+                const insertions = source.getArtistInsertions(id)
                 if (insertions?.tracks?.length || insertions?.albums?.length) {
-                    return true;
+                    return true
                 }
             }
         }
 
-        return false;
+        return false
     }
 
     public hasSpoof(type: SpoofableType, id: string): boolean {
-        return !isEmptyObject(this.getSpoof(type, id));
+        return !isEmptyObject(this.getSpoof(type, id))
     }
 
     hasTrackSpoof(trackId: string): boolean {
-        return this.hasSpoof("track", trackId);
+        return this.hasSpoof('track', trackId)
     }
 
     hasAlbumSpoof(albumId: string): boolean {
-        return this.hasSpoof("album", albumId);
+        return this.hasSpoof('album', albumId)
     }
 
     hasArtistSpoof(artistId: string): boolean {
-        return this.hasSpoof("artist", artistId);
+        return this.hasSpoof('artist', artistId)
     }
 
     hasInsertions(artistId: string): boolean {
-        return !isEmptyObject(this.getArtistInsertions(artistId));
+        return !isEmptyObject(this.getArtistInsertions(artistId))
     }
 }
 
-export const sources = new MainSource();
-putToBundle("sources", sources);
+export const sources = new MainSource()
+putToBundle('sources', sources)

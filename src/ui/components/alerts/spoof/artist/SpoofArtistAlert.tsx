@@ -1,27 +1,26 @@
-import { Artist } from "@/types";
-import { SpoofAlertBase } from "../base/SpoofAlertBase";
-import { sources } from "@/api/main-api";
-import { localSource } from "@/api/db-api";
-import { spoofAllNodesFor } from "@/utils/ui-utils";
-import { debug } from "@/utils/logger";
-import { SpoofAlertArtistListField } from "../base/releases/artist/SpoofAlertArtistListField";
-import { isEmptyObject } from "@/utils/common";
-
+import { Artist } from '@/types'
+import { SpoofAlertBase } from '../base/SpoofAlertBase'
+import { sources } from '@/api/main-api'
+import { localSource } from '@/api/db-api'
+import { spoofAllNodesFor } from '@/utils/ui-utils'
+import { debug } from '@/utils/logger'
+import { SpoofAlertArtistListField } from '../base/releases/artist/SpoofAlertArtistListField'
+import { isEmptyObject } from '@/utils/common'
 
 export class SpoofArtistAlert extends SpoofAlertBase<Artist> {
     public constructor(data: Artist, scrim?: HTMLElement, artistNode?: HTMLElement) {
-        super(data, "artist", "Подмена исполнителя", artistNode, scrim);
+        super(data, 'artist', 'Подмена исполнителя', artistNode, scrim)
     }
 
-    protected async onApply(spoofData: Artist){
+    protected async onApply(spoofData: Artist) {
         if (spoofData) {
-            localSource.pushArtistSpoof(spoofData, this.id);
-            spoofAllNodesFor("artist", this.id);
+            localSource.pushArtistSpoof(spoofData, this.id)
+            spoofAllNodesFor('artist', this.id)
         }
-        
+
         if (this.forceSpoof()) {
-            const insertions = { tracks: this.trackListField.getValue(), albums: this.albumListField.getValue() };
-            await localSource.pushArtistInsertions(this.id, insertions);
+            const insertions = { tracks: this.trackListField.getValue(), albums: this.albumListField.getValue() }
+            await localSource.pushArtistInsertions(this.id, insertions)
         }
     }
 
@@ -35,10 +34,10 @@ export class SpoofArtistAlert extends SpoofAlertBase<Artist> {
     }
 
     protected async onSpoofCancel() {
-        await super.onSpoofCancel();
+        await super.onSpoofCancel()
 
         if (sources.hasInsertions(this.id)) {
-            await localSource.pushArtistInsertions(this.id, { tracks: [], albums: [] });
+            await localSource.pushArtistInsertions(this.id, { tracks: [], albums: [] })
         }
     }
 
@@ -46,13 +45,15 @@ export class SpoofArtistAlert extends SpoofAlertBase<Artist> {
     declare private albumListField: SpoofAlertArtistListField
 
     protected getChildren(): HTMLElement {
-        return <div>
-            {(this.trackListField = new SpoofAlertArtistListField(this, "track")).element}
-            {(this.albumListField = new SpoofAlertArtistListField(this, "album")).element}
-        </div>
+        return (
+            <div>
+                {(this.trackListField = new SpoofAlertArtistListField(this, 'track')).element}
+                {(this.albumListField = new SpoofAlertArtistListField(this, 'album')).element}
+            </div>
+        )
     }
 
     protected getPrevSpoofedData() {
-        return sources.getArtistSpoof(this.id);
+        return sources.getArtistSpoof(this.id)
     }
 }

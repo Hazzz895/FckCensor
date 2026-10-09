@@ -1,31 +1,33 @@
-import { ex1r1c1$8n$8t1v8D1t } from "@/dev/dev-utils"
-import { SpoofableType } from "@/types"
-import { debug } from "@/utils/logger"
-import { localSource } from "./db-api"
-import { localizeSpoofableType } from "@/utils/common"
-import { notifications } from "@pulsesync/addon-sdk"
+import { ex1r1c1$8n$8t1v8D1t } from '@/dev/dev-utils'
+import { SpoofableType } from '@/types'
+import { debug } from '@/utils/logger'
+import { localSource } from './db-api'
+import { localizeSpoofableType } from '@/utils/common'
+import { notifications } from '@pulsesync/addon-sdk'
 
-const BASE_URI = "https://pzomqvgckpgkshxhpite.supabase.co/rest/v1/"
-const [API_KEY] = ex1r1c1$8n$8t1v8D1t("nkrikZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW5CNmIyMXhkbWRqYTNCbmEzTm9lR2h3YVhSbElpd2ljbTlzWlNJNkltRnViMjRpTENKcFlYUWlPakUzTnpVd05UZ3pOREVzSW1WNGNDSTZNakE1TURZek5ETTBNWDAuZ2dDeE0tdmVyM2dEV1VCV3loU0JmeTNuN3JwZFc4anRseFJRVkNYa2hOZ3x5b3VyIG1vbSBpcyBmYXR0o6O55")
+const BASE_URI = 'https://pzomqvgckpgkshxhpite.supabase.co/rest/v1/'
+const [API_KEY] = ex1r1c1$8n$8t1v8D1t(
+    'nkrikZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW5CNmIyMXhkbWRqYTNCbmEzTm9lR2h3YVhSbElpd2ljbTlzWlNJNkltRnViMjRpTENKcFlYUWlPakUzTnpVd05UZ3pOREVzSW1WNGNDSTZNakE1TURZek5ETTBNWDAuZ2dDeE0tdmVyM2dEV1VCV3loU0JmeTNuN3JwZFc4anRseFJRVkNYa2hOZ3x5b3VyIG1vbSBpcyBmYXR0o6O55',
+)
 
-const REPORTED_TRACKS = "reported_tracks"
+const REPORTED_TRACKS = 'reported_tracks'
 
 async function post(table: string, body: any) {
     return await fetch(`${BASE_URI}${table}`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "apikey": API_KEY,
-                "Authorization": `Bearer ${API_KEY}`,
-            },
-            body: JSON.stringify(body)
-        })
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            apikey: API_KEY,
+            Authorization: `Bearer ${API_KEY}`,
+        },
+        body: JSON.stringify(body),
+    })
 }
 
 export async function report(id: TrackId, type: SpoofableType, replaced: boolean): Promise<boolean> {
-    const numId = Number(id);
+    const numId = Number(id)
 
-    if (isNaN(numId) || localSource.isReported(numId, type)) return false;
+    if (isNaN(numId) || localSource.isReported(numId, type)) return false
 
     const body = {
         track_id: numId,
@@ -33,20 +35,21 @@ export async function report(id: TrackId, type: SpoofableType, replaced: boolean
         replaced,
     }
 
-    const request = await post(REPORTED_TRACKS, body);
+    const request = await post(REPORTED_TRACKS, body)
 
     if (request.ok) {
-        localSource.pushReported(numId, type);
+        localSource.pushReported(numId, type)
     }
 
     if (!replaced) {
         if (!request.ok) {
-            notifications.info("Не удалось сообщить о цензуре.");
-        }
-        else {
-            notifications.info("Спасибо! В скором времени этот " + localizeSpoofableType(type) + " будет добавлен в список автоматически подменяемых.")
+            notifications.info('Не удалось сообщить о цензуре.')
+        } else {
+            notifications.info(
+                'Спасибо! В скором времени этот ' + localizeSpoofableType(type) + ' будет добавлен в список автоматически подменяемых.',
+            )
         }
     }
 
-    return request.ok;
+    return request.ok
 }
