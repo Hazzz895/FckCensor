@@ -1,40 +1,31 @@
-import { Album, Artist, FckCensorSpoofData, OuterArtist, SearchResponse, SearchType, Spoofable, Track } from '@/types'
-import { log } from './logger'
-import { getDiResource } from './hook-utils'
-import { runUnprotected } from './ui-utils'
-import { fitArtists } from './common'
+import { getSdkApi } from '@/sdk/lifecycle'
+import { flushSdk } from '@/sdk/bridge'
+import { Album, Artist, OuterArtist, SearchResponse, SearchType, Track } from '@/types'
+import { readResource } from '@/sdk/resources'
 
-export function reloadPlayer(trackId?: string) {
-    const e = window.sonataState?.queueState?.currentEntity?.value?.entity
-    const mediaPlayer = window.sonataState?.currentMediaPlayer?.value?.currentMediaPlayer as any
-    if (e && mediaPlayer && (!trackId || String(e.entityData?.meta?.id) == trackId)) {
-        mediaPlayer.reload(e)
-        log('Player reloaded')
-    }
-}
-
-export function restoreOriginalValues(data: Spoofable, fckCensorData?: FckCensorSpoofData | null) {
-    const source = fckCensorData ?? data.__fckCensor
-    const originalValues = source?.originalValues
-    if (!originalValues) return
-
-    runUnprotected(data, () => {
-        Object.assign(data, { ...originalValues, ...(originalValues.artists && { artists: fitArtists(data, originalValues.artists) }) })
-    })
-
-    delete source.originalValues
-    if (data.__fckCensor && data.__fckCensor !== source) {
-        delete data.__fckCensor.originalValues
+export async function reloadPlayer(trackId?: string) {
+    await flushSdk()
+    const api = getSdkApi(),
+        snapshot = await api?.player.getSnapshot(),
+        track = snapshot?.track
+    if (api && track && (!trackId || String(track.id) === trackId)) {
+        await api.client.playTrackById(String(track.id))
+        const progress = typeof snapshot?.progress === 'number' ? snapshot.progress : snapshot?.progress?.position
+        if (typeof progress === 'number' && progress > 0) await api.client.setProgress(progress)
+        if (!snapshot?.isPlaying) await api.client.pause()
     }
 }
 
 export function search(text: string, type: SearchType = 'all', page = 0, args: Record<string, any> = {}): Promise<SearchResponse | null> {
-    return getDiResource('SearchResource')?.getInstantMixedSearch({
-        text: text,
-        type: type,
-        page: page,
-        ...args,
-    })
+    return readResource<SearchResponse>(
+        { resource: 'search', method: 'getInstantMixedSearch' },
+        {
+            text: text,
+            type: type,
+            page: page,
+            ...args,
+        },
+    )
 }
 
 export function searchArtists(text: string): Promise<SearchResponse | null> {
@@ -42,16 +33,19 @@ export function searchArtists(text: string): Promise<SearchResponse | null> {
 }
 
 export function getAlbumTracks(albumId: TrackId, ...args: any): Promise<Album | null> {
-    return getDiResource('AlbumResource')?.getAlbumWithRichTracks({
-        albumId,
-        ...args,
-    })
+    return readResource<Album>(
+        { resource: 'albums', method: 'getAlbumWithRichTracks' },
+        {
+            albumId,
+            ...args,
+        },
+    )
 }
 
 export function getTracks(...trackIds: string[]): Promise<Track[]> {
     if (!trackIds.length) return Promise.resolve([])
 
-    return getDiResource('TracksResource')?.getTracksMeta({ trackIds })
+    return readResource<Track[]>({ resource: 'tracks', method: 'getTracksMeta' }, { trackIds })
 }
 
 export function getAlbums(...albumIds: TrackId[]): Promise<Album[]> {
@@ -59,13 +53,16 @@ export function getAlbums(...albumIds: TrackId[]): Promise<Album[]> {
 
     if (!albumIds.length) return Promise.resolve([])
 
-    return getDiResource('AlbumResource')?.getAlbums({
-        albumIds: albumIds,
-    })
+    return readResource<Album[]>(
+        { resource: 'albums', method: 'getAlbums' },
+        {
+            albumIds: albumIds,
+        },
+    )
 }
 
 export function getOuterArtist(artistId: TrackId): Promise<OuterArtist> {
-    return getDiResource('ArtistsResource')?.getInfo({ artistId })
+    return readResource<OuterArtist>({ resource: 'artists', method: 'getInfo' }, { artistId })
 }
 
 export async function getArtist(artistId: TrackId): Promise<Artist> {

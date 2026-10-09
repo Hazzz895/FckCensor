@@ -15,6 +15,10 @@ export function numberToHsl(number: number) {
 
 export const httpsify = (url: string) => (url.includes('://') ? url : 'https://' + url)
 
+export function getEntityCoverUri(entity: { coverUri?: string | null; ogImage?: string | null; cover?: { uri?: string | null } | null }) {
+    return entity.coverUri || entity.ogImage || entity.cover?.uri || undefined
+}
+
 /* obj is null or {} */
 export function isEmptyObject(obj?: object | null) {
     if (!obj) return true

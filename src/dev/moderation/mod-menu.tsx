@@ -8,8 +8,8 @@ import { Track } from '@/types'
 import { debug, error } from '@/utils/logger'
 import { lrcLineToTimestamp } from '@/utils/music'
 import { getReports, Report } from './api/moderation-reports-api'
-import { useCurrentTrack } from '@pulsesync/addon-sdk'
 import { setProgress } from '@/utils/pulsesync'
+import { getSdkApi } from '@/sdk/lifecycle'
 
 let fullscreenListener: any = null
 
@@ -184,7 +184,7 @@ class AiAnaliticsMenuWindow extends MenuWindow {
     }
 
     private async onCheck(ev: MouseEvent) {
-        const currentTrack = useCurrentTrack()
+        const currentTrack = (await getSdkApi()?.player.getSnapshot())?.track
         if (!currentTrack) return
 
         const button = ev.currentTarget as HTMLButtonElement

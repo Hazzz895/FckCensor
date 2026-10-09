@@ -4,34 +4,73 @@ import { SpoofAlertBase } from '../../SpoofAlertBase'
 import { ReleaseNode } from '../ReleaseNode'
 import ElementWrap from '@/ui/components/ElementWrap'
 import { IGetValue } from '@/ui/components/IGetValue'
-import { getAlbumTracks } from '@/utils/music'
-import { debug } from '@/utils/logger'
+import { getAlbumTracks, getTracks } from '@/utils/music'
+import { debug, error } from '@/utils/logger'
+import { sources } from '@/api/main-api'
+import { cloneEntity } from '@/utils/common'
 import { ActionButton } from '@/ui/components/alerts/alerts'
 import { AddSpoofAlertFieldButton } from '../../SpoofAlertCustomPropertyField'
 
 export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField<Track[]> {
     public constructor(alert: SpoofAlertBase) {
         super(alert, 'Треки альбома', 'track')
+        const originalVolumes = alert.getOriginalValue('volumes') as Track[][] | undefined
+        for (const track of originalVolumes?.flat() ?? []) {
+            this.trackMetadata.set(String(track.id), cloneEntity(track))
+        }
     }
 
     public tracks?: Track[][] | null
+    private readonly trackMetadata = new Map<string, Track>()
+    private readonly requestedTrackIds = new Set<string>()
+
+    public getDisplayTrack(track?: Track): Track | undefined {
+        if (!track) return undefined
+        const display = cloneEntity(this.trackMetadata.get(String(track.id)) ?? track)
+        sources.spoofTrack(display)
+        return display
+    }
+
+    private loadTrackMetadata() {
+        const ids = [...new Set(this.tracks?.flat().map(track => String(track.id)) ?? [])].filter(
+            id => !this.requestedTrackIds.has(id) && !this.getDisplayTrack({ id } as Track)?.title,
+        )
+        if (!ids.length) return
+        ids.forEach(id => this.requestedTrackIds.add(id))
+        void getTracks(...ids)
+            .then(tracks => {
+                for (const track of tracks) this.trackMetadata.set(String(track.id), cloneEntity(track))
+                this.reRenderElement()
+            })
+            .catch(error)
+    }
 
     protected fillElements(): DiskNode[] {
-        this.tracks ??= this.alert.album.volumes
+        if (this.tracks === undefined) this.tracks = this.alert.album.volumes
         if (this.tracks === undefined) {
-            getAlbumTracks(this.alert.album.id).then(a => {
-                try {
-                    this.tracks = a?.volumes ?? null
-                } catch {
-                    this.tracks == null
-                } finally {
+            getAlbumTracks(this.alert.album.id)
+                .then(a => {
+                    try {
+                        this.tracks = a?.volumes ?? null
+                    } catch {
+                        this.tracks = null
+                    } finally {
+                        this.reRenderElement()
+                    }
+                })
+                .catch(err => {
+                    this.tracks = null
+                    error(err)
                     this.reRenderElement()
-                }
-            })
+                })
             return [new DiskNode(this, Array(this.alert.album.trackCount).fill(undefined), 0, undefined)]
         } else if (this.tracks == null) {
             return []
         } else {
+            for (const track of this.tracks.flat()) {
+                if (track.title) this.trackMetadata.set(String(track.id), cloneEntity(track))
+            }
+            this.loadTrackMetadata()
             return this.tracks.map((v, i) => new DiskNode(this, v, i, this.tracks!.length > 1 ? i : undefined))
         }
     }
@@ -121,7 +160,7 @@ export class DiskNode extends ElementWrap implements IGetValue<Track[]> {
                             this.disk.splice(i, 1)
                             this.reRenderElement()
                         }}
-                        release={t}
+                        release={this.field.getDisplayTrack(t)}
                         disableUp={this.diskIndex === 0 && i === 0}
                         disableDown={this.diskIndex === totalDisks - 1 && i === this.disk.length - 1}
                     />

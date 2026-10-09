@@ -1,6 +1,6 @@
 import { localSource } from '@/api/db-api'
 import { Track } from '@/types'
-import { reloadPlayer, restoreOriginalValues } from '@/utils/music'
+import { reloadPlayer } from '@/utils/music'
 import { debug } from '@/utils/logger'
 import { SpoofEntityWithArtistsAlert } from '../base/artists/SpoofEntityWithArtistsAlert'
 import { SpoofAudioField } from './SpoofAudioField'
@@ -70,8 +70,7 @@ export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
                 }
             }
         }
-        spoofAllNodesFor('track', this.id)
-        reloadPlayer(this.id)
+        await spoofAllNodesFor('track', this.id)
     }
 
     protected async onSpoofRemove() {
@@ -79,8 +78,8 @@ export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
 
         if (localSource.hasPlayerReplacementChanges(this.id)) {
             await localSource.removeTrackReplacement(this.id)
+            await reloadPlayer(this.id)
         }
-        reloadPlayer(this.id)
     }
 
     protected async onSpoofCancel() {
@@ -88,8 +87,8 @@ export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
 
         if (sources.hasPlayerReplacement(this.id)) {
             await localSource.pushTrackReplacementException(this.id)
+            await reloadPlayer(this.id)
         }
-        reloadPlayer(this.id)
     }
 
     protected getPrevSpoofedData() {

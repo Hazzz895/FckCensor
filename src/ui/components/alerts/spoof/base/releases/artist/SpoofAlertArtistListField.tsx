@@ -20,7 +20,7 @@ export class SpoofAlertArtistListField extends SpoofAlertReleasesListField<Inser
             alert,
             (type == 'track' ? 'Треки' : 'Альбомы') + ', добавленные в профиль исполнителя',
             type,
-            (sources.getArtistInsertions(alert.artist.id)?.[(type + 's') as 'tracks' | 'albums'] ?? []).map(norm),
+            (sources.getArtistInsertions(alert.id)?.[(type + 's') as 'tracks' | 'albums'] ?? []).map(norm),
         )
     }
 
@@ -29,7 +29,7 @@ export class SpoofAlertArtistListField extends SpoofAlertReleasesListField<Inser
     private getting = false
 
     protected fillElements() {
-        const t = sources.getArtistInsertions(this.alert.artist.id)?.[(this.type + 's') as 'tracks' | 'albums']
+        const t = sources.getArtistInsertions(this.alert.id)?.[(this.type + 's') as 'tracks' | 'albums']
 
         if (!this.insertions) {
             this.insertions = t?.map(norm) ?? []

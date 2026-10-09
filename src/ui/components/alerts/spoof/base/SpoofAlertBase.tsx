@@ -9,8 +9,7 @@ import SpoofAlertCustomPropertyField, { AddSpoofAlertFieldButton } from './Spoof
 import { SpoofAlertEntityPropertyField } from './SpoofAlertEntityPropertyField'
 import { SpoofAlertInputField } from './SpoofAlertInputField'
 import styles from '@/styles.module.scss'
-import { spoofEntity } from '@/utils/spoofs'
-import { restoreAllNodesByType, showNotificationWithCover, spoofAllNodesFor } from '@/utils/ui-utils'
+import { showNotificationWithCover, spoofAllNodesFor } from '@/utils/ui-utils'
 import { CoverProps } from '../spoof-alert'
 import { SpoofAlertCoverField } from './SpoofAlertCoverField'
 import { localSource } from '@/api/db-api'
@@ -54,6 +53,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
     readonly sourceNode
     protected readonly scrim
     private fields: SpoofAlertEntityPropertyField[] = []
+    private readonly coverField: SpoofAlertCoverField
     protected readonly hadSpoof
     protected readonly removeAction: SpoofRemoveAction | null
 
@@ -67,11 +67,11 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
     }
 
     protected constructor(entity: T, type: SpoofableType, alertTitle: string, sourceNode?: HTMLElement, scrim?: HTMLElement) {
-        this.realEntity = entity
+        this.realEntity = cloneEntity(entity)
         entity = cloneEntity(entity)
-        if (settings.store.liteMode) {
-            spoofEntity(type, entity)
-        }
+        // SDK reads return original DTOs; editors must show the saved override.
+        const savedData = sources.getSpoof(type, String(entity.id))
+        if (savedData) Object.assign(entity, cloneEntity(savedData))
         this.entity = entity
         this.scrim = scrim
         this.sourceNode = sourceNode
@@ -103,7 +103,8 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         const titleField = this.addPropertyField(
             new SpoofAlertInputField(this, type === 'artist' ? 'name' : 'title', type === 'artist' ? 'Имя исполнителя' : 'Название'),
         )
-        const coverField = this.addPropertyField(new SpoofAlertCoverField(this))
+        const coverField = (this.coverField = new SpoofAlertCoverField(this))
+        const coverFieldElement = this.addPropertyField(coverField)
         const childrenNode = this.getChildren()
 
         const prevSpoof = this.getPrevSpoofedData()
@@ -137,7 +138,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
             <div>
                 {liteModeTooltip}
                 <div class={'EditContentModal_field__rexIL ' + styles.CoverAndTitleContainer}>
-                    {coverField}
+                    {coverFieldElement}
                     {titleField}
                 </div>
                 {childrenNode}
@@ -172,24 +173,30 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
                     {customFields}
                     {addPropButton}
                 </details>
-                <div style="display: flex; justify-content: space-between">
-                    <div style="display: flex; gap: 8px">{this.getAdditionalButtons()}</div>
-                    <div style="display: flex; gap: 8px">
-                        <ActionButton onclick={this.onSpoofRemoveInternal.bind(this)} {...(!this.removeAction ? { disabled: true } : {})}>
-                            {this.removeAction === 'restore' ? 'Вернуть подмену' : 'Удалить подмену'}
-                        </ActionButton>
-                        <ActionButton onclick={this.onApplyInternal.bind(this)}>Применить</ActionButton>
-                    </div>
-                </div>
             </div>
         )
 
-        this.spoofAlert = createScrimAlert(scrim as JSX.Element, alertTitle, content)
+        const buttons = (
+            <div style="display: flex; justify-content: space-between">
+                <div style="display: flex; gap: 8px">{this.getAdditionalButtons()}</div>
+                <div style="display: flex; gap: 8px">
+                    <ActionButton onclick={this.onSpoofRemoveInternal.bind(this)} {...(!this.removeAction ? { disabled: true } : {})}>
+                        {this.removeAction === 'restore' ? 'Вернуть подмену' : 'Удалить подмену'}
+                    </ActionButton>
+                    <ActionButton onclick={this.onApplyInternal.bind(this)}>Применить</ActionButton>
+                </div>
+            </div>
+        )
+        this.spoofAlert = createScrimAlert(scrim as JSX.Element, alertTitle, content, () => coverField.dispose(), buttons)
     }
 
     getOriginalValue(propertyName: string) {
-        const originalValues = sources.getFckCensorData(this.type, this.id)?.originalValues ?? this.entity.__fckCensor?.originalValues
-        return originalValues && propertyName in originalValues ? originalValues[propertyName] : (this.entity as any)[propertyName]
+        const originalValues = sources.getFckCensorData(this.type, this.id)?.originalValues
+        if (originalValues && propertyName in originalValues) return originalValues[propertyName]
+        const entityOriginalValues = this.realEntity.__fckCensor?.originalValues
+        return entityOriginalValues && propertyName in entityOriginalValues
+            ? entityOriginalValues[propertyName]
+            : (this.realEntity as any)[propertyName]
     }
 
     protected getAdditionalButtons(): JSX.Child {
@@ -197,6 +204,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
     }
 
     protected async onApplyInternal() {
+        await this.coverField.ready
         closeAlert(this.spoofAlert)
 
         const spoofData = this.getSpoofData()
@@ -246,11 +254,6 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         if (!this.removeAction) return
 
         closeAlert(this.spoofAlert)
-        try {
-            restoreAllNodesByType(this.type, this.id)
-        } catch (e) {
-            error(e)
-        }
         sources.forgetFckCensorData(this.type, this.id)
 
         switch (this.removeAction) {
@@ -266,7 +269,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         }
 
         try {
-            spoofAllNodesFor(this.type, this.id)
+            await spoofAllNodesFor(this.type, this.id)
         } catch (e) {
             error(e)
         }

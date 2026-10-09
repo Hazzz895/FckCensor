@@ -87,7 +87,7 @@ export class SpoofAudioField extends SpoofAlertEntityPropertyField<number | unde
         } else if (localSource.hasPlayerReplacementException(this.alert.id)) {
             await localSource.removeTrackReplacement(this.alert.id)
         }
-        reloadPlayer(this.alert.id)
+        await reloadPlayer(this.alert.id)
     }
 
     private openFilePicker() {

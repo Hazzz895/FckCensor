@@ -1,50 +1,37 @@
 import { CloseButton } from './components/alerts/alerts'
 import styles from '@/styles.module.scss'
 import { JSX } from '@/jsx-runtime'
+import { setNativeTooltip, showNativeTooltip } from '@pulsesync/addon-sdk'
 
 const TOOLTIP_ID = (styles as any).FckCensorTooltip
 const CLOSABLE_TOOLTIP_ID = (styles as any).ClosableTooltip
 
-export function Tooltip({ children }: JSX.HTMLAttributes) {
-    removeTooltip()
-    const tooltip = (
-        <div
-            class="QhR4J536RmNHBB5bZYwF TooltipWithTitle_root__7jLY3"
-            data-test-id="TOOLTIP_WITH_TITLE"
-            role="tooltip"
-            id={TOOLTIP_ID}
-            onMouseEnter={() => removeTooltip()}
-        >
-            <div class="_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 _3_Mxw7Si7j2g4kWjlpR Fqg1VWCJUfasVVxqICeO">
-                <div class="TooltipWithTitle_text__ElBtq">
-                    <span class="_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 ZYV27jeWd30QDXu4GhaH TooltipWithTitle_description__HsGcR">{children}</span>
-                </div>
-            </div>
-        </div>
-    )
-    //document.body.appendChild(tooltip);
-    return tooltip
-}
-
-export function createTooltip(description: string, x: Number, y: number) {
-    const tooltip = <Tooltip>{description}</Tooltip>
-    document.body.appendChild(tooltip)
-    tooltip.props.translate = `${x}px ${y}px`
-    return tooltip
-}
+let stopTooltip: (() => void) | undefined
 
 export function createRelativeTooltip(view: HTMLElement, description?: string) {
-    const rect = view.getBoundingClientRect()
-    return createTooltip(description ?? view.ariaLabel!, rect.x + rect.width, rect.y + rect.height)
+    removeTooltip()
+    const cleanup = setNativeTooltip(view, { content: description ?? view.getAttribute('aria-label') ?? '' })
+    const hide = () => removeTooltip()
+    view.addEventListener('mouseleave', hide, { once: true })
+    view.addEventListener('blur', hide, { once: true })
+    stopTooltip = () => {
+        cleanup()
+        view.removeEventListener('mouseleave', hide)
+        view.removeEventListener('blur', hide)
+    }
+    showNativeTooltip(view)
+    return view
 }
 
-export function eventHandlerForTooltip(event: MouseEvent) {
-    const view = event.target as HTMLElement
-    createRelativeTooltip(view, undefined)
-    view.addEventListener('mouseleave', () => removeTooltip())
+export function eventHandlerForTooltip(event: MouseEvent | FocusEvent) {
+    createRelativeTooltip(event.currentTarget as HTMLElement)
 }
 
 export function removeTooltip(id: string = TOOLTIP_ID) {
+    if (id === TOOLTIP_ID) {
+        stopTooltip?.()
+        stopTooltip = undefined
+    }
     document.getElementById(id)?.remove()
 }
 
@@ -115,8 +102,8 @@ export function createRelativeClosableTooltip(
 }
 
 export function eventHandlerForClosableTooltip(event: MouseEvent) {
-    const view = event.target as HTMLElement
+    const view = event.currentTarget as HTMLElement
     const id = view.getAttribute('tooltip-id') ?? CLOSABLE_TOOLTIP_ID
     createRelativeTooltip(view, id)
-    view.addEventListener('mouseleave', () => removeTooltip(id))
+    view.addEventListener('mouseleave', () => removeTooltip(id), { once: true })
 }

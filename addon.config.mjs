@@ -8,6 +8,10 @@ const addonConfig = {
     version: '2.0.90',
     author: 'Hazzz895',
     type: 'script',
+    requirements: {
+        minHostApi: 1,
+        capabilities: ['native-ui-v2', 'resource-read-v1', 'resource-hooks-v1', 'metadata-overrides-v1', 'library-overrides-v1'],
+    },
     image: 'image.png',
     banner: 'banner.png',
     libraryLogo: '',
@@ -19,6 +23,7 @@ const addonConfig = {
         'https://pzomqvgckpgkshxhpite.supabase.co/',
         'https://t2.genius.com/unsafe/',
         'https://genius.com/',
+        'https://lrclib.net/',
     ],
     supportedVersions: [],
 }

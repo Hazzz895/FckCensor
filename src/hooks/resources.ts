@@ -1,24 +1,62 @@
 import { sources } from '@/api/main-api'
-import { FunctionHook, hookDi, hookMethods, HookMethod, findModule, appRequire, Hook, unhook } from '../utils/hook-utils'
+import type { PulseSyncResourceTarget } from '@pulsesync/addon-sdk'
+import { getSdkApi } from '@/sdk/lifecycle'
+import { rememberResponse, requestSdkSync, isSdkLibraryArtist, isSdkLibraryAlbum } from '@/sdk/bridge'
 import { debug, error } from '@/utils/logger'
 import { Album, OuterArtist, Playlist, SearchResponse, Track } from '@/types'
 import { insert } from '@/utils/common'
 import { getAlbums, getTracks } from '@/utils/music'
 import addonConfig from '../../addon.config.mjs'
 import { showNotificationSafe } from '@/utils/ui-utils'
-import { toggleSettingsHook } from './ui/settings'
 import { FALLBACK_ENTITY } from '@/api/dto/fallback'
 import { settings } from '@/settings'
 
-const heavyMethodsUnhooks: string[] = []
-
-/** хук методов, которые должны отключаться при включении упрощённого режима */
-function hookHeavyMethods(obj: any, hook: Hook, ...methodNames: [string, ...string[]]): string[] | null {
-    if (settings.store.liteMode) return null
-
-    const unhooks = hookMethods(obj, hook, ...methodNames)
-    if (unhooks) heavyMethodsUnhooks.push(...unhooks)
-    return unhooks
+const heavyMethodsUnhooks: (() => void)[] = []
+let hookGeneration = 0
+let hooksStarting: Promise<void>[] = []
+let registration: { generation: number; promise: Promise<void> } | undefined
+class FunctionHook {
+    before(_original: Function, _request: any): any {}
+    after(_result: any, _request?: any): any {}
+}
+type Hook = FunctionHook | ((result: any, request: any) => any)
+function hookHeavyMethods(resource: PulseSyncResourceTarget['resource'], hook: Hook, ...methodNames: string[]) {
+    if (settings.store.liteMode) return
+    const api = getSdkApi()
+    if (!api) throw Error('SDK lifecycle is not active')
+    const generation = hookGeneration
+    for (const method of methodNames) {
+        hooksStarting.push(
+            api.resources
+                .registerHook({ resource, method } as PulseSyncResourceTarget, {
+                    timeoutMs: 5000,
+                    before:
+                        hook instanceof FunctionHook
+                            ? async ({ request }) => {
+                                  const mutable = structuredClone(request)
+                                  await hook.before(() => {}, mutable)
+                                  return { kind: 'continue', request: mutable }
+                              }
+                            : undefined,
+                    after: async ({ result, request }) => {
+                        rememberResponse(result)
+                        if (hook instanceof FunctionHook) await hook.after(result, request)
+                        else await hook(result, request)
+                        requestSdkSync(false)
+                        // Sources contain optional undefined fields; the SDK hook boundary accepts JSON only.
+                        return { kind: 'replace', result: JSON.parse(JSON.stringify(result)) }
+                    },
+                })
+                .then(cleanup => {
+                    if (generation !== hookGeneration || api.signal.aborted || settings.store.liteMode) cleanup()
+                    else heavyMethodsUnhooks.push(cleanup)
+                }),
+        )
+    }
+}
+export function stopResourceHooks() {
+    hookGeneration++
+    for (const cleanup of heavyMethodsUnhooks.splice(0)) cleanup()
 }
 
 class GetTracksMetaHook extends FunctionHook {
@@ -63,7 +101,8 @@ class GetTracksMetaHook extends FunctionHook {
 }
 
 class GetFullInfoTrackHook extends GetTracksMetaHook {
-    public after(info: any) {
+    public after(envelope: any) {
+        const info = envelope?.data ?? envelope
         if (info && 'track' in info) {
             sources.spoofTrack(info.track)
             if (Array.isArray(info.similarTracks)) {
@@ -76,7 +115,7 @@ class GetFullInfoTrackHook extends GetTracksMetaHook {
                 }
             }
         }
-        return info
+        return envelope
     }
 }
 
@@ -88,7 +127,7 @@ function hookTrackResource(tr: any) {
 function hookAlbumResource(ar: any) {
     hookHeavyMethods(
         ar,
-        async (albums: Album | Album[]) => {
+        async (albums: any) => {
             if (Array.isArray(albums)) {
                 for (const a of albums) {
                     try {
@@ -97,9 +136,12 @@ function hookAlbumResource(ar: any) {
                         error(e)
                     }
                 }
-            } else if (albums) {
+            } else if (albums && !albums.notModified) {
                 try {
-                    sources.spoofAlbum(albums)
+                    const value = (albums as any).data ?? albums
+                    const volumes = value.volumes
+                    sources.spoofAlbum(value)
+                    if (isSdkLibraryAlbum(String(value.id))) value.volumes = volumes
                 } catch (e) {
                     error(e)
                 }
@@ -112,21 +154,30 @@ function hookAlbumResource(ar: any) {
 
     hookHeavyMethods(
         ar,
-        async (albums: Album | Album[]) => {
+        async (albums: any) => {
             async function spoof(a: Album) {
+                const nativeVolumes = a.volumes
                 try {
                     const spoof = sources.spoofAlbum(a)
-
+                    // Never leave ID-only or partially fetched volumes in a rich-track response.
+                    a.volumes = nativeVolumes
+                    if (isSdkLibraryAlbum(String(a.id))) {
+                        nativeVolumes?.flat().forEach(track => sources.spoofTrack(track))
+                        return
+                    }
                     if (spoof?.volumes) {
                         const tracks = await getTracks(...spoof.volumes.flatMap(v => v.map(t => String(t.id))))
-                        let i = 0
-                        a.volumes = spoof.volumes.map(volume => {
-                            const volumeTracks = tracks.slice(i, i + volume.length)
-                            i += volume.length
-                            return volumeTracks
-                        })
+                        const volumes = spoof.volumes.map(volume =>
+                            volume.map(ref => {
+                                const track = tracks.find(t => String(t.id) === String(ref.id))
+                                if (!track) throw Error(`Missing replacement track ${ref.id}`)
+                                return track
+                            }),
+                        )
+                        a.volumes = volumes
                     }
                 } catch (e) {
+                    a.volumes = nativeVolumes
                     error(e)
                 }
             }
@@ -183,7 +234,7 @@ function hookArtistResource(ar: any) {
     hookHeavyMethods(
         ar,
         async (trackIds: string[], t: ArtistId) => {
-            sources.getArtistInsertions(String(t.artistId))?.tracks?.forEach(insertion => {
+            ;(!isSdkLibraryArtist(String(t.artistId)) ? sources.getArtistInsertions(String(t.artistId)) : null)?.tracks?.forEach(insertion => {
                 insert(trackIds, insertion.releaseId, insertion.index)
             })
         },
@@ -220,22 +271,24 @@ function hookArtistResource(ar: any) {
 }
 
 async function addInsertionsToTracksList(tracks: Track[], artistId: string) {
+    if (isSdkLibraryArtist(artistId)) return
     const insertions = sources.getArtistInsertions(artistId)?.tracks
     if (insertions) {
         const insertionTracksMeta = await getTracks(...insertions.map(x => x.releaseId))
         insertions.forEach((insertion, i) => {
-            insert(tracks, insertionTracksMeta[i], insertion.index)
+            if (insertionTracksMeta[i]) insert(tracks, insertionTracksMeta[i], insertion.index)
         })
     }
     return insertions
 }
 
 async function addInsertionsToAlbumsList(albums: Album[], artistId: string) {
+    if (isSdkLibraryArtist(artistId)) return
     const insertions = sources.getArtistInsertions(artistId)?.albums
     if (insertions) {
         const insertionTracksMeta = await getAlbums(...insertions.map(x => x.releaseId))
         insertions.forEach((insertion, i) => {
-            insert(albums, insertionTracksMeta[i], insertion.index)
+            if (insertionTracksMeta[i]) insert(albums, insertionTracksMeta[i], insertion.index)
         })
     }
     return insertions
@@ -355,20 +408,6 @@ function hookChartResource(cr: any) {
     )
 }
 
-function hookDisclaimersResource(dr: any) {
-    hookMethods(
-        dr,
-        async (disclaimers: { id: string; type: string; title: string }[]) => {
-            disclaimers.push({
-                id: addonConfig.id,
-                type: 'informational',
-                title: 'Трек был подменён',
-            })
-        },
-        'getDisclaimers',
-    )
-}
-
 export function hookRotorResource(doubleRR: any) {
     hookHeavyMethods(
         doubleRR,
@@ -391,37 +430,32 @@ export function hookRotorResource(doubleRR: any) {
     )
 }
 
-export function hookResources() {
-    if (heavyMethodsUnhooks.length > 0 || settings.store.liteMode) return
-
-    hookDi({
-        TracksResource: hookTrackResource,
-        AlbumResource: hookAlbumResource,
-        ArtistsResource: hookArtistResource,
-        LandingResource: hookLandingResource,
-        Landing3Resource: hookChartResource,
-        SearchResource: hookSearchResource,
-        RotorResource: hookRotorResource,
-        //"DisclaimersResource": hookDisclaimersResource,
-    })
+export function hookResources(): Promise<void> {
+    if (registration?.generation === hookGeneration) return registration.promise
+    if (heavyMethodsUnhooks.length || settings.store.liteMode) return Promise.resolve()
+    hooksStarting = []
+    hookTrackResource('tracks')
+    hookAlbumResource('albums')
+    hookArtistResource('artists')
+    hookLandingResource('landing')
+    hookSearchResource('search')
+    hookChartResource('landing3')
+    hookRotorResource('rotor')
+    const generation = hookGeneration
+    const promise = Promise.all(hooksStarting)
+        .then(() => {})
+        .catch(error => {
+            if (generation === hookGeneration) stopResourceHooks()
+            throw error
+        })
+        .finally(() => {
+            if (registration?.promise === promise) registration = undefined
+        })
+    registration = { generation, promise }
+    return promise
 }
-
-let toggledLiteModePreviously = false
-
-export function toggleLiteMode(enabled: boolean) {
-    if ((enabled && heavyMethodsUnhooks.length === 0) || (!enabled && heavyMethodsUnhooks.length > 0)) return
-    debug((enabled ? 'Enabling' : 'Disabling') + ' lite mode')
-
-    if (toggledLiteModePreviously) {
-        showNotificationSafe('Упрощённый режим ' + (enabled ? 'включён' : 'выключён'), 'info', { icon: 'settings' })
-    }
-    toggledLiteModePreviously = true
-
-    if (enabled) {
-        debug('Unhooking heavy methods', heavyMethodsUnhooks)
-        unhook(...heavyMethodsUnhooks)
-        heavyMethodsUnhooks.length = 0
-    } else {
-        hookResources()
-    }
+export async function toggleLiteMode(enabled: boolean) {
+    if (enabled) stopResourceHooks()
+    else await hookResources()
+    requestSdkSync()
 }

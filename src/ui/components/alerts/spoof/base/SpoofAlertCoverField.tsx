@@ -1,4 +1,4 @@
-import { httpsify } from '@/utils/common'
+import { getEntityCoverUri, httpsify } from '@/utils/common'
 import { SpoofAlertEntityPropertyField } from './SpoofAlertEntityPropertyField'
 import { CoverProps } from '../spoof-alert'
 import { SpoofAlertBase } from './SpoofAlertBase'
@@ -10,33 +10,50 @@ import { localSource } from '@/api/db-api'
 export class SpoofAlertCoverField extends SpoofAlertEntityPropertyField {
     public constructor(alert: SpoofAlertBase) {
         super(alert, 'coverUri')
-        localSource.getCustomCover(this.alert.type, this.alert.id).then(cover => {
-            if (cover) {
-                this.onCoverSelected(cover, this.alert.entity.coverUri)
-            }
-        })
+        this.ready = localSource
+            .getCustomCover(this.alert.type, this.alert.id)
+            .then(cover => {
+                if (cover && !this.disposed && !this.file) {
+                    this.onCoverSelected(cover)
+                }
+            })
+            .catch(error)
     }
 
+    readonly ready: Promise<void>
     private currentImageUrl?: string
     private file?: Blob
+    private disposed = false
 
-    private onCoverSelected(file: Blob, url?: string) {
+    private onCoverSelected(file: Blob) {
+        if (this.disposed) return
         if (this.currentImageUrl) URL.revokeObjectURL(this.currentImageUrl)
         this.file = file
-        this.currentImageUrl = url ?? URL.createObjectURL(file)
+        this.currentImageUrl = URL.createObjectURL(file)
         this.reRenderElement()
     }
 
+    dispose() {
+        if (this.disposed) return
+        this.disposed = true
+        if (this.currentImageUrl) URL.revokeObjectURL(this.currentImageUrl)
+    }
+
     getValue() {
-        return this.file
+        return this.file ?? getEntityCoverUri(this.alert.entity)
     }
 
     hasDiffs(prop: any): boolean {
-        return !!this.currentImageUrl && this.currentImageUrl != this.originalValue
+        const original = getEntityCoverUri({
+            coverUri: this.originalValue,
+            ogImage: this.alert.getOriginalValue('ogImage'),
+            cover: this.alert.getOriginalValue('cover'),
+        })
+        return !!this.file || prop !== original
     }
 
     protected createElement(): HTMLElement {
-        let coverUri = this.currentImageUrl || this.alert.entity.coverUri || this.alert.entity.ogImage
+        let coverUri = this.currentImageUrl || getEntityCoverUri(this.alert.entity)
         if (coverUri) {
             coverUri = httpsify(coverUri)
         }

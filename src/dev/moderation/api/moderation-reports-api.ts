@@ -1,3 +1,5 @@
+import { net } from '@pulsesync/addon-sdk'
+
 import { SECRET_SUPABASE_TOKEN } from '@/../build-info'
 
 const BASE_URL = 'https://pzomqvgckpgkshxhpite.supabase.co/rest/v1'
@@ -5,7 +7,7 @@ const BASE_URL = 'https://pzomqvgckpgkshxhpite.supabase.co/rest/v1'
 function request(table: string, query: string) {
     if (!SECRET_SUPABASE_TOKEN) throw new Error('SECRET_SUPABASE_TOKEN is not defined')
 
-    return fetch(`${BASE_URL}/${table}?${query}`, {
+    return net.fetch(`${BASE_URL}/${table}?${query}`, {
         headers: {
             apiKey: SECRET_SUPABASE_TOKEN,
             'Content-Type': 'application/json',

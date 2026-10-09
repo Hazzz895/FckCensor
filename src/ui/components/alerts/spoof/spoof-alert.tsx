@@ -1,6 +1,7 @@
+import { getTracks } from '@/utils/music'
 import { JSX } from '@/jsx-runtime'
 import { TrackMST, Artist, Album, Track, SpoofableType } from '@/types'
-import { getTrackFromNode } from '@/utils/ui-utils'
+import { getTrackIdFromNode } from '@/utils/ui-utils'
 import { debug } from '@/utils/logger'
 import { SpoofTrackAlert } from './track/SpoofTrackAlert'
 import { SpoofArtistAlert } from './artist/SpoofArtistAlert'
@@ -9,9 +10,10 @@ import { localizeSpoofableType } from '@/utils/common'
 import addonConfig from '@/../addon.config.mjs'
 import { modals } from '@pulsesync/addon-sdk'
 
-export function createTrackSpoofAlertFor(scrim?: HTMLElement, trackNode?: HTMLElement, trackData?: Track | null) {
+export async function createTrackSpoofAlertFor(scrim?: HTMLElement, trackNode?: HTMLElement, trackData?: Track | null) {
     if (trackData === undefined) {
-        trackData = getTrackFromNode(trackNode!)!
+        const id = trackNode ? getTrackIdFromNode(trackNode) : null
+        trackData = id ? ((await getTracks(id))[0] ?? null) : null
     }
 
     if (trackData !== null) {

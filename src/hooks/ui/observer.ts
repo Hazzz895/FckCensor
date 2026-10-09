@@ -1,6 +1,7 @@
 import { debug, error } from '@/utils/logger'
 import { getTrackIdFromNode } from '@/utils/ui-utils'
 import { Q_TRACK_ROOT } from './constants'
+import { removeTooltip } from '@/ui/tooltips'
 
 let mutationCallbacks: ((mutation: MutationRecord) => void)[] = []
 let addedNodeCallbacks: [(el: HTMLElement) => void, selector?: string][] = []
@@ -43,7 +44,15 @@ const observer = new MutationObserver(mutations => {
         )
     })
 })
-observer.observe(document.body, { childList: true, subtree: true })
+export function startObserver() {
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: ['href', 'data-pulsesync-track-id'],
+    })
+}
 
 export function listenMutations(listener: (mutation: MutationRecord) => void) {
     mutationCallbacks.push(listener)
@@ -89,6 +98,9 @@ export function invokeAddNodesListeners() {
 
 export function destroyObserver() {
     observer.disconnect()
+    removeTooltip()
+    document.querySelectorAll('[fckcensoroption], [fckcensorsettings]').forEach(node => node.remove())
+    document.querySelectorAll('[data-fckcensor-badge]').forEach(node => node.remove())
     mutationCallbacks = []
     addedNodeCallbacks = []
     removedNodeCallbacks = []

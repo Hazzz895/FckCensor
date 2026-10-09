@@ -1,3 +1,5 @@
+import { sourcesChanged } from '@/sdk/lifecycle'
+import { isSdkLibraryArtist } from '@/sdk/library'
 import { loadRemoteList } from './remote-api'
 import { getDb, loadLocalDb } from './db-api'
 
@@ -456,7 +458,7 @@ export default class MainSource extends Source {
         }
 
         const insertions = this.getArtistInsertions(a.id)
-        if (insertions) {
+        if (insertions && !isSdkLibraryArtist(String(a.id))) {
             if (a.counts?.tracks) {
                 a.counts.tracks += insertions.tracks?.length ?? 0
             }
@@ -470,6 +472,7 @@ export default class MainSource extends Source {
 
     pushSource(source: ISource) {
         this.sourcesCollection.push(source)
+        sourcesChanged()
     }
 
     private static getSourceSpoof(source: ISource, type: SpoofableType, id: string): SpoofableEntity | null {

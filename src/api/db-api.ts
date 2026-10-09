@@ -1,3 +1,4 @@
+import { sourcesChanged } from '@/sdk/lifecycle'
 import { debug, error, log } from '@/utils/logger'
 import ISource, { Source } from './dto/sources/source'
 import { Track, Album, Artist, SpoofableType, SpoofableEntity } from '@/types'
@@ -185,8 +186,6 @@ export async function loadLocalDb() {
     }
 }
 
-const MAX_TRACKS_CACHE_LENGTH = 4
-
 export class LocalSource extends Source {
     private readonly playerReplacementsCache: Map<string, TrackReplacement> = new Map<string, TrackReplacement>()
 
@@ -204,6 +203,17 @@ export class LocalSource extends Source {
     }
     public bumpSpoofs() {
         this._spoofsRevision++
+        sourcesChanged()
+    }
+
+    getKnownIds(type: SpoofableType): Iterable<string> {
+        if (type === 'track') return new Set([...this.trackSpoofs.keys(), ...this.replacementsTrackIds])
+        if (type === 'album') return this.albumSpoofs.keys()
+        return new Set([...this.artistSpoofs.keys(), ...this.artistsInsertions.keys()])
+    }
+    releasePlayerUrls() {
+        for (const replacement of this.playerReplacementsCache.values()) if (replacement.url) URL.revokeObjectURL(replacement.url)
+        this.playerReplacementsCache.clear()
     }
 
     async buildPlayerReplacement(trackId: string): Promise<TrackReplacement | null> {
@@ -213,6 +223,7 @@ export class LocalSource extends Source {
         if (this.playerReplacementsCache.has(trackId)) {
             return this.playerReplacementsCache.get(trackId)!
         }
+        if (!this.replacementsTrackIds.includes(String(trackId))) return null
         const db = await getDb()
         return new Promise((resolve, reject) => {
             const tx = db.transaction(TRACKS, 'readonly')
@@ -223,12 +234,6 @@ export class LocalSource extends Source {
                 if (request.result && request.result.data) {
                     const url = URL.createObjectURL(request.result.data)
                     const replacement = new TrackReplacement(this, url)
-                    if (this.playerReplacementsCache.size > MAX_TRACKS_CACHE_LENGTH) {
-                        const oldestKey = this.playerReplacementsCache.keys().next().value!
-                        const oldestUrl = this.playerReplacementsCache.get(oldestKey)
-                        URL.revokeObjectURL(oldestUrl!.url!)
-                        this.playerReplacementsCache.delete(oldestKey)
-                    }
                     this.playerReplacementsCache.set(trackId, replacement)
                     resolve(replacement)
                 } else {
@@ -291,6 +296,7 @@ export class LocalSource extends Source {
         ;(file ? this.replacementsTrackIds : this.replacementExceptionsTrackIds).push(id)
 
         await this.pushToDb(TRACKS, id, { data: file })
+        sourcesChanged()
         if (file) {
             await this.calculateTracksAudioSize()
         }
@@ -306,6 +312,7 @@ export class LocalSource extends Source {
         this.forgetTrackReplacement(id)
 
         await this.removeFromDb(TRACKS, id)
+        sourcesChanged()
         await this.calculateTracksAudioSize()
     }
 
@@ -395,21 +402,25 @@ export class LocalSource extends Source {
         }
 
         this.artistSpoofs.set(id, artist)
+        sourcesChanged()
         return this.pushToDb(ARTIST_SPOOFS, id, dbArtist)
     }
 
     removeArtistSpoof(artistId: string) {
         this.artistSpoofs.delete(artistId)
+        sourcesChanged()
         return this.removeFromDb(ARTIST_SPOOFS, artistId)
     }
 
     pushArtistInsertions(artistId: string, insertions: ArtistInsertions) {
         this.artistsInsertions.set(artistId, insertions)
+        sourcesChanged()
         return this.pushToDb(ARTIST_INSERTIONS, artistId, insertions)
     }
 
     removeArtistInsertions(artistId: string) {
         this.artistsInsertions.delete(artistId)
+        sourcesChanged()
         return this.removeFromDb(ARTIST_INSERTIONS, artistId)
     }
 
@@ -504,6 +515,8 @@ export class LocalSource extends Source {
             this.bumpSpoofs()
             this.replacementsTrackIds = []
             this.replacementExceptionsTrackIds = []
+            this.releasePlayerUrls()
+            sourcesChanged()
         }
     }
 
@@ -546,6 +559,9 @@ export class AutomaticLocalInsertionsSource implements ISource {
         this.local = local
     }
 
+    getKnownIds(type: SpoofableType): Iterable<string> {
+        return type === 'artist' ? this.getInsertions().keys() : []
+    }
     buildPlayerReplacement(trackId: string): Promise<TrackReplacement | null> {
         return Promise.resolve(null)
     }

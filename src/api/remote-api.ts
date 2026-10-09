@@ -1,3 +1,4 @@
+import { net } from '@pulsesync/addon-sdk'
 import { Album, Artist, Release, RemoteList, RemoteSourceBase, Track, TracksStorage } from '@/types'
 import { debug, error, log, warn } from '@/utils/logger'
 import { versionSatisfies, versionsSatisfies } from '@/utils/version-utils'
@@ -14,7 +15,7 @@ const LOCAL_URI = `http://localhost:2007/assets/list_v2.json?name=${addonConfig.
 export let list: RemoteSource | null = null
 
 export async function loadRemoteList() {
-    RemoteSource.load(DATA_LIST_URI)
+    await RemoteSource.load(DATA_LIST_URI)
     // RemoteSource.load(LOCAL_URI);
 }
 
@@ -103,7 +104,7 @@ export class RemoteSource extends Source {
             if (list) {
                 return list
             }
-            const response = await fetch(url)
+            const response = await net.fetch(url, { timeoutMs: 15000 })
             if (!response.ok) {
                 throw new Error('Fetch failed with status ' + response.status + ': ' + response.statusText)
             }
@@ -142,6 +143,17 @@ export class RemoteSource extends Source {
     public constructor(list: MinifiedRemoteSource) {
         super()
         this.list = list
+    }
+
+    getKnownIds(type: import('@/types').SpoofableType): Iterable<string> {
+        if (type === 'album') return this.list.albums.keys()
+        if (type === 'artist') return new Set([...this.list.artists.keys(), ...this.list.artistsInsertions.keys()])
+        const ids = new Set(this.list.tracks.keys())
+        for (const storage of this.list.tracksStorages) {
+            for (const id of Object.keys(storage.tracks ?? {})) ids.add(id)
+            for (const item of storage.trackIds ?? []) ids.add(String(typeof item === 'number' ? item : item.id))
+        }
+        return ids
     }
 
     async buildPlayerReplacement(trackId: string): Promise<TrackReplacement | null> {

@@ -1,3 +1,4 @@
+import { net } from '@pulsesync/addon-sdk'
 import { Track } from '@/types'
 import { trackToQuery } from '@/utils/music'
 
@@ -11,7 +12,7 @@ export async function getLrclibTrackLyrics(query: string | Track) {
 
     if (cache.has(q)) return cache.get(q)!
 
-    const response = await fetch(`${SEARCH_URI}?q=${encodeURIComponent(q)}`)
+    const response = await net.fetch(`${SEARCH_URI}?q=${encodeURIComponent(q)}`)
     const results: { plainLyrics?: string; syncedLyrics?: string; instrumental: boolean }[] = await response.json()
     if (!results.length) return null
 

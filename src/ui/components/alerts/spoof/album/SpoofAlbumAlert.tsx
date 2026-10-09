@@ -18,7 +18,7 @@ export class SpoofAlbumAlert extends SpoofEntityWithArtistsAlert<Album> {
     private originalVolumesId?: string
 
     protected getChildren() {
-        const fckCensorData = sources.getFckCensorData('album', this.id)
+        const fckCensorData = this.album.__fckCensor ?? sources.getFckCensorData('album', this.id)
         const el = (
             <div>
                 {super.getChildren()}
@@ -59,13 +59,13 @@ export class SpoofAlbumAlert extends SpoofEntityWithArtistsAlert<Album> {
             spoofData.__fckCensor ??= {}
             spoofData.__fckCensor.replaceArtistsInAlbumVolumes = true
         }
-        localSource.pushAlbumSpoof(spoofData, this.id)
-        spoofAllNodesFor('album', this.id)
+        await localSource.pushAlbumSpoof(spoofData, this.id)
+        await spoofAllNodesFor('album', this.id)
     }
 
     protected async onSpoofRemove() {
         this.originalVolumesId = this.getVolumesId()
-        localSource.removeAlbumSpoof(this.id)
+        await localSource.removeAlbumSpoof(this.id)
     }
 
     protected async afterSpoofChanged() {

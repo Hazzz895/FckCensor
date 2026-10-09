@@ -3,6 +3,7 @@ import TrackReplacement from '../track-replacement'
 import { ArtistInsertions } from '../artist-insertion'
 
 export default interface ISource {
+    getKnownIds?(type: SpoofableType): Iterable<string>
     buildPlayerReplacement(trackId: string): Promise<TrackReplacement | null>
 
     hasPlayerReplacement(trackId: string): boolean | null
@@ -17,6 +18,9 @@ export default interface ISource {
 }
 
 export abstract class Source implements ISource {
+    getKnownIds(_type: SpoofableType): Iterable<string> {
+        return []
+    }
     abstract buildPlayerReplacement(trackId: string): Promise<TrackReplacement | null>
     abstract hasPlayerReplacement(trackId: string): boolean | null
     abstract getTrackSpoof(trackId: string): Track | null

@@ -1,3 +1,4 @@
+import { net } from '@pulsesync/addon-sdk'
 import { Track } from '@/types'
 import { getAnyTrackLyrics } from '@/utils/universal-lyrics'
 import Groq from 'groq-sdk'
@@ -191,7 +192,7 @@ const SCHEMA = {
     additionalProperties: false,
 }
 
-const groqClient = new Groq({ apiKey: import.meta.env.VITE_GROQ_TOKEN, dangerouslyAllowBrowser: true })
+const groqClient = new Groq({ apiKey: import.meta.env.VITE_GROQ_TOKEN, dangerouslyAllowBrowser: true, fetch: net.fetch })
 
 export async function generateCensoredLyricsFragments(text: string): Promise<CensoredFragment[]> {
     const response = await groqClient.chat.completions.create({

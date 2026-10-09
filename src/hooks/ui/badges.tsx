@@ -1,38 +1,55 @@
-import { JSX, legacyCreateElement } from '@/jsx-runtime'
-import { listenAddNodes, listenAddTrackNodes, listenMutations, unlistenMutations } from './observer'
+import { JSX } from '@/jsx-runtime'
+import { listenAddNodes, listenAddTrackNodes, listenMutations } from './observer'
 import addonConfig from '../../../addon.config.mjs'
-import { debug, error } from '@/utils/logger'
+import { error } from '@/utils/logger'
 import styles from '@/styles.module.scss'
-import { eventHandlerForTooltip } from '@/ui/tooltips'
+import { createNativeBadge, type YandexMusicIconName } from '@pulsesync/addon-sdk'
 import { sources } from '@/api/main-api'
-import { Q_ALBUM_FIBER_ROOT, Q_ALBUM_STICKY_TITLE, Q_ARTIST_STICKY_TITLE, Q_META_TITLE_CONTAINER, Q_PLAYER_BAR } from './constants'
-import { closestInTree, getAlbumFromNode, getAllTrackNodesById, getArtistFromNode, getTrackIdFromNode } from '@/utils/ui-utils'
+import { Q_ALBUM_STICKY_TITLE, Q_ARTIST_STICKY_TITLE, Q_META_TITLE_CONTAINER, Q_PLAYER_BAR, Q_TRACK_ROOT } from './constants'
+import { closestInTree, getEntityIdFromNode, getAllTrackNodesById, getTrackIdFromNode } from '@/utils/ui-utils'
 import { SpoofableType } from '@/types'
 import { onCurrentTrackChange } from '@/utils/pulsesync'
-import { useCurrentTrack } from '@pulsesync/addon-sdk'
+import { getSdkApi } from '@/sdk/lifecycle'
+
+let currentTrackId: string | undefined
 
 const PLAYERBAR_SELECTOR = `${Q_PLAYER_BAR}, [data-test-id="FULLSCREEN_PLAYER_FULLSCREEN_CONTENT"]`
 
 export function prepareBadges() {
-    listenAddTrackNodes(el => updateTrackBadge(el, getTrackIdFromNode(el) ?? ''), `:has(${Q_META_TITLE_CONTAINER})`)
+    listenAddTrackNodes(el => {
+        updateTrackBadge(el, getTrackIdFromNode(el) ?? '')
+    }, `:has(${Q_META_TITLE_CONTAINER})`)
 
-    listenAddNodes(
-        el => updateAlbumBadge(el, String(getAlbumFromNode(el.closest('.PageHeaderBase_content___DNyv')?.querySelector(Q_ALBUM_FIBER_ROOT)!)?.id)),
-        Q_ALBUM_STICKY_TITLE,
-    )
+    listenAddNodes(el => updateAlbumBadge(el, getEntityIdFromNode(el, 'album') ?? ''), Q_ALBUM_STICKY_TITLE)
 
-    listenAddNodes(el => updateArtistBadge(el, String(getArtistFromNode(el.closest('.ArtistPage_content__iZHVN')!)?.id)), Q_ARTIST_STICKY_TITLE)
+    listenAddNodes(el => updateArtistBadge(el, getEntityIdFromNode(el, 'artist') ?? ''), Q_ARTIST_STICKY_TITLE)
 
     listenAddNodes(updatePlayerBarBadge, PLAYERBAR_SELECTOR)
 
-    const playerBarMutationListener = listenMutations(mutation => {
-        if (updatePlayerBarBadge(mutation.target as HTMLElement)) {
-            unlistenMutations(playerBarMutationListener)
-        }
+    listenMutations(mutation => {
+        const target = mutation.target instanceof HTMLElement ? mutation.target : mutation.target.parentElement
+        const row = target?.closest<HTMLElement>(Q_TRACK_ROOT)
+        if (row) updateTrackBadge(row, getTrackIdFromNode(row) ?? '')
     })
 
-    updatePlayerBarBadge()
-    onCurrentTrackChange(() => {
+    listenMutations(mutation => {
+        const target = mutation.target instanceof HTMLElement ? mutation.target : mutation.target.parentElement
+        const playerBar = target?.closest<HTMLElement>(PLAYERBAR_SELECTOR)
+        if (playerBar) updatePlayerBarBadge(playerBar)
+    })
+
+    currentTrackId = undefined
+    const api = getSdkApi()
+    void api?.player
+        .getSnapshot()
+        .then(snapshot => {
+            if (getSdkApi() !== api) return
+            currentTrackId = snapshot.track ? String(snapshot.track.id) : undefined
+            updatePlayerBarBadge()
+        })
+        .catch(error)
+    onCurrentTrackChange(track => {
+        currentTrackId = track ? String(track.id) : undefined
         try {
             updatePlayerBarBadge()
         } catch (e) {
@@ -52,9 +69,8 @@ export function updatePlayerBarBadge(playerBar?: HTMLElement) {
         return
     }
     if (!playerBar) return
-    const track = useCurrentTrack()
-    if (!track) return
-    return updateTrackBadge(playerBar, String(track.id))
+    if (!playerBar.isConnected) return
+    return updateTrackBadge(playerBar, currentTrackId ?? '')
 }
 
 export function updateTrackBadge(container: HTMLElement, trackId: string) {
@@ -62,15 +78,19 @@ export function updateTrackBadge(container: HTMLElement, trackId: string) {
 
     if (!title) return false
 
-    title.querySelector<HTMLElement>(`.${styles.FckCensorBadge}`)?.remove()
-
-    if (sources.hasPlayerReplacement(trackId) || sources.hasTrackSpoof(trackId)) {
-        const options = title.querySelector<HTMLElement>('div:has([data-test-id="PLAYERBAR_DESKTOP_CONTEXT_MENU_BUTTON"])')
-        if (options) {
-            title.insertBefore(<ReplacedBadge type="track" />, options)
-        } else {
-            title.appendChild(<ReplacedBadge type="track" />)
-        }
+    let badge = title.querySelector<HTMLElement>(`.${styles.FckCensorBadge}`)
+    const replaced = !!trackId && (sources.hasPlayerReplacement(trackId) || sources.hasTrackSpoof(trackId))
+    if (!replaced) {
+        badge?.remove()
+        return true
+    }
+    badge ??= <ReplacedBadge type="track" />
+    const options = title.querySelector<HTMLElement>('div:has([data-test-id="PLAYERBAR_DESKTOP_CONTEXT_MENU_BUTTON"])')
+    // Native marks can mount after our badge during a React rerender.
+    if (options) {
+        if (badge.nextElementSibling !== options) title.insertBefore(badge, options)
+    } else if (title.lastElementChild !== badge) {
+        title.appendChild(badge)
     }
 
     return true
@@ -117,21 +137,13 @@ export interface BadgeProps extends JSX.HTMLAttributes {
 }
 
 export function Badge({ icon, description, ...props }: BadgeProps) {
+    const nativeBadge = createNativeBadge({
+        icon: icon.replace(/_(xxxs|xxs|xs|s|m|l|xl|xxl|xxxl)$/, '') as YandexMusicIconName,
+        label: description,
+    })
     return (
-        <span
-            aria-label={description}
-            {...props}
-            class={`Meta_explicitMarkContainer__BxMQg ${styles.FckCensorBadge}`}
-            onmouseenter={eventHandlerForTooltip}
-        >
-            <svg
-                class="ExplicitMarkIcon_explicitMark__0BPeQ Meta_explicitMark__ocnCV Rkdd2vKC_3xa1eUdRdHP"
-                focusable="false"
-                data-test-id="FCKCENSOR_BADGE_ICON"
-                aria-hidden="false"
-            >
-                <use xlink:href={`/icons/sprite.svg#${icon}`}></use>
-            </svg>
+        <span {...props} class={styles.FckCensorBadge} style="display: contents" data-fckcensor-badge>
+            {nativeBadge}
         </span>
     )
 }

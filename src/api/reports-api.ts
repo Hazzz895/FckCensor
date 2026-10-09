@@ -1,3 +1,4 @@
+import { net } from '@pulsesync/addon-sdk'
 import { ex1r1c1$8n$8t1v8D1t } from '@/dev/dev-utils'
 import { SpoofableType } from '@/types'
 import { debug } from '@/utils/logger'
@@ -13,7 +14,7 @@ const [API_KEY] = ex1r1c1$8n$8t1v8D1t(
 const REPORTED_TRACKS = 'reported_tracks'
 
 async function post(table: string, body: any) {
-    return await fetch(`${BASE_URI}${table}`, {
+    return await net.fetch(`${BASE_URI}${table}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

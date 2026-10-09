@@ -1,3 +1,4 @@
+import { net } from '@pulsesync/addon-sdk'
 import { Track } from '@/types'
 import { trackToQuery } from '@/utils/music'
 
@@ -18,7 +19,7 @@ export async function getGeniusTrackLyrics(query: string | Track) {
     const result = searchResults[0]
     if (!result?.result?.url) return null
 
-    const response = await fetch(result.result.url)
+    const response = await net.fetch(result.result.url)
     if (!response.ok) return null
 
     const html = await response.text()
@@ -49,7 +50,7 @@ export async function getGeniusTrackLyrics(query: string | Track) {
 export async function searchGenius(q: string, type: SearchType) {
     const url = BASE_GENIUS_URL + 'search/' + type + '?q=' + encodeURIComponent(q)
 
-    const response = await fetch(url)
+    const response = await net.fetch(url)
     if (!response.ok) return null
 
     const json = (await response.json()) as RequestResponse

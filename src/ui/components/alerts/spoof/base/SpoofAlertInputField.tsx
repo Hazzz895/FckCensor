@@ -4,10 +4,12 @@ import { SpoofAlertEntityPropertyField } from './SpoofAlertEntityPropertyField'
 
 export class SpoofAlertInputField extends SpoofAlertEntityPropertyField<string> {
     readonly label
+    private readonly initialValue?: string
 
     public constructor(alert: SpoofAlertBase, propertyName: string, label?: string, value?: string) {
         super(alert, propertyName, value)
         this.label = label
+        this.initialValue = value ?? (alert.entity as any)[propertyName] ?? this.originalValue
     }
 
     getValue() {
@@ -19,6 +21,6 @@ export class SpoofAlertInputField extends SpoofAlertEntityPropertyField<string> 
     }
 
     createElement(): HTMLElement {
-        return <TextField header={this.label} placeholder={this.originalValue} value={this.originalValue} />
+        return <TextField header={this.label} placeholder={this.originalValue} value={this.initialValue} />
     }
 }

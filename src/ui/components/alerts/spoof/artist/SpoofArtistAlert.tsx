@@ -14,14 +14,14 @@ export class SpoofArtistAlert extends SpoofAlertBase<Artist> {
 
     protected async onApply(spoofData: Artist) {
         if (spoofData) {
-            localSource.pushArtistSpoof(spoofData, this.id)
-            spoofAllNodesFor('artist', this.id)
+            await localSource.pushArtistSpoof(spoofData, this.id)
         }
 
         if (this.forceSpoof()) {
             const insertions = { tracks: this.trackListField.getValue(), albums: this.albumListField.getValue() }
             await localSource.pushArtistInsertions(this.id, insertions)
         }
+        await spoofAllNodesFor('artist', this.id)
     }
 
     protected forceSpoof() {
@@ -29,8 +29,8 @@ export class SpoofArtistAlert extends SpoofAlertBase<Artist> {
     }
 
     protected async onSpoofRemove() {
-        localSource.removeArtistSpoof(this.id)
-        localSource.removeArtistInsertions(this.id)
+        await localSource.removeArtistSpoof(this.id)
+        await localSource.removeArtistInsertions(this.id)
     }
 
     protected async onSpoofCancel() {
