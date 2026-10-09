@@ -10,24 +10,25 @@
     "build:modules": "node ./scripts/module-compile.mjs",
     "format": "oxfmt .",
     "sync": "node ./scripts/sync-addon.mjs",
-    "build:sync": "yarn build && yarn sync"
+    "build:sync": "yarn build && yarn sync",
+    "typecheck": "tsc --noEmit"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },
   "dependencies": {
-    "@pulsesync/addon-sdk": "0.13.3",
-    "@pulsesync/yamusic-types": "^0.4.0",
+    "@pulsesync/addon-sdk": "0.15.0",
+    "@pulsesync/yamusic-types": "^0.6.0",
     "groq-sdk": "^1.6.0"
   },
   "devDependencies": {
-    "@types/node": "26.6.3",
+    "@types/node": "26.6.4",
     "@types/react": "19.3.0",
-    "@vitejs/plugin-react": "6.1.1",
-    "oxfmt": "0.71.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "oxfmt": "0.72.0",
     "react": "19.3.0",
     "sass-embedded": "^1.105.1",
     "typescript": "7.0.2",
-    "vite": "8.3.1"
+    "vite": "8.3.4"
   }
 }
