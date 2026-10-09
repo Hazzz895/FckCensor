@@ -2,7 +2,7 @@ import { JSX } from '@/jsx-runtime'
 import { listenAddNodes } from './observer'
 import { getEntityIdFromNode, getContextMenuSource } from '@/utils/ui-utils'
 import { createAlbumSpoofAlertFor, createArtistSpoofAlertFor, createTrackSpoofAlertFor } from '@/ui/components/alerts/spoof/spoof-alert'
-import type { TrackMenuItem, AlbumMenuItem, PlayerBarButton } from '@pulsesync/addon-sdk'
+import type { TrackMenuItem, AlbumMenuItem } from '@pulsesync/addon-sdk'
 import { getTracks, getAlbumTracks, getArtist } from '@/utils/music'
 
 async function editTrack(id: string) {
@@ -28,16 +28,6 @@ export const albumMenuItems: AlbumMenuItem[] = [
         icon: 'edit',
         position: 3,
         onClick: ({ album }) => editAlbum(album.id),
-    },
-]
-export const playerBarButtons: PlayerBarButton[] = [
-    {
-        id: 'spoof-current-track',
-        label: 'Подменить трек',
-        icon: 'edit',
-        onClick: async ({ currentTrack }) => {
-            if (currentTrack) await editTrack(String(currentTrack.id))
-        },
     },
 ]
 export function prepareOptions() {
