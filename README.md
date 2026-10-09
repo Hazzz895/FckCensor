@@ -80,3 +80,7 @@
   <img alt="Меню подмены альбома с подменённым трек-листом" src="./images/spoof_album_menu.png" />
 </details>
 
+## Благодарности
+[`Diramix`](https://github.com/Diramix) — внёс огромный вклад в пополнение списка автоматических подмен треков. [Поддержать на boosty](https://boosty.to/diramix)
+
+[`foreA-adoxid`](https://github.com/foreA-adoxid) — помог реализовать часть функционала аддона. [Поддержать на boosty](https://boosty.to/evt)

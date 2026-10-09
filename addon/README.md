@@ -77,3 +77,6 @@
 </details>
 
 ## Благодарности
+[`Diramix`](https://github.com/Diramix) — внёс огромный вклад в пополнение списка автоматических подмен треков. [Поддержать на boosty](https://boosty.to/diramix)
+
+[`foreA-adoxid`](https://github.com/foreA-adoxid) — помог реализовать часть функционала аддона. [Поддержать на boosty](https://boosty.to/evt)
