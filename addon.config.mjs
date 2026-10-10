@@ -33,7 +33,7 @@ if (addonConfig.beta) {
     addonConfig.name += ' ['
     addonConfig.name += `${addonConfig.version}-beta`
     if (typeof addonConfig.beta === 'number' && addonConfig.beta > 0) {
-        addonConfig.name += `-${addonConfig.beta}`
+        addonConfig.name += `.${addonConfig.beta}`
     }
     addonConfig.name += ']'
 }
