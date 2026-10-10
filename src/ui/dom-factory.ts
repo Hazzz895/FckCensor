@@ -6,6 +6,10 @@ export function jsx(tag: any, attrs: any): HTMLElement {
 
 export { jsx as jsxs }
 
+export function jsxDEV(tag: any, attrs: any): HTMLElement {
+    return jsx(tag, attrs)
+}
+
 export function h(tag: any, attrs: any, ...children: any[]): HTMLElement {
     if (typeof tag === 'function') {
         return tag({ ...attrs, children })

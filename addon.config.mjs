@@ -1,5 +1,3 @@
-import { IS_DEVELOPMENT_BUILD, SECRET_GROQ_TOKEN } from './build-info.js'
-
 const addonConfig = {
     beta: 1,
     id: 'fckcensor',
@@ -27,6 +25,7 @@ const addonConfig = {
         'https://lrclib.net/',
     ],
     supportedVersions: [],
+    conflictsWith: [],
 }
 
 if (addonConfig.beta) {
@@ -36,13 +35,15 @@ if (addonConfig.beta) {
         addonConfig.name += `.${addonConfig.beta}`
     }
     addonConfig.name += ']'
+
+    addonConfig.conflictsWith.push('78d083c5-0510-4c41-b3de-41aab30a9fc5')
 }
 
-if (SECRET_GROQ_TOKEN) {
+if (process?.env?.VITE_GROQ_TOKEN) {
     addonConfig.allowedUrls.push('https://api.groq.com/openai/v1')
 }
 
-if (IS_DEVELOPMENT_BUILD) {
+if (process?.env?.NODE_ENV === 'development') {
     addonConfig.name = '[DEV] ' + addonConfig.name
 }
 

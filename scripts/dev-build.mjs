@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process'
 import { promises as fs } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { loadEnv } from 'vite'
 
 import { deliverAddon, formatDeliveryResult, notifyClient, readLocalModules } from './addon-delivery.mjs'
 import { createModuleBuilder } from './module-build.mjs'
@@ -63,6 +64,8 @@ async function tick() {
             return
         }
         attempted = signature
+        Object.assign(process.env, loadEnv('development', rootDir, ''))
+        process.env.MODE = 'development'
         const configUrl = new URL(pathToFileURL(configPath).href)
         configUrl.searchParams.set('revision', signature)
         const { default: config } = await import(configUrl.href)
@@ -78,7 +81,7 @@ async function tick() {
         await new Promise((resolve, reject) => {
             child = spawn(process.execPath, [viteBin, 'build', '--mode', 'development'], {
                 cwd: rootDir,
-                env: { ...process.env, PULSESYNC_ADDON_OUT_DIR: outDir },
+                env: { ...process.env, NODE_ENV: 'development', PULSESYNC_ADDON_OUT_DIR: outDir },
                 stdio: 'inherit',
                 windowsHide: true,
             })
