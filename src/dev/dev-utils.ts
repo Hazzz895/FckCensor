@@ -1,9 +1,3 @@
-import addonConfig from '../../addon.config.mjs'
-
-export function isBeta() {
-    return Number(addonConfig.version.split('.')[2]) > 90
-}
-
 export function putToBundle(key: string, value: any) {
     window['__fckCensorDevBundle'] ??= {}
     window['__fckCensorDevBundle'][key] = value
