@@ -3,7 +3,6 @@ import addonConfig from '../addon.config.mjs'
 import '@/ym_styles.scss'
 import '@/styles.module.scss'
 import './api/reports-api'
-import { initializeUserDev } from './dev/dev-utils'
 import { debug, error } from './utils/logger'
 import { loadSources } from './api/main-api'
 import { localSource } from './api/db-api'
@@ -25,7 +24,6 @@ export default defineAddon({
     albumMenuItems,
     start: async api => {
         debug('Starting')
-        let stopUserDev: (() => void) | undefined
         let stopBridge: (() => void) | undefined
         let unsubscribeSettings: (() => void) | undefined
         let stopped = false
@@ -34,7 +32,6 @@ export default defineAddon({
             stopped = true
             api.signal.removeEventListener('abort', cleanup)
             unsubscribeSettings?.()
-            stopUserDev?.()
             destroyObserver()
             stopResourceHooks()
             stopBridge?.()
@@ -43,7 +40,6 @@ export default defineAddon({
         api.signal.addEventListener('abort', cleanup, { once: true })
         try {
             api.signal.throwIfAborted()
-            stopUserDev = initializeUserDev(api)
             stopBridge = await startSdkBridge(api)
             if (api.signal.aborted) {
                 stopBridge()
