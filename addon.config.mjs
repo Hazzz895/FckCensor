@@ -1,5 +1,5 @@
 const addonConfig = {
-    beta: 1,
+    beta: 2,
     id: 'fckcensor',
     directoryName: 'fckcensor',
     name: 'FckCensor',
