@@ -42,8 +42,8 @@ export function libraryId(value: unknown): string {
 export function libraryTrack(value: any, albumId?: string): PulseSyncLibraryTrack {
     const id = libraryId(value.id),
         title = String(value.title || 'Без имени'),
-        durationMs = typeof value.durationMs === 'number' ? Math.round(value.durationMs) : NaN
-    if (!Number.isSafeInteger(durationMs) || durationMs <= 0 || durationMs > 86400000) throw Error(`Incomplete track ${id}`)
+        durationMs = value.durationMs === undefined ? 0 : typeof value.durationMs === 'number' ? Math.round(value.durationMs) : NaN
+    if (!Number.isSafeInteger(durationMs) || durationMs < 0) throw Error(`Invalid track duration ${id}`)
     const artists = (value.artists ?? []).map((a: any) => ({
         ...metadataPatch('artist', a),
         id: libraryId(a.id),

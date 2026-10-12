@@ -103,11 +103,7 @@ export async function syncLibrary(api: AddonApi, stillCurrent: () => boolean) {
                     tracks: { index: number; track: PulseSyncLibraryTrack }[] = [],
                     albumsData: { index: number; album: PulseSyncLibraryAlbum }[] = []
                 let count = 0
-                const index = (value: number | undefined) => {
-                    if (value === undefined || value === -1) return 5000
-                    if (!Number.isSafeInteger(value) || value < 0 || value > 5000) throw Error('Relative insertion uses resource hooks')
-                    return value
-                }
+                const index = (value: number | undefined) => typeof value === "number" ? value : -1;
                 for (const insertion of insertions.tracks ?? []) {
                     const position = index(insertion.index)
                     const [track] = await getVolume([insertion.releaseId])
