@@ -28,4 +28,9 @@ export const DATA_LIST_V1_URI = DATA_GITHUB_BASE_URI + 'list.json'
 export const DATA_LIST_V2_URI = DATA_GITHUB_BASE_URI + 'list_v2.json'
 export const DATA_LIST_URI = DATA_LIST_V2_URI
 
+export const SUPABASE_PROJECT_ID = 'pzomqvgckpgkshxhpite'
+export const SUPABASE_BASE_URI = 'https://' + SUPABASE_PROJECT_ID + '.supabase.co'
+export const SUPABASE_REST_URI = SUPABASE_BASE_URI + '/rest/v1'
+export const SUPABASE_FUNCTIONS_BASE_URI = SUPABASE_BASE_URI + '/functions/v1/'
+
 export const RKN_BLOCKED_DISCLAIMER_ID = '65256e7f0ec8594f3459e3fa'

@@ -5,8 +5,8 @@ import { debug } from '@/utils/logger'
 import { localSource } from './db-api'
 import { localizeSpoofableType } from '@/utils/common'
 import { notifications } from '@pulsesync/addon-sdk'
+import { SUPABASE_REST_URI } from '@/hooks/ui/constants'
 
-const BASE_URI = 'https://pzomqvgckpgkshxhpite.supabase.co/rest/v1/'
 const [API_KEY] = ex1r1c1$8n$8t1v8D1t(
     'nkrikZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW5CNmIyMXhkbWRqYTNCbmEzTm9lR2h3YVhSbElpd2ljbTlzWlNJNkltRnViMjRpTENKcFlYUWlPakUzTnpVd05UZ3pOREVzSW1WNGNDSTZNakE1TURZek5ETTBNWDAuZ2dDeE0tdmVyM2dEV1VCV3loU0JmeTNuN3JwZFc4anRseFJRVkNYa2hOZ3x5b3VyIG1vbSBpcyBmYXR0o6O55',
 )
@@ -14,7 +14,7 @@ const [API_KEY] = ex1r1c1$8n$8t1v8D1t(
 const REPORTED_TRACKS = 'reported_tracks'
 
 async function post(table: string, body: any) {
-    return await net.fetch(`${BASE_URI}${table}`, {
+    return await net.fetch(`${SUPABASE_REST_URI}/${table}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
