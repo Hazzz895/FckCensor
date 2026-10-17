@@ -2,18 +2,12 @@ import { getSdkApi } from '@/sdk/lifecycle'
 import { flushSdk } from '@/sdk/bridge'
 import { Album, Artist, OuterArtist, SearchResponse, SearchType, Track } from '@/types'
 import { readResource } from '@/sdk/resources'
+import { log } from './logger'
 
 export async function reloadPlayer(trackId?: string) {
     await flushSdk()
-    const api = getSdkApi(),
-        snapshot = await api?.player.getSnapshot(),
-        track = snapshot?.track
-    if (api && track && (!trackId || String(track.id) === trackId)) {
-        await api.client.playTrackById(String(track.id))
-        const progress = typeof snapshot?.progress === 'number' ? snapshot.progress : snapshot?.progress?.position
-        if (typeof progress === 'number' && progress > 0) await api.client.setProgress(progress)
-        if (!snapshot?.isPlaying) await api.client.pause()
-    }
+    await getSdkApi()?.pulsesyncApi?.reloadPlayer(trackId)
+    log("Player reloaded")
 }
 
 export function search(text: string, type: SearchType = 'all', page = 0, args: Record<string, any> = {}): Promise<SearchResponse | null> {
