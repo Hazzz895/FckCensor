@@ -27,7 +27,8 @@ export function isSdkLibraryArtist(id: string) {
 export function isSdkLibraryAlbum(id: string) {
     return libraryAlbums.has(String(id))
 }
-export function resetLibraryState() {
+export function resetLibraryState(): string[] {
+    const artistIds = [...libraryArtists]
     libraryJson = ''
     dataGeneration++
     nativeTracks.clear()
@@ -35,6 +36,7 @@ export function resetLibraryState() {
     fallbackReasons.clear()
     libraryArtists.clear()
     libraryAlbums.clear()
+    return artistIds
 }
 export async function syncLibrary(api: AddonApi, stillCurrent: () => boolean) {
     const payload: {

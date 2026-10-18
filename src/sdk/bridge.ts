@@ -95,10 +95,10 @@ export async function startSdkBridge(api: AddonApi) {
     })
     return () => {
         if (activeApi !== api) return
+        const artistIds = resetLibraryState()
         activeApi = undefined
         audioJson = ''
         resetMetadataState()
-        resetLibraryState()
         pending = false
         full = false
         revision++
@@ -106,6 +106,7 @@ export async function startSdkBridge(api: AddonApi) {
         unsubscribe()
         unpage()
         unbind()
+        for (const id of artistIds) api.client.removeLibraryOverride('artist', id)
         void Promise.allSettled([api.client.clearMetadataOverrides(), api.client.clearLibraryOverrides(), api.client.clearTrackReplacements()])
     }
 }
