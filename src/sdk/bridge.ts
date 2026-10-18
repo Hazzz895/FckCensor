@@ -95,7 +95,8 @@ export async function startSdkBridge(api: AddonApi) {
     })
     return () => {
         if (activeApi !== api) return
-        const artistIds = resetLibraryState()
+        const artistIds = known('artist').filter(id => sources.hasInsertions(id))
+        resetLibraryState()
         activeApi = undefined
         audioJson = ''
         resetMetadataState()
