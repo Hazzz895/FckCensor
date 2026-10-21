@@ -22,6 +22,7 @@
         return;
     }
 
+
     function findModule(...requiredStrings) {
         for (const id in appRequire.m) {
             try {
@@ -95,8 +96,8 @@
           className: styles.message
         }, ...children);
 
-        const ctr = React.createElement(NotificationComponent.$W, {
-          message: content
+        const ctr = React.createElement(NotificationComponent.$W, { 
+          message: content 
         });
 
         notificationManager.notification({
@@ -111,92 +112,6 @@
         postNotification(caption, coverUri);
     }
 
-    async function getReplacementUrl(trackId) {
-        if (!trackId) return null;
-        const replacedTrack = getReplaced(trackId);
-        if (!replacedTrack || replacedTrack.src === "remote_exception") return null;
-        let url = replacedTrack.url;
-        if (replacedTrack.src === "local" && !url) {
-            url = await getLocalTrackUrl(trackId);
-        }
-        return url || null;
-    }
-
-    (function installFetchInterception() {
-        const FILE_INFO_RE = /^https:\/\/api\.music\.yandex\.net\/get-file-info(\/batch)?(?:\?|$)/;
-        const originalFetch = window.fetch;
-
-        window.fetch = async function(input, init) {
-            let url = "";
-            try {
-                if (typeof input === "string") url = input;
-                else if (input && typeof input.url === "string") url = input.url;
-                else url = String(input);
-            } catch (e) {}
-
-            if (!FILE_INFO_RE.test(url)) {
-                return originalFetch.apply(this, arguments);
-            }
-
-            try {
-                const u = new URL(url, location.href);
-                const isBatch = /\/get-file-info\/batch$/.test(u.pathname);
-
-                if (!isBatch) {
-                    const trackId = u.searchParams.get("trackId");
-                    if (trackId) {
-                        const replUrl = await getReplacementUrl(trackId);
-                        if (replUrl) {
-                            log("Replacing track " + trackId + " with url " + replUrl);
-                            return new Response(JSON.stringify({
-                                downloadInfo: { trackId: String(trackId), urls: [replUrl] }
-                            }), {
-                                status: 200,
-                                headers: { "Content-Type": "application/json" }
-                            });
-                        }
-                    }
-                    return originalFetch.apply(this, arguments);
-                }
-
-                // Асинхронная параллельная обработка батча
-                const trackIds = (u.searchParams.get("trackIds") || "").split(",").filter(Boolean);
-                const replMap = {};
-
-                const replacementPromises = trackIds.map(async (tid) => {
-                    const url = await getReplacementUrl(tid);
-                    return { tid: String(tid), url };
-                });
-                const results = await Promise.all(replacementPromises);
-                for (const { tid, url } of results) {
-                    if (url) replMap[tid] = url;
-                }
-
-                if (Object.keys(replMap).length === 0) return originalFetch.apply(this, arguments);
-
-                const origResp = await originalFetch.apply(this, arguments);
-                let data = null;
-                try { data = await origResp.clone().json(); } catch (e) {}
-                if (!data || !Array.isArray(data.downloadInfos)) return origResp;
-                const byId = {};
-                data.downloadInfos.forEach(d => { byId[String(d.trackId)] = d; });
-                for (const tid in replMap) {
-                    log("Replacing track " + tid + " with url " + replMap[tid]);
-                    byId[tid] = { trackId: tid, urls: [replMap[tid]] };
-                }
-                data.downloadInfos = trackIds.map(tid => byId[String(tid)]).filter(Boolean);
-                return new Response(JSON.stringify(data), {
-                    status: origResp.status || 200,
-                    statusText: origResp.statusText || "",
-                    headers: { "Content-Type": "application/json" }
-                });
-            } catch (e) {
-                log("fetch interception error", e);
-                return originalFetch.apply(this, arguments);
-            }
-        };
-    })();
-
     // === хранение подменных треков ===
     /* из базы данных */
     let localTracksUrlCache = {};
@@ -209,7 +124,7 @@
         return new Promise((resolve, reject) => {
             const tx = db.transaction("tracks", 'readonly');
             const store = tx.objectStore("tracks");
-            const request = store.get(trackId);
+            const request = store.get(trackId); 
 
             request.onsuccess = () => {
                 if (request.result && request.result.data) {
@@ -253,18 +168,6 @@
         return dbPromise;
     }
 
-    // первоначальная загрузка треков из базы данных
-    openDB().then(db => {
-        const tx = db.transaction("tracks", 'readonly');
-        const store = tx.objectStore("tracks");
-        const request = store.getAllKeys();
-
-        request.onsuccess = () => {
-            localTrackIds = request.result;
-            log("Loaded ", Object.keys(localTrackIds).length, "local tracks");
-        };
-    });
-
     /* из папки assets */
     let assetsTracks = {};
     function updateAssetsTracks() {
@@ -277,10 +180,9 @@
                     assetsTracks[id] = url;
                 });
                 log("Tracks from assets:", assetsTracks);
+                syncReplacementsWithPulseSync();
             });
     }
-
-    updateAssetsTracks();
 
     /* из репозитория */
     let remoteTracks = {};
@@ -298,12 +200,62 @@
 
                 request.onsuccess = () => {
                     remoteExceptions = request.result.map(item => item.id);
+                    syncReplacementsWithPulseSync();
                 };
             });
         })
         .catch(err => {
             console.error(`[${ADDON_NAME}] Ошибка при попытке получить список треков с удалённого репозитория: `, err)
         });
+
+    // === ИНТЕГРАЦИЯ С НАТИВНЫМ API PULSESYNC ===
+    let syncTimeout = null;
+    function syncReplacementsWithPulseSync() {
+        if (syncTimeout) clearTimeout(syncTimeout);
+        syncTimeout = setTimeout(async () => {
+            if (!window.pulsesyncApi || typeof window.pulsesyncApi.setTrackReplacements !== 'function') {
+                log("PulseSync API for replacements not found.");
+                return;
+            }
+
+            const replacementsMap = {};
+
+            for (const id in remoteTracks) {
+                if (!remoteExceptions.includes(id)) {
+                    replacementsMap[id] = remoteTracks[id];
+                }
+            }
+
+            for (const id in assetsTracks) {
+                replacementsMap[id] = assetsTracks[id];
+            }
+
+            for (const id of localTrackIds) {
+                const url = await getLocalTrackUrl(id);
+                if (url) {
+                    replacementsMap[id] = url;
+                }
+            }
+
+            window.pulsesyncApi.setTrackReplacements(replacementsMap, ADDON_NAME);
+            log(`Synced ${Object.keys(replacementsMap).length} replacements with PulseSync API`);
+        }, 100);
+    }
+
+    // первоначальная загрузка треков из базы данных
+    openDB().then(db => {
+        const tx = db.transaction("tracks", 'readonly');
+        const store = tx.objectStore("tracks");
+        const request = store.getAllKeys();
+
+        request.onsuccess = () => {
+            localTrackIds = request.result;
+            log("Loaded ", Object.keys(localTrackIds).length, "local tracks");
+            syncReplacementsWithPulseSync();
+        };
+    });
+
+    updateAssetsTracks();
 
     // получение ссылки на трек
     function getReplaced(trackId) {
@@ -400,7 +352,7 @@
     function onContextMenuReplaceClick(trackId, item) {
         const replaced = getReplaced(trackId);
 
-        function reloadPlayer() {
+        function reloadPlayer() { 
             const e = window.sonataState?.queueState?.currentEntity?.value?.entity;
             const mediaPlayer = window.sonataState?.currentMediaPlayer?.value?.currentMediaPlayer;
             if (e && mediaPlayer && e.entityData?.meta?.id == trackId) {
@@ -413,6 +365,7 @@
             reloadPlayer();
             updateReplaceItem(trackId, item);
             addReplacedMarks();
+            syncReplacementsWithPulseSync();
         }
 
         function notificate(replaced) {
@@ -430,7 +383,7 @@
                         accept: { 'audio/*': ['.mp3', '.wav', '.ogg', '.flac'] }
                     }
                 ],
-                multiple: false
+                multiple: false 
             })
             .then(async (fileHandles) => {
                 const fileHandle = fileHandles[0];
@@ -447,7 +400,7 @@
 
                 const tx = db.transaction("tracks", 'readwrite');
                 const store = tx.objectStore("tracks");
-
+                
                 store.put({ id: trackId, data: file });
                 api.report(trackId, true);
                 onSuccess();
@@ -464,12 +417,12 @@
         // если трек есть в базе данных, то удаление
         else if (replaced.src == "local") {
             localTrackIds = localTrackIds.filter(id => id != trackId);
-
+            
             if (localTracksUrlCache[trackId]) {
                 URL.revokeObjectURL(localTracksUrlCache[trackId]);
                 delete localTracksUrlCache[trackId];
             }
-
+            
             openDB().then(db => {
                 const tx = db.transaction("tracks", 'readwrite');
                 const store = tx.objectStore("tracks");
@@ -587,7 +540,7 @@
                     }
                 }
             })
-
+            
             addReplacedMarks(mutation.target);
         });
     });
@@ -600,11 +553,11 @@
         const span = document.createElement("span");
 
         span.classList.add("Meta_replacedMarkContainer", "Meta_explicitMarkContainer__BxMQg")
-        span.innerHTML =
-        `<svg
-            class="ExplicitMarkIcon_explicitMark__0BPeQ Meta_explicitMark__ocnCV Rkdd2vKC_3xa1eUdRdHP"
-            focusable="false"
-            aria-label="Трек подменен аддоном ${ADDON_NAME}"
+        span.innerHTML = 
+        `<svg 
+            class="ExplicitMarkIcon_explicitMark__0BPeQ Meta_explicitMark__ocnCV Rkdd2vKC_3xa1eUdRdHP" 
+            focusable="false" 
+            aria-label="Трек подменен аддоном ${ADDON_NAME}" 
             data-test-id="REPLACED_MARK_ICON">
                 <use xlink:href="/icons/sprite.svg#edit_xxs">
                 </use>
@@ -623,18 +576,18 @@
             const tooltip = document.createElement("div");
             tooltip.id = "FckCensorTooltip";
             const bounding = ev.target.getBoundingClientRect();
-            tooltip.innerHTML =
-            `<div
-                class="QhR4J536RmNHBB5bZYwF TooltipWithTitle_root__7jLY3"
-                data-test-id="TOOLTIP_WITH_TITLE"
+            tooltip.innerHTML = 
+            `<div 
+                class="QhR4J536RmNHBB5bZYwF TooltipWithTitle_root__7jLY3" 
+                data-test-id="TOOLTIP_WITH_TITLE" 
                 tabindex="-1"
-                role="tooltip"
+                role="tooltip" 
                 style="position: absolute; left: 0px; top: 0px; visibility: visible; transform: translate(${bounding.left}px, ${bounding.top + bounding.height}px);">
-                <div
+                <div 
                     class="_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 _3_Mxw7Si7j2g4kWjlpR Fqg1VWCJUfasVVxqICeO">
-                    <div
+                    <div 
                         class="TooltipWithTitle_text__ElBtq">
-                        <span
+                        <span 
                             class="_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 ZYV27jeWd30QDXu4GhaH TooltipWithTitle_description__HsGcR"
                             >${ev.target.firstElementChild.ariaLabel}</span>
                     </div>
