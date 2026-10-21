@@ -23,7 +23,6 @@
     }
 
 
-    // получение DI модуля (оно хранит все синглтоны необходимые для работы аддона)
     function findModule(...requiredStrings) {
         for (const id in appRequire.m) {
             try {
@@ -38,36 +37,6 @@
         }
         return null;
     }
-
-    const diModule = findModule("Dt", "P9", "Gr", "do");
-    if (!diModule?.Dt) {
-        console.error("Failed to find DI module. Wait for addon update!");
-        return;
-    }
-
-    
-    const di = diModule.Dt;
-    const originalDiGet = di.prototype.get;
-
-    // хук получения DI
-    let hooked = false;
-    di.prototype.get = function(_) {
-        const result = originalDiGet.apply(this, arguments);
-
-        if (!hooked) {
-            const gfir = this.shared.get("GetFileInfoResource");
-            
-            if (gfir) {
-                hooked = true;
-                
-                di.prototype.get = originalDiGet; 
-                
-                hookMethods(gfir);
-            }
-        }
-        
-        return result;
-    };
 
     let _notificationComponentsCache = null;
     function getNotificationComponents() {
@@ -127,8 +96,8 @@
           className: styles.message
         }, ...children);
 
-        const ctr = React.createElement(NotificationComponent.$W, { 
-          message: content 
+        const ctr = React.createElement(NotificationComponent.$W, {
+          message: content
         });
 
         notificationManager.notification({
@@ -143,39 +112,84 @@
         postNotification(caption, coverUri);
     }
 
-    // основной код аддона, выполняется после инициализации DI
-    function hookMethods(gfir) {
-        const originalGetFileInfo = gfir.getLocalFileDownloadInfo;
-        gfir.getLocalFileDownloadInfo = async function(trackId) {
-            const replacedTrack = getReplaced(trackId);
-            
-            if (replacedTrack && replacedTrack.src !== "remote_exception") {
-                let url = replacedTrack.url;
-                
-                if (replacedTrack.src === "local" && !replacedTrack.url) {
-                    url = await getLocalTrackUrl(trackId);
-                }
-
-                if (url) {
-                    log("Replacing track " + trackId + " with url " + url);
-                    return {
-                        trackId: trackId,
-                        urls: [url]
-                    };
-                }
-            }
-            return originalGetFileInfo.apply(this, arguments);
-        };
-
-        const originalIsDownloaded = gfir.isTrackDownloaded;
-        gfir.isTrackDownloaded = async function(trackId, _) {
-            const replacedTrack = getReplaced(trackId);
-            if (replacedTrack && replacedTrack.src !== "remote_exception") {
-                return true;
-            }
-            return originalIsDownloaded.apply(this, arguments);
-        };
+    async function getReplacementUrl(trackId) {
+        if (!trackId) return null;
+        const replacedTrack = getReplaced(trackId);
+        if (!replacedTrack || replacedTrack.src === "remote_exception") return null;
+        let url = replacedTrack.url;
+        if (replacedTrack.src === "local" && !url) {
+            url = await getLocalTrackUrl(trackId);
+        }
+        return url || null;
     }
+
+    (function installFetchInterception() {
+        const FILE_INFO_RE = /^https:\/\/api\.music\.yandex\.net\/get-file-info(\/batch)?(?:\?|$)/;
+        const originalFetch = window.fetch;
+
+        window.fetch = async function(input, init) {
+            let url = "";
+            try {
+                if (typeof input === "string") url = input;
+                else if (input && typeof input.url === "string") url = input.url;
+                else url = String(input);
+            } catch (e) {}
+
+            if (!FILE_INFO_RE.test(url)) {
+                return originalFetch.apply(this, arguments);
+            }
+
+            try {
+                const u = new URL(url, location.href);
+                const isBatch = /\/get-file-info\/batch$/.test(u.pathname);
+
+                if (!isBatch) {
+                    const trackId = u.searchParams.get("trackId");
+                    if (trackId) {
+                        const replUrl = await getReplacementUrl(trackId);
+                        if (replUrl) {
+                            log("Replacing track " + trackId + " with url " + replUrl);
+                            return new Response(JSON.stringify({
+                                downloadInfo: { trackId: String(trackId), urls: [replUrl] }
+                            }), {
+                                status: 200,
+                                headers: { "Content-Type": "application/json" }
+                            });
+                        }
+                    }
+                    return originalFetch.apply(this, arguments);
+                }
+
+                const trackIds = (u.searchParams.get("trackIds") || "").split(",").filter(Boolean);
+                const replMap = {};
+                for (const tid of trackIds) {
+                    const replUrl = await getReplacementUrl(tid);
+                    if (replUrl) replMap[String(tid)] = replUrl;
+                }
+                if (Object.keys(replMap).length === 0) return originalFetch.apply(this, arguments);
+
+                const origResp = await originalFetch.apply(this, arguments);
+                let data = null;
+                try { data = await origResp.clone().json(); } catch (e) {}
+                if (!data || !Array.isArray(data.downloadInfos)) return origResp;
+                const byId = {};
+                data.downloadInfos.forEach(d => { byId[String(d.trackId)] = d; });
+                for (const tid in replMap) {
+                    log("Replacing track " + tid + " with url " + replMap[tid]);
+                    byId[tid] = { trackId: tid, urls: [replMap[tid]] };
+                }
+                data.downloadInfos = trackIds.map(tid => byId[String(tid)]).filter(Boolean);
+                return new Response(JSON.stringify(data), {
+                    status: origResp.status || 200,
+                    statusText: origResp.statusText || "",
+                    headers: { "Content-Type": "application/json" }
+                });
+            } catch (e) {
+                log("fetch interception error", e);
+                return originalFetch.apply(this, arguments);
+            }
+        };
+    })();
 
     // === хранение подменных треков ===
     /* из базы данных */
