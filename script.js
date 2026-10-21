@@ -96,8 +96,8 @@
           className: styles.message
         }, ...children);
 
-        const ctr = React.createElement(NotificationComponent.$W, {
-          message: content
+        const ctr = React.createElement(NotificationComponent.$W, { 
+          message: content 
         });
 
         notificationManager.notification({
@@ -124,7 +124,7 @@
         return new Promise((resolve, reject) => {
             const tx = db.transaction("tracks", 'readonly');
             const store = tx.objectStore("tracks");
-            const request = store.get(trackId);
+            const request = store.get(trackId); 
 
             request.onsuccess = () => {
                 if (request.result && request.result.data) {
@@ -172,7 +172,7 @@
     openDB().then(db => {
         const tx = db.transaction("tracks", 'readonly');
         const store = tx.objectStore("tracks");
-        const request = store.getAllKeys();
+        const request = store.getAllKeys(); 
 
         request.onsuccess = () => {
             localTrackIds = request.result;
@@ -180,7 +180,6 @@
             syncReplacementsWithPulseSync();
         };
     });
-
 
     /* из папки assets */
     let assetsTracks = {};
@@ -353,7 +352,7 @@
     function onContextMenuReplaceClick(trackId, item) {
         const replaced = getReplaced(trackId);
 
-        function reloadPlayer() {
+        function reloadPlayer() { 
             const e = window.sonataState?.queueState?.currentEntity?.value?.entity;
             const mediaPlayer = window.sonataState?.currentMediaPlayer?.value?.currentMediaPlayer;
             if (e && mediaPlayer && e.entityData?.meta?.id == trackId) {
@@ -384,7 +383,7 @@
                         accept: { 'audio/*': ['.mp3', '.wav', '.ogg', '.flac'] }
                     }
                 ],
-                multiple: false
+                multiple: false 
             })
             .then(async (fileHandles) => {
                 const fileHandle = fileHandles[0];
@@ -401,7 +400,7 @@
 
                 const tx = db.transaction("tracks", 'readwrite');
                 const store = tx.objectStore("tracks");
-
+                
                 store.put({ id: trackId, data: file });
                 api.report(trackId, true);
                 onSuccess();
@@ -418,12 +417,12 @@
         // если трек есть в базе данных, то удаление
         else if (replaced.src == "local") {
             localTrackIds = localTrackIds.filter(id => id != trackId);
-
+            
             if (localTracksUrlCache[trackId]) {
                 URL.revokeObjectURL(localTracksUrlCache[trackId]);
                 delete localTracksUrlCache[trackId];
             }
-
+            
             openDB().then(db => {
                 const tx = db.transaction("tracks", 'readwrite');
                 const store = tx.objectStore("tracks");
@@ -554,11 +553,11 @@
         const span = document.createElement("span");
 
         span.classList.add("Meta_replacedMarkContainer", "Meta_explicitMarkContainer__BxMQg")
-        span.innerHTML =
-        `<svg
-            class="ExplicitMarkIcon_explicitMark__0BPeQ Meta_explicitMark__ocnCV Rkdd2vKC_3xa1eUdRdHP"
-            focusable="false"
-            aria-label="Трек подменен аддоном ${ADDON_NAME}"
+        span.innerHTML = 
+        `<svg 
+            class="ExplicitMarkIcon_explicitMark__0BPeQ Meta_explicitMark__ocnCV Rkdd2vKC_3xa1eUdRdHP" 
+            focusable="false" 
+            aria-label="Трек подменен аддоном ${ADDON_NAME}" 
             data-test-id="REPLACED_MARK_ICON">
                 <use xlink:href="/icons/sprite.svg#edit_xxs">
                 </use>
@@ -577,18 +576,18 @@
             const tooltip = document.createElement("div");
             tooltip.id = "FckCensorTooltip";
             const bounding = ev.target.getBoundingClientRect();
-            tooltip.innerHTML =
-            `<div
-                class="QhR4J536RmNHBB5bZYwF TooltipWithTitle_root__7jLY3"
-                data-test-id="TOOLTIP_WITH_TITLE"
+            tooltip.innerHTML = 
+            `<div 
+                class="QhR4J536RmNHBB5bZYwF TooltipWithTitle_root__7jLY3" 
+                data-test-id="TOOLTIP_WITH_TITLE" 
                 tabindex="-1"
-                role="tooltip"
+                role="tooltip" 
                 style="position: absolute; left: 0px; top: 0px; visibility: visible; transform: translate(${bounding.left}px, ${bounding.top + bounding.height}px);">
-                <div
+                <div 
                     class="_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 _3_Mxw7Si7j2g4kWjlpR Fqg1VWCJUfasVVxqICeO">
-                    <div
+                    <div 
                         class="TooltipWithTitle_text__ElBtq">
-                        <span
+                        <span 
                             class="_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 ZYV27jeWd30QDXu4GhaH TooltipWithTitle_description__HsGcR"
                             >${ev.target.firstElementChild.ariaLabel}</span>
                     </div>
