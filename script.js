@@ -122,12 +122,9 @@
 
         const db = await openDB();
         return new Promise((resolve, reject) => {
-            const tx = db.transaction("tracks", 'readonly');
-            const store = tx.objectStore("tracks");
-            const request = store.get(trackId); 
-
+            const request = db.transaction("tracks", "readonly").objectStore("tracks").get(trackId);
             request.onsuccess = () => {
-                if (request.result && request.result.data) {
+                if (request.result?.data) {
                     const url = URL.createObjectURL(request.result.data);
                     localTracksUrlCache[trackId] = url;
                     resolve(url);
@@ -170,13 +167,10 @@
 
     // первоначальная загрузка треков из базы данных
     openDB().then(db => {
-        const tx = db.transaction("tracks", 'readonly');
-        const store = tx.objectStore("tracks");
-        const request = store.getAllKeys(); 
-
+        const request = db.transaction("tracks", "readonly").objectStore("tracks").getAllKeys();
         request.onsuccess = () => {
             localTrackIds = request.result;
-            log("Loaded ", Object.keys(localTrackIds).length, "local tracks");
+            log("Loaded ", localTrackIds.length, "local tracks");
             syncReplacementsWithPulseSync();
         };
     });
@@ -223,14 +217,14 @@
             console.error(`[${ADDON_NAME}] Ошибка при попытке получить список треков с удалённого репозитория: `, err)
         });
 
-    let syncTimeout = null;
-    function syncReplacementsWithPulseSync() {
-        if (syncTimeout) clearTimeout(syncTimeout);
-        syncTimeout = setTimeout(async () => {
+    let syncGeneration = 0;
+    async function syncReplacementsWithPulseSync() {
             if (!window.pulsesyncApi || typeof window.pulsesyncApi.setTrackReplacements !== 'function') {
                 log("PulseSync API for replacements not found.");
                 return;
             }
+
+            const myGen = ++syncGeneration;
 
             const replacementsMap = {};
 
@@ -251,9 +245,10 @@
                 }
             }
 
+            if (myGen !== syncGeneration) return;
+
             window.pulsesyncApi.setTrackReplacements(replacementsMap, ADDON_NAME);
             log(`Synced ${Object.keys(replacementsMap).length} replacements with PulseSync API`);
-        }, 100);
     }
 
 
@@ -361,11 +356,11 @@
             }
         }
 
-        function onSuccess() {
-            reloadPlayer();
+        async function onSuccess() {
+            await syncReplacementsWithPulseSync();
             updateReplaceItem(trackId, item);
             addReplacedMarks();
-            syncReplacementsWithPulseSync();
+            reloadPlayer();
         }
 
         function notificate(replaced) {
