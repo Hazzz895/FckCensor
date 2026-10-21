@@ -96,8 +96,8 @@
           className: styles.message
         }, ...children);
 
-        const ctr = React.createElement(NotificationComponent.$W, { 
-          message: content 
+        const ctr = React.createElement(NotificationComponent.$W, {
+          message: content
         });
 
         notificationManager.notification({
@@ -107,7 +107,7 @@
     }
 
     function postNotificationWithCover(caption, trackId) {
-        const currentTrack = window.pulsesyncApi?.getCurrentTrack();
+        const currentTrack = pulsesyncApi.getCurrentTrack();
         const coverUri = currentTrack && currentTrack.id == trackId ? currentTrack.coverUri : null;
         postNotification(caption, coverUri);
     }
@@ -124,7 +124,7 @@
         return new Promise((resolve, reject) => {
             const tx = db.transaction("tracks", 'readonly');
             const store = tx.objectStore("tracks");
-            const request = store.get(trackId); 
+            const request = store.get(trackId);
 
             request.onsuccess = () => {
                 if (request.result && request.result.data) {
@@ -168,6 +168,20 @@
         return dbPromise;
     }
 
+    // первоначальная загрузка треков из базы данных
+    openDB().then(db => {
+        const tx = db.transaction("tracks", 'readonly');
+        const store = tx.objectStore("tracks");
+        const request = store.getAllKeys();
+
+        request.onsuccess = () => {
+            localTrackIds = request.result;
+            log("Loaded ", Object.keys(localTrackIds).length, "local tracks");
+            syncReplacementsWithPulseSync();
+        };
+    });
+
+
     /* из папки assets */
     let assetsTracks = {};
     function updateAssetsTracks() {
@@ -183,6 +197,8 @@
                 syncReplacementsWithPulseSync();
             });
     }
+
+    updateAssetsTracks();
 
     /* из репозитория */
     let remoteTracks = {};
@@ -208,7 +224,6 @@
             console.error(`[${ADDON_NAME}] Ошибка при попытке получить список треков с удалённого репозитория: `, err)
         });
 
-    // === ИНТЕГРАЦИЯ С НАТИВНЫМ API PULSESYNC ===
     let syncTimeout = null;
     function syncReplacementsWithPulseSync() {
         if (syncTimeout) clearTimeout(syncTimeout);
@@ -242,20 +257,6 @@
         }, 100);
     }
 
-    // первоначальная загрузка треков из базы данных
-    openDB().then(db => {
-        const tx = db.transaction("tracks", 'readonly');
-        const store = tx.objectStore("tracks");
-        const request = store.getAllKeys();
-
-        request.onsuccess = () => {
-            localTrackIds = request.result;
-            log("Loaded ", Object.keys(localTrackIds).length, "local tracks");
-            syncReplacementsWithPulseSync();
-        };
-    });
-
-    updateAssetsTracks();
 
     // получение ссылки на трек
     function getReplaced(trackId) {
@@ -352,7 +353,7 @@
     function onContextMenuReplaceClick(trackId, item) {
         const replaced = getReplaced(trackId);
 
-        function reloadPlayer() { 
+        function reloadPlayer() {
             const e = window.sonataState?.queueState?.currentEntity?.value?.entity;
             const mediaPlayer = window.sonataState?.currentMediaPlayer?.value?.currentMediaPlayer;
             if (e && mediaPlayer && e.entityData?.meta?.id == trackId) {
@@ -383,7 +384,7 @@
                         accept: { 'audio/*': ['.mp3', '.wav', '.ogg', '.flac'] }
                     }
                 ],
-                multiple: false 
+                multiple: false
             })
             .then(async (fileHandles) => {
                 const fileHandle = fileHandles[0];
@@ -400,7 +401,7 @@
 
                 const tx = db.transaction("tracks", 'readwrite');
                 const store = tx.objectStore("tracks");
-                
+
                 store.put({ id: trackId, data: file });
                 api.report(trackId, true);
                 onSuccess();
@@ -417,12 +418,12 @@
         // если трек есть в базе данных, то удаление
         else if (replaced.src == "local") {
             localTrackIds = localTrackIds.filter(id => id != trackId);
-            
+
             if (localTracksUrlCache[trackId]) {
                 URL.revokeObjectURL(localTracksUrlCache[trackId]);
                 delete localTracksUrlCache[trackId];
             }
-            
+
             openDB().then(db => {
                 const tx = db.transaction("tracks", 'readwrite');
                 const store = tx.objectStore("tracks");
@@ -540,7 +541,7 @@
                     }
                 }
             })
-            
+
             addReplacedMarks(mutation.target);
         });
     });
@@ -553,11 +554,11 @@
         const span = document.createElement("span");
 
         span.classList.add("Meta_replacedMarkContainer", "Meta_explicitMarkContainer__BxMQg")
-        span.innerHTML = 
-        `<svg 
-            class="ExplicitMarkIcon_explicitMark__0BPeQ Meta_explicitMark__ocnCV Rkdd2vKC_3xa1eUdRdHP" 
-            focusable="false" 
-            aria-label="Трек подменен аддоном ${ADDON_NAME}" 
+        span.innerHTML =
+        `<svg
+            class="ExplicitMarkIcon_explicitMark__0BPeQ Meta_explicitMark__ocnCV Rkdd2vKC_3xa1eUdRdHP"
+            focusable="false"
+            aria-label="Трек подменен аддоном ${ADDON_NAME}"
             data-test-id="REPLACED_MARK_ICON">
                 <use xlink:href="/icons/sprite.svg#edit_xxs">
                 </use>
@@ -576,18 +577,18 @@
             const tooltip = document.createElement("div");
             tooltip.id = "FckCensorTooltip";
             const bounding = ev.target.getBoundingClientRect();
-            tooltip.innerHTML = 
-            `<div 
-                class="QhR4J536RmNHBB5bZYwF TooltipWithTitle_root__7jLY3" 
-                data-test-id="TOOLTIP_WITH_TITLE" 
+            tooltip.innerHTML =
+            `<div
+                class="QhR4J536RmNHBB5bZYwF TooltipWithTitle_root__7jLY3"
+                data-test-id="TOOLTIP_WITH_TITLE"
                 tabindex="-1"
-                role="tooltip" 
+                role="tooltip"
                 style="position: absolute; left: 0px; top: 0px; visibility: visible; transform: translate(${bounding.left}px, ${bounding.top + bounding.height}px);">
-                <div 
+                <div
                     class="_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 _3_Mxw7Si7j2g4kWjlpR Fqg1VWCJUfasVVxqICeO">
-                    <div 
+                    <div
                         class="TooltipWithTitle_text__ElBtq">
-                        <span 
+                        <span
                             class="_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 ZYV27jeWd30QDXu4GhaH TooltipWithTitle_description__HsGcR"
                             >${ev.target.firstElementChild.ariaLabel}</span>
                     </div>
@@ -645,7 +646,7 @@
         try {
             const playerContainers = node.querySelectorAll('[data-test-id="PLAYERBAR_DESKTOP"], [data-test-id="FULLSCREEN_PLAYER_FULLSCREEN_CONTENT"]');
             if (playerContainers.length == 0) return;
-            const entity = window.pulsesyncApi?.getCurrentTrack();
+            const entity = pulsesyncApi.getCurrentTrack();
             const replaced = isReplaced(entity?.id);
             playerContainers.forEach(ctr => {
                 if (replaced) {
@@ -663,12 +664,10 @@
         }
     }
 
-    if (window.pulsesyncApi && window.pulsesyncApi._waitForPlayer) {
-        window.pulsesyncApi._waitForPlayer(player => {
-            updatePlayerbarReplacedMark()
-            player.state?.queueState?.currentEntity?.onChange(() => updatePlayerbarReplacedMark())
-        })
-    }
+    window.pulsesyncApi._waitForPlayer(player => {
+        updatePlayerbarReplacedMark()
+        player.state?.queueState?.currentEntity?.onChange(() => updatePlayerbarReplacedMark())
+    })
 
     addReplacedMarks();
 })();
