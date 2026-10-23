@@ -7,7 +7,10 @@ const addonConfig = {
     name: 'FckCensor',
     description: 'Автоматически убирает цензуру и позволяет делать это вручную.',
     version: '2.0.0',
-    author: 'Hazzz895',
+    author: [
+        'Hazzz895',
+        'forea.adoxid'
+    ],
     type: 'script',
     requirements: {
         minHostApi: 1,
