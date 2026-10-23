@@ -1,7 +1,6 @@
 import { IS_DEVELOPMENT_BUILD, SECRET_GROQ_TOKEN } from "./build-info.js"
 
 const addonConfig = {
-    beta: 2,
     id: 'fckcensor',
     directoryName: 'fckcensor',
     name: 'FckCensor',
