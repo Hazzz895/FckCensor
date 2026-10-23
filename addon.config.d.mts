@@ -1,19 +1,4 @@
-declare const addonConfig: {
-    id: string
-    directoryName: string
-    name: string
-    description: string
-    version: string
-    author: string | string[]
-    requirements: { minHostApi: number; capabilities: string[] }
-    type: 'web-addon' | 'script' | 'theme' | 'library' | string
-    image: string
-    banner: string
-    libraryLogo: string
-    tags: string[]
-    dependencies: string[]
-    allowedUrls: string[]
-    supportedVersions: string[]
-}
+import type { AddonManifest } from '@pulsesync/addon-sdk/vite'
 
+declare const addonConfig: AddonManifest & { storeAddonId: string }
 export default addonConfig

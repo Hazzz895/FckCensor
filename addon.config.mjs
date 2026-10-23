@@ -1,7 +1,7 @@
 import { IS_DEVELOPMENT_BUILD, SECRET_GROQ_TOKEN } from "./build-info.js"
 
 const addonConfig = {
-    id: 'fckcensor',
+    id: 'dbcc49253774bd2d29f760e1',
     directoryName: 'fckcensor',
     name: 'FckCensor',
     description: 'Автоматически убирает цензуру и позволяет делать это вручную.',
@@ -19,7 +19,6 @@ const addonConfig = {
     banner: 'banner.png',
     libraryLogo: '',
     tags: ['Info', 'Script', 'Tools'],
-    dependencies: [],
     allowedUrls: [
         'https://github.com/',
         'https://raw.githubusercontent.com/',
@@ -28,8 +27,7 @@ const addonConfig = {
         'https://genius.com/',
         'https://lrclib.net/',
     ],
-    supportedVersions: [],
-    conflictsWith: [],
+    storeAddonId: '78d083c5-0510-4c41-b3de-41aab30a9fc5'
 }
 
 if (addonConfig.beta) {
