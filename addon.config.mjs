@@ -37,8 +37,6 @@ if (addonConfig.beta) {
         addonConfig.name += `.${addonConfig.beta}`
     }
     addonConfig.name += ']'
-
-    addonConfig.conflictsWith.push('78d083c5-0510-4c41-b3de-41aab30a9fc5')
 }
 
 if (SECRET_GROQ_TOKEN) {
