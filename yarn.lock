@@ -45,17 +45,17 @@
     "@parcel/watcher-win32-arm64" "2.6.0"
     "@parcel/watcher-win32-x64" "2.6.0"
 
-"@pulsesync/addon-sdk@0.15.0":
-  version "0.15.0"
-  resolved "https://registry.npmjs.org/@pulsesync/addon-sdk/-/addon-sdk-0.15.0.tgz"
-  integrity sha512-BVcI4xVq45mr9MX4+dK8OXAzTHKQLbCOfiTkICqaXNI8pThhscrEc/+VIWP7sY1d66NZUnw45RwIWaM44gCIOA==
+"@pulsesync/addon-sdk@^0.16.0":
+  version "0.16.0"
+  resolved "https://registry.npmjs.org/@pulsesync/addon-sdk/-/addon-sdk-0.16.0.tgz"
+  integrity sha512-Aq4P3eIG3pDu01Bx/YXGbZn2PcFJxBS3PY+dJqhD/Xy/btlINoRnuA+BNNIYYw3TLDD/qwRxp4E/g7BCGBGdIA==
   dependencies:
-    "@pulsesync/yamusic-types" "^0.6.0"
+    "@pulsesync/yamusic-types" "^0.7.0"
 
-"@pulsesync/yamusic-types@^0.6.0":
-  version "0.6.0"
-  resolved "https://registry.npmjs.org/@pulsesync/yamusic-types/-/yamusic-types-0.6.0.tgz"
-  integrity sha512-NHH1A7xTHetBT2Grc6GvdoGdUe2YhbjvEFDeG4FoLN3JLCQb2XNwwby7y8DCDhfM1gTvB8hOSy1uXHCMVNVfag==
+"@pulsesync/yamusic-types@^0.7.0":
+  version "0.7.0"
+  resolved "https://registry.npmjs.org/@pulsesync/yamusic-types/-/yamusic-types-0.7.0.tgz"
+  integrity sha512-+oHKu6P2VMA4rmxcNWxlPG3PFNe6a9MADRkl5Qdcv7CfrMsq1HGcR/8uoRmzJiBpKksNo3/59/Bzr2D2QZxQsA==
 
 "@rolldown/binding-win32-x64-msvc@1.2.12":
   version "1.2.12"
