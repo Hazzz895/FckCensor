@@ -50,7 +50,6 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
     readonly id
     readonly title
 
-    readonly sourceNode
     protected readonly scrim
     private fields: SpoofAlertEntityPropertyField[] = []
     private readonly coverField: SpoofAlertCoverField
@@ -66,7 +65,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         this.fields = this.fields.filter(x => x !== field)
     }
 
-    protected constructor(entity: T, type: SpoofableType, alertTitle: string, sourceNode?: HTMLElement, scrim?: HTMLElement) {
+    protected constructor(entity: T, type: SpoofableType, alertTitle: string, scrim?: HTMLElement) {
         this.realEntity = cloneEntity(entity)
         entity = cloneEntity(entity)
         // SDK reads return original DTOs; editors must show the saved override.
@@ -74,7 +73,6 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         if (savedData) Object.assign(entity, cloneEntity(savedData))
         this.entity = entity
         this.scrim = scrim
-        this.sourceNode = sourceNode
         this.type = type
         this.title = alertTitle
 

@@ -8,8 +8,8 @@ import { SpoofAlertArtistListField } from '../base/releases/artist/SpoofAlertArt
 import { isEmptyObject } from '@/utils/common'
 
 export class SpoofArtistAlert extends SpoofAlertBase<Artist> {
-    public constructor(data: Artist, scrim?: HTMLElement, artistNode?: HTMLElement) {
-        super(data, 'artist', 'Подмена исполнителя', artistNode, scrim)
+    public constructor(data: Artist, scrim?: HTMLElement) {
+        super(data, 'artist', 'Подмена исполнителя', scrim)
     }
 
     protected async onApply(spoofData: Artist) {

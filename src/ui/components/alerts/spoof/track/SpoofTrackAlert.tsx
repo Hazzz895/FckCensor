@@ -9,8 +9,8 @@ import { showNotificationWithCover, spoofAllNodesFor } from '@/utils/ui-utils'
 import { ActionButton } from '../../alerts'
 
 export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
-    public constructor(data: Track, scrim?: HTMLElement, trackNode?: HTMLElement) {
-        super(data, 'track', 'Подмена трека', trackNode, scrim)
+    public constructor(data: Track, scrim?: HTMLElement) {
+        super(data, 'track', 'Подмена трека', scrim)
     }
 
     declare private spoofAudioField: SpoofAudioField
