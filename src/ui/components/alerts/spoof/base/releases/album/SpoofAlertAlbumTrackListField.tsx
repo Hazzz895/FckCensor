@@ -25,6 +25,7 @@ export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField<T
     public tracks?: Track[][] | null
     private readonly trackMetadata = new Map<string, Track>()
     private readonly requestedTrackIds = new Set<string>()
+    private tracksEdited = false
 
     public getDisplayTrack(track?: Track): Track | undefined {
         if (!track) return undefined
@@ -59,15 +60,29 @@ export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField<T
             getAlbumTracks(this.alert.album.id)
                 .then(a => {
                     try {
-                        this.tracks = a?.volumes ?? null
+                        const loadedVolumes = a?.volumes ?? null
+                        if (this.tracksEdited) {
+                            const addedVolumes = this.tracks ?? []
+                            this.tracks = loadedVolumes ?? []
+                            for (const disk of addedVolumes) {
+                                if (disk.length === 0) {
+                                    this.tracks.push([])
+                                } else {
+                                    if (this.tracks.length === 0) this.tracks.push([])
+                                    this.tracks[this.tracks.length - 1].push(...disk)
+                                }
+                            }
+                        } else {
+                            this.tracks = loadedVolumes
+                        }
                     } catch {
-                        this.tracks = null
+                        if (!this.tracksEdited) this.tracks = null
                     } finally {
                         this.reRenderElement()
                     }
                 })
                 .catch(err => {
-                    this.tracks = null
+                    if (!this.tracksEdited) this.tracks = null
                     error(err)
                     this.reRenderElement()
                 })
@@ -90,12 +105,16 @@ export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField<T
     }
 
     private onAddDiskClick() {
-        this.tracks?.push([])
+        this.tracksEdited = true
+        this.tracks ??= []
+        this.tracks.push([])
         this.reRenderElement()
     }
 
     protected onReleaseAdd(track: Track): void {
-        if (!this.tracks) return
+        this.tracksEdited = true
+        this.tracks ??= []
+        if (this.tracks.length === 0) this.tracks.push([])
         this.tracks[this.tracks.length - 1].push(track)
     }
 

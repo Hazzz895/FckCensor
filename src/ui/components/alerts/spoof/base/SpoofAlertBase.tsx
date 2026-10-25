@@ -305,6 +305,10 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         return false
     }
 
+    protected shouldIncludeSpoofField(propertyName: string | undefined, hasDiffs: boolean): boolean {
+        return hasDiffs
+    }
+
     protected async afterSpoofChanged(): Promise<void> {}
 
     private getSpoofData(): T | null {
@@ -312,7 +316,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
         for (const field of this.fields) {
             if (!field.propertyName) continue
             const prop = field.getValue()
-            if (field.hasDiffs(prop)) {
+            if (this.shouldIncludeSpoofField(field.propertyName, field.hasDiffs(prop))) {
                 ;(changedData as any)[field.propertyName] = prop
             }
         }

@@ -32,7 +32,7 @@ export async function createTrackSpoofAlertFor(scrim?: HTMLElement, trackNode?: 
     }
 
     if (trackData !== null) {
-        return new SpoofTrackAlert(trackData, scrim, trackNode)
+        return new SpoofTrackAlert(trackData, scrim)
     }
 
     showNoDataError('track')
@@ -44,7 +44,7 @@ export function createArtistSpoofAlertFor(scrim?: HTMLElement, artistData?: Arti
     }
 
     if (artistData) {
-        return new SpoofArtistAlert(artistData, scrim, scrim)
+        return new SpoofArtistAlert(artistData, scrim)
     }
 
     showNoDataError('artist')
@@ -56,7 +56,7 @@ export function createAlbumSpoofAlertFor(scrim?: HTMLElement, albumData?: Album 
     }
 
     if (albumData) {
-        return new SpoofAlbumAlert(albumData, scrim, scrim)
+        return new SpoofAlbumAlert(albumData, scrim)
     }
 
     showNoDataError('album')

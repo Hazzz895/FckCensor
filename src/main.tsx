@@ -15,6 +15,7 @@ import { prepareSettingsOptions } from './hooks/ui/settings'
 import { settings } from './settings'
 import { startSdkBridge, requestSdkSync, flushSdk } from './sdk/bridge'
 import { hookResources, stopResourceHooks, toggleLiteMode } from './hooks/resources'
+import { prepeareButtons } from './hooks/ui/buttons'
 
 export default defineAddon({
     id: addonConfig.id,
@@ -56,6 +57,7 @@ export default defineAddon({
             api.signal.throwIfAborted()
             startObserver()
             prepareBadges()
+            prepeareButtons()
             prepareTutorials()
             prepareOptions()
             prepareDisabledTracksObserver()

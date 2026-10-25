@@ -10,6 +10,7 @@ import addonConfig from '../../addon.config.mjs'
 import { showNotificationSafe } from '@/utils/ui-utils'
 import { FALLBACK_ENTITY } from '@/api/dto/fallback'
 import { settings } from '@/settings'
+import { isCustomEntity } from '@/ui/components/alerts/spoof/custom-entities/custom-entity-id-counter'
 
 const heavyMethodsUnhooks: (() => void)[] = []
 let hookGeneration = 0
@@ -60,32 +61,62 @@ export function stopResourceHooks() {
 }
 
 class GetTracksMetaHook extends FunctionHook {
+    private customTrackIdsByRequest = new WeakMap<object, string[]>()
+
     public before(originalMethod: Function, request: { trackIds?: TrackId[] }) {
         if (!Array.isArray(request?.trackIds)) {
             return
         }
 
         const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+        const customTrackIds: string[] = []
 
-        request.trackIds = request.trackIds.map(item => {
-            if (typeof item !== 'string') return item
+        request.trackIds = request.trackIds.flatMap<TrackId>(item => {
+            if (typeof item !== 'string') return [item]
 
             const colonIndex = item.indexOf(':')
-            if (colonIndex === -1) return item
+            if (colonIndex === -1) {
+                if (isCustomEntity(Number(item))) {
+                    customTrackIds.push(item)
+                    return []
+                }
+                return [item]
+            }
 
             const trackId = item.slice(0, colonIndex)
             const albumId = item.slice(colonIndex + 1)
 
-            if (UUID_REGEX.test(trackId) || albumId === String(FALLBACK_ENTITY.id)) {
-                return trackId
+            if (isCustomEntity(Number(trackId))) {
+                customTrackIds.push(trackId)
+                return []
             }
 
-            return item
+            if (UUID_REGEX.test(trackId) || albumId === String(FALLBACK_ENTITY.id) || isCustomEntity(Number(albumId))) {
+                return [trackId]
+            }
+
+            return [item]
         })
+
+        this.customTrackIdsByRequest.set(request, customTrackIds)
     }
 
-    public after(tracks: Track[]) {
+    public after(tracks: Track[], request?: { trackIds?: TrackId[] }) {
         if (Array.isArray(tracks)) {
+            const customTrackIds =
+                (request && this.customTrackIdsByRequest.get(request)) ??
+                request?.trackIds?.flatMap(item => {
+                    if (typeof item !== 'string') return []
+                    const trackId = item.split(':', 1)[0]
+                    return isCustomEntity(Number(trackId)) ? [trackId] : []
+                }) ??
+                []
+            if (request) this.customTrackIdsByRequest.delete(request)
+            for (const id of customTrackIds) {
+                const spoof = sources.getTrackSpoof(id)
+                if (spoof) tracks.push({ ...spoof, id: Number(id) })
+            }
+
             for (const t of tracks) {
                 try {
                     sources.spoofTrack(t)
@@ -97,6 +128,44 @@ class GetTracksMetaHook extends FunctionHook {
             sources.spoofTrack(tracks)
         }
         return tracks
+    }
+}
+
+class GetAlbumsHook extends FunctionHook {
+    private customAlbumIdsByRequest = new WeakMap<object, string[]>()
+
+    public before(_originalMethod: Function, request: { albumIds?: TrackId[] }) {
+        if (!Array.isArray(request?.albumIds)) return
+
+        const customAlbumIds: string[] = []
+        request.albumIds = request.albumIds.filter(id => {
+            if (!isCustomEntity(Number(id))) return true
+            customAlbumIds.push(String(id))
+            return false
+        })
+        this.customAlbumIdsByRequest.set(request, customAlbumIds)
+    }
+
+    public after(albums: Album[], request?: { albumIds?: TrackId[] }) {
+        if (!Array.isArray(albums)) return
+
+        const customAlbumIds =
+            (request && this.customAlbumIdsByRequest.get(request)) ??
+            request?.albumIds?.flatMap(id => (isCustomEntity(Number(id)) ? [String(id)] : [])) ??
+            []
+        if (request) this.customAlbumIdsByRequest.delete(request)
+        for (const id of customAlbumIds) {
+            const spoof = sources.getAlbumSpoof(id)
+            if (spoof) albums.push({ ...spoof, id: Number(id) })
+        }
+
+        for (const album of albums) {
+            try {
+                sources.spoofAlbum(album)
+            } catch (e) {
+                error(e)
+            }
+        }
     }
 }
 
@@ -125,6 +194,8 @@ function hookTrackResource(tr: any) {
 }
 
 function hookAlbumResource(ar: any) {
+    hookHeavyMethods(ar, new GetAlbumsHook(), 'getAlbums')
+
     hookHeavyMethods(
         ar,
         async (albums: any) => {
@@ -147,7 +218,6 @@ function hookAlbumResource(ar: any) {
                 }
             }
         },
-        'getAlbums',
         'getAlbumWithTracksIds',
         'getAlbumWithTracksIdsWithEtag',
     )

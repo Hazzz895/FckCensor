@@ -9,8 +9,8 @@ import { showNotificationWithCover, spoofAllNodesFor } from '@/utils/ui-utils'
 import { ActionButton } from '../../alerts'
 
 export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
-    public constructor(data: Track, scrim?: HTMLElement) {
-        super(data, 'track', 'Подмена трека', scrim)
+    public constructor(data: Track, scrim?: HTMLElement, title: string = 'Подмена трека') {
+        super(data, 'track', title, scrim)
     }
 
     declare private spoofAudioField: SpoofAudioField
@@ -58,7 +58,7 @@ export class SpoofTrackAlert extends SpoofEntityWithArtistsAlert<Track> {
         await super.onApplyInternal()
     }
 
-    async onApply(spoofData: Track | null) {
+    protected async onApply(spoofData: Track | null) {
         if (spoofData) {
             await localSource.pushTrackSpoof(spoofData, this.id)
         } else {

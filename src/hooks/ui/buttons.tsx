@@ -1,5 +1,9 @@
 import { JSX } from '@/jsx-runtime'
 import { listenAddNodes } from './observer'
+import { Artist, OuterArtist, SpoofableEntity, SpoofableType } from '@/types'
+import { createCustomAlbumAlertFor, createCustomTrackAlertFor } from '@/ui/components/alerts/spoof/custom-entities/custom-entities-alert'
+import { getSdkApi } from '@/sdk/lifecycle'
+import { localizeSpoofableType } from '@/utils/common'
 
 export function prepeareButtons() {
     /*listenAddNodes(el => {
@@ -9,15 +13,38 @@ export function prepeareButtons() {
                 <AddTrackButton>Добавить трек</AddTrackButton>
             </div>,
         )
-    }, ':is(.PageHeaderArtist_root__QhL_a, .CommonAlbumPage_header__jS_be) [data-test-id="BASE_PAGE_HEADER_CONTROLS"]')
+    }, ':is(.PageHeaderArtist_root__QhL_a, .CommonAlbumPage_header__jS_be) [data-test-id="BASE_PAGE_HEADER_CONTROLS"]')*/
 
     listenAddNodes(el => {
-        el.appendChild(<AddTrackButton style="margin-left: auto">Добавить трек</AddTrackButton>)
+        addAddCustomEntityButton(el, 'track', createCustomTrackAlertFor)
     }, '[data-test-id="ARTIST_TRACKS_PAGE"] [data-test-id="TEXT_HEADER"]:not(:has([fckcensorbutton])')
 
     listenAddNodes(el => {
-        el.appendChild(<AddTrackButton style="margin-left: auto">Добавить альбом</AddTrackButton>)
+        addAddCustomEntityButton(el, 'album', createCustomAlbumAlertFor)
     }, '[data-test-id="ARTIST_ALBUMS_PAGE"] [data-test-id="TEXT_HEADER"]:not(:has([fckcensorbutton])')
+}
+
+function addAddCustomEntityButton(container: HTMLElement, type: SpoofableType, listener: (artist: Artist, scrim: HTMLElement | undefined) => any) {
+    function onClick(e: Event) {
+        const el = e.currentTarget as HTMLElement
+        if (!el) return;
+        getSdkApi()?.pulsesyncApi?.getPageEntity().then(
+            pageData => {
+                if (pageData?.type != 'artist') return
+                let entity = pageData.entity as OuterArtist | Artist;
+                listener("artist" in entity ? entity.artist : entity, el)
+            }
+        )
+    }
+    
+    const button = <AddTrackButton
+        style="margin-left: auto"
+        onclick={onClick}>
+            Добавить {localizeSpoofableType(type)}
+    </AddTrackButton>;
+
+    container.appendChild(button)
+    return button;
 }
 
 function AddTrackButton({ children, ...props }: JSX.HTMLAttributes) {
