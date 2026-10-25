@@ -2,7 +2,7 @@ import { IS_DEVELOPMENT_BUILD, SECRET_GROQ_TOKEN } from "./build-info.js"
 
 const addonConfig = {
     id: 'dbcc49253774bd2d29f760e1',
-    directoryName: 'fckcensor',
+    directoryName: '78d083c5-0510-4c41-b3de-41aab30a9fc5',
     name: 'FckCensor',
     description: 'Автоматически убирает цензуру и позволяет делать это вручную.',
     version: '2.0.0',
