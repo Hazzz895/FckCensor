@@ -18,7 +18,7 @@ export const RAW_GITHUB_BASE_URI = 'https://raw.githubusercontent.com/'
 export const ADDON_PATH = 'Hazzz895/FckCensor'
 export const DATA_PATH = 'Hazzz895/FckCensorData'
 
-const GITHUB_BRANCH = 'v2'
+const GITHUB_BRANCH = 'main'
 export const ADDON_GITHUB_FILE_BASE_URI = GITHUB_BASE_URI + ADDON_PATH + '/blob/' + GITHUB_BRANCH + '/'
 export const ADDON_FAQ_URI = ADDON_GITHUB_FILE_BASE_URI + 'FAQ.md'
 
