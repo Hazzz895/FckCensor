@@ -2,7 +2,7 @@ import { JSX } from '@/jsx-runtime'
 import { listenAddNodes } from './observer'
 
 export function prepeareButtons() {
-    listenAddNodes(el => {
+    /*listenAddNodes(el => {
         el.classList.add('PageHeaderPlaylist_controls__uSwwK')
         el.appendChild(
             <div class="PageHeaderPlaylist_ugcControls__9q8Ne">
