@@ -98,6 +98,24 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
             addPropButton.parentElement!.insertBefore(ts.addPropertyField(new SpoofAlertCustomPropertyField(ts)), addPropButton)
         }
 
+        const jsonContent = (
+            <pre style="color: var(--ym-controls-color-secondary-text-enabled_variant)" class={'EditContentModal_input__8O8GH ' + styles.i} />
+        )
+        let jsonStructureRendered = false
+        const jsonStructure = (
+            <details
+                ontoggle={(ev: Event) => {
+                    const details = ev.currentTarget as HTMLDetailsElement
+                    if (!details.open || jsonStructureRendered) return
+                    jsonStructureRendered = true
+                    jsonContent.textContent = JSON.stringify((this.realEntity as any)?.toJSON?.() || this.entity, null, 4).replace('\\n', '\n')
+                }}
+            >
+                <summary class="EditContentModal_field__rexIL">JSON-структура</summary>
+                {jsonContent}
+            </details>
+        )
+
         const titleField = this.addPropertyField(
             new SpoofAlertInputField(this, type === 'artist' ? 'name' : 'title', type === 'artist' ? 'Имя исполнителя' : 'Название'),
         )
@@ -119,8 +137,6 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
                 customFields.push(fieldElement)
             }
         }
-
-        let jsonStructure = JSON.stringify((this.realEntity as any)?.toJSON?.() || this.entity, null, 4).replace('\\n', '\n')
 
         let liteModeTooltip = null
         if (settings.store.liteMode && shouldShowTutorial(LITE_MODE_WARNING)) {
@@ -157,17 +173,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
                             </a>
                         </div>
                     </summary>
-                    {jsonStructure && (
-                        <details>
-                            <summary class="EditContentModal_field__rexIL">JSON-структура</summary>
-                            <pre
-                                style="color: var(--ym-controls-color-secondary-text-enabled_variant)"
-                                class={'EditContentModal_input__8O8GH ' + styles.i}
-                            >
-                                {jsonStructure}
-                            </pre>
-                        </details>
-                    )}
+                    {jsonStructure}
                     {customFields}
                     {addPropButton}
                 </details>

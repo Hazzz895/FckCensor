@@ -2,6 +2,7 @@ import { JSX } from '@/jsx-runtime'
 import { listenAddNodes } from './observer'
 import { getEntityIdFromNode, getContextMenuSource } from '@/utils/ui-utils'
 import { createAlbumSpoofAlertFor, createArtistSpoofAlertFor, createTrackSpoofAlertFor } from '@/ui/components/alerts/spoof/spoof-alert'
+import type { Album } from '@/types'
 import type { TrackMenuItem, AlbumMenuItem } from '@pulsesync/addon-sdk'
 import { getTracks, getAlbumTracks, getArtist } from '@/utils/music'
 
@@ -9,8 +10,10 @@ async function editTrack(id: string) {
     const [track] = await getTracks(id)
     createTrackSpoofAlertFor(undefined, undefined, track ?? null)
 }
-export async function editAlbum(id: string) {
-    createAlbumSpoofAlertFor(undefined, await getAlbumTracks(id))
+export async function editAlbum(id: string, album?: Omit<Album, 'id'> & { id: string | number }) {
+    const albumData =
+        album && Array.isArray(album.artists) ? { ...album, id: Number(album.id), volumes: undefined } : await getAlbumTracks(id)
+    createAlbumSpoofAlertFor(undefined, albumData)
 }
 export const trackMenuItems: TrackMenuItem[] = [
     {
@@ -27,7 +30,7 @@ export const albumMenuItems: AlbumMenuItem[] = [
         label: 'Подменить альбом',
         icon: 'edit',
         position: 3,
-        onClick: ({ album }) => editAlbum(album.id),
+        onClick: ({ album }) => editAlbum(String(album.id), album),
     },
 ]
 export function prepareOptions() {

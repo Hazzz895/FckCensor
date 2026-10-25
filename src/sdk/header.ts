@@ -3,6 +3,7 @@ import { IconButton, Tooltip, usePage, type SlotProps } from '@pulsesync/addon-s
 import { editAlbum } from '@/hooks/ui/options'
 import { getArtist } from '@/utils/music'
 import { createArtistSpoofAlertFor } from '@/ui/components/alerts/spoof/spoof-alert'
+import type { Album } from '@/types'
 
 export function SpoofHeaderAction(_props: SlotProps<'entityHeaderControls'>) {
     const page = usePage()
@@ -16,7 +17,7 @@ export function SpoofHeaderAction(_props: SlotProps<'entityHeaderControls'>) {
         size: 's',
         variant: 'outline',
         onClick: async () => {
-            if (page.type === 'album') await editAlbum(String(id))
+            if (page.type === 'album') await editAlbum(String(id), page.entity as Album)
             else createArtistSpoofAlertFor(undefined, await getArtist(String(id)))
         },
     })

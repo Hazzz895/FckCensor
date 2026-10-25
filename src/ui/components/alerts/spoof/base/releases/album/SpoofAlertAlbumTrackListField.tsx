@@ -15,8 +15,10 @@ export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField<T
     public constructor(alert: SpoofAlertBase) {
         super(alert, 'Треки альбома', 'track')
         const originalVolumes = alert.getOriginalValue('volumes') as Track[][] | undefined
-        for (const track of originalVolumes?.flat() ?? []) {
-            this.trackMetadata.set(String(track.id), cloneEntity(track))
+        for (const disk of originalVolumes ?? []) {
+            for (const track of disk) {
+                this.trackMetadata.set(String(track.id), track)
+            }
         }
     }
 
@@ -32,14 +34,20 @@ export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField<T
     }
 
     private loadTrackMetadata() {
-        const ids = [...new Set(this.tracks?.flat().map(track => String(track.id)) ?? [])].filter(
-            id => !this.requestedTrackIds.has(id) && !this.getDisplayTrack({ id } as Track)?.title,
-        )
-        if (!ids.length) return
+        const ids = new Set<string>()
+        for (const disk of this.tracks ?? []) {
+            for (const track of disk) {
+                const id = String(track.id)
+                if (this.requestedTrackIds.has(id) || this.trackMetadata.get(id)?.title) continue
+                if (track.title) this.trackMetadata.set(id, track)
+                else ids.add(id)
+            }
+        }
+        if (!ids.size) return
         ids.forEach(id => this.requestedTrackIds.add(id))
         void getTracks(...ids)
             .then(tracks => {
-                for (const track of tracks) this.trackMetadata.set(String(track.id), cloneEntity(track))
+                for (const track of tracks) this.trackMetadata.set(String(track.id), track)
                 this.reRenderElement()
             })
             .catch(error)
@@ -63,19 +71,17 @@ export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField<T
                     error(err)
                     this.reRenderElement()
                 })
-            return [new DiskNode(this, Array(this.alert.album.trackCount).fill(undefined), 0, undefined)]
+            return [new DiskNode(this, [undefined], 0, undefined)]
         } else if (this.tracks == null) {
             return []
         } else {
-            for (const track of this.tracks.flat()) {
-                if (track.title) this.trackMetadata.set(String(track.id), cloneEntity(track))
-            }
             this.loadTrackMetadata()
             return this.tracks.map((v, i) => new DiskNode(this, v, i, this.tracks!.length > 1 ? i : undefined))
         }
     }
 
     public getValue() {
+        if (this.tracks == null) return this.originalValue ?? []
         return (this.releaseNodes as DiskNode[]).map(node => node.getValue().map(x => ({ id: x.id }) as Track)).filter(x => x.length > 0)
     }
 
@@ -150,23 +156,33 @@ export class DiskNode extends ElementWrap implements IGetValue<Track[]> {
                 </div>
             ) : undefined
         const totalDisks = this.field.tracks?.length ?? 1
-        return (
-            <div style="width: 100%">
-                {header}
-                {this.disk.map((t, i) => (
+        const element = <div style="width: 100%">{header}</div>
+        let index = 0
+        const appendBatch = () => {
+            if (!element.isConnected) return
+
+            const end = Math.min(index + 20, this.disk.length)
+            for (; index < end; index++) {
+                const trackIndex = index
+                const track = this.disk[trackIndex]
+                element.appendChild(
                     <ReleaseNode
-                        onIndexChange={delta => this.field.moveTrack(this.diskIndex, i, delta)}
+                        onIndexChange={delta => this.field.moveTrack(this.diskIndex, trackIndex, delta)}
                         onremove={() => {
-                            this.disk.splice(i, 1)
+                            this.disk.splice(trackIndex, 1)
                             this.reRenderElement()
                         }}
-                        release={this.field.getDisplayTrack(t)}
-                        disableUp={this.diskIndex === 0 && i === 0}
-                        disableDown={this.diskIndex === totalDisks - 1 && i === this.disk.length - 1}
-                    />
-                ))}
-            </div>
-        )
+                        release={this.field.getDisplayTrack(track)}
+                        disableUp={this.diskIndex === 0 && trackIndex === 0}
+                        disableDown={this.diskIndex === totalDisks - 1 && trackIndex === this.disk.length - 1}
+                    />,
+                )
+            }
+
+            if (index < this.disk.length) requestAnimationFrame(appendBatch)
+        }
+        requestAnimationFrame(appendBatch)
+        return element
     }
 
     public getValue(): Track[] {
