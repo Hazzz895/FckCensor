@@ -97,3 +97,13 @@ export function formatBytes(value: number) {
     for (; value >= 1024 && unitIndex < units.length - 1;) ((value /= 1024), unitIndex++)
     return ''.concat(value.toFixed(2), ' ').concat(units[unitIndex])
 }
+
+export function openExternalLink(link: string) {
+    const a = document.createElement('a');
+    a.href = link;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+}
