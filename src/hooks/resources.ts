@@ -8,16 +8,26 @@ import { insert } from '@/utils/common'
 import { getAlbums, getTracks } from '@/utils/music'
 import addonConfig from '../../addon.config.mjs'
 import { showNotificationSafe } from '@/utils/ui-utils'
-import { FALLBACK_ENTITY } from '@/api/dto/fallback'
 import { settings } from '@/settings'
-import { isCustomEntity } from '@/ui/components/alerts/spoof/custom-entities/custom-entity-id-counter'
+import {
+    CustomIdsStash,
+    requestFingerprint,
+    splitAlbumIds,
+    splitTrackIds,
+    takeCustomIds,
+} from '@/ui/components/alerts/spoof/custom-entities/custom-entity-requests'
+import { getCustomAlbum, getCustomTrack } from '@/ui/components/alerts/spoof/custom-entities/custom-entity-build'
 
 const heavyMethodsUnhooks: (() => void)[] = []
 let hookGeneration = 0
 let hooksStarting: Promise<void>[] = []
 let registration: { generation: number; promise: Promise<void> } | undefined
+
+class EarlyResponse {
+    constructor(public readonly result: unknown) {}
+}
 class FunctionHook {
-    before(_original: Function, _request: any): any {}
+    before(_original: Function, _request: any): EarlyResponse | void {}
     after(_result: any, _request?: any): any {}
 }
 type Hook = FunctionHook | ((result: any, request: any) => any)
@@ -35,8 +45,13 @@ function hookHeavyMethods(resource: PulseSyncResourceTarget['resource'], hook: H
                         hook instanceof FunctionHook
                             ? async ({ request }) => {
                                   const mutable = structuredClone(request)
-                                  await hook.before(() => {}, mutable)
-                                  return { kind: 'continue', request: mutable }
+                                  const early = await hook.before(() => {}, mutable)
+                                  if (early instanceof EarlyResponse) {
+                                      rememberResponse(early.result)
+                                      requestSdkSync(false)
+                                      return { kind: 'respond' as const, result: JSON.parse(JSON.stringify(early.result)) }
+                                  }
+                                  return { kind: 'continue' as const, request: mutable }
                               }
                             : undefined,
                     after: async ({ result, request }) => {
@@ -60,70 +75,47 @@ export function stopResourceHooks() {
     for (const cleanup of heavyMethodsUnhooks.splice(0)) cleanup()
 }
 
-class GetTracksMetaHook extends FunctionHook {
-    private customTrackIdsByRequest = new WeakMap<object, string[]>()
+function spoofTrackSafe(track: Track) {
+    try {
+        sources.spoofTrack(track)
+    } catch (e) {
+        error(e)
+    }
+}
 
-    public before(originalMethod: Function, request: { trackIds?: TrackId[] }) {
+class GetTracksMetaHook extends FunctionHook {
+    private readonly pendingCustomIds = new CustomIdsStash()
+
+    public before(_originalMethod: Function, request: { trackIds?: TrackId[] }) {
         if (!Array.isArray(request?.trackIds)) {
             return
         }
 
-        const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-        const customTrackIds: string[] = []
+        const { rest, customIds } = splitTrackIds(request.trackIds)
+        request.trackIds = rest as TrackId[]
+        if (!customIds.length) return
 
-        request.trackIds = request.trackIds.flatMap<TrackId>(item => {
-            if (typeof item !== 'string') return [item]
+        if (!rest.length) {
+            const tracks = customIds.flatMap(id => getCustomTrack(id) ?? [])
+            tracks.forEach(spoofTrackSafe)
+            return new EarlyResponse(tracks)
+        }
 
-            const colonIndex = item.indexOf(':')
-            if (colonIndex === -1) {
-                if (isCustomEntity(Number(item))) {
-                    customTrackIds.push(item)
-                    return []
-                }
-                return [item]
-            }
-
-            const trackId = item.slice(0, colonIndex)
-            const albumId = item.slice(colonIndex + 1)
-
-            if (isCustomEntity(Number(trackId))) {
-                customTrackIds.push(trackId)
-                return []
-            }
-
-            if (UUID_REGEX.test(trackId) || albumId === String(FALLBACK_ENTITY.id) || isCustomEntity(Number(albumId))) {
-                return [trackId]
-            }
-
-            return [item]
-        })
-
-        this.customTrackIdsByRequest.set(request, customTrackIds)
+        this.pendingCustomIds.put(requestFingerprint(rest), customIds)
     }
 
     public after(tracks: Track[], request?: { trackIds?: TrackId[] }) {
         if (Array.isArray(tracks)) {
-            const customTrackIds =
-                (request && this.customTrackIdsByRequest.get(request)) ??
-                request?.trackIds?.flatMap(item => {
-                    if (typeof item !== 'string') return []
-                    const trackId = item.split(':', 1)[0]
-                    return isCustomEntity(Number(trackId)) ? [trackId] : []
-                }) ??
-                []
-            if (request) this.customTrackIdsByRequest.delete(request)
-            for (const id of customTrackIds) {
-                const spoof = sources.getTrackSpoof(id)
-                if (spoof) tracks.push({ ...spoof, id: Number(id) })
+            const present = new Set(tracks.map(t => String(t.id)))
+            for (const id of takeCustomIds(this.pendingCustomIds, request?.trackIds, splitTrackIds)) {
+                if (present.has(id)) continue
+                const track = getCustomTrack(id)
+                if (!track) continue
+                tracks.push(track)
+                present.add(id)
             }
 
-            for (const t of tracks) {
-                try {
-                    sources.spoofTrack(t)
-                } catch (e) {
-                    error(e)
-                }
-            }
+            tracks.forEach(spoofTrackSafe)
         } else {
             sources.spoofTrack(tracks)
         }
@@ -131,41 +123,46 @@ class GetTracksMetaHook extends FunctionHook {
     }
 }
 
+function spoofAlbumSafe(album: Album) {
+    try {
+        sources.spoofAlbum(album)
+    } catch (e) {
+        error(e)
+    }
+}
+
 class GetAlbumsHook extends FunctionHook {
-    private customAlbumIdsByRequest = new WeakMap<object, string[]>()
+    private readonly pendingCustomIds = new CustomIdsStash()
 
     public before(_originalMethod: Function, request: { albumIds?: TrackId[] }) {
         if (!Array.isArray(request?.albumIds)) return
 
-        const customAlbumIds: string[] = []
-        request.albumIds = request.albumIds.filter(id => {
-            if (!isCustomEntity(Number(id))) return true
-            customAlbumIds.push(String(id))
-            return false
-        })
-        this.customAlbumIdsByRequest.set(request, customAlbumIds)
+        const { rest, customIds } = splitAlbumIds(request.albumIds)
+        request.albumIds = rest as TrackId[]
+        if (!customIds.length) return
+
+        if (!rest.length) {
+            const albums = customIds.flatMap(id => getCustomAlbum(id) ?? [])
+            albums.forEach(spoofAlbumSafe)
+            return new EarlyResponse(albums)
+        }
+
+        this.pendingCustomIds.put(requestFingerprint(rest), customIds)
     }
 
     public after(albums: Album[], request?: { albumIds?: TrackId[] }) {
         if (!Array.isArray(albums)) return
 
-        const customAlbumIds =
-            (request && this.customAlbumIdsByRequest.get(request)) ??
-            request?.albumIds?.flatMap(id => (isCustomEntity(Number(id)) ? [String(id)] : [])) ??
-            []
-        if (request) this.customAlbumIdsByRequest.delete(request)
-        for (const id of customAlbumIds) {
-            const spoof = sources.getAlbumSpoof(id)
-            if (spoof) albums.push({ ...spoof, id: Number(id) })
+        const present = new Set(albums.map(a => String(a.id)))
+        for (const id of takeCustomIds(this.pendingCustomIds, request?.albumIds, splitAlbumIds)) {
+            if (present.has(id)) continue
+            const album = getCustomAlbum(id)
+            if (!album) continue
+            albums.push(album)
+            present.add(id)
         }
 
-        for (const album of albums) {
-            try {
-                sources.spoofAlbum(album)
-            } catch (e) {
-                error(e)
-            }
-        }
+        albums.forEach(spoofAlbumSafe)
     }
 }
 
@@ -344,9 +341,10 @@ async function addInsertionsToTracksList(tracks: Track[], artistId: string) {
     if (isSdkLibraryArtist(artistId)) return
     const insertions = sources.getArtistInsertions(artistId)?.tracks
     if (insertions) {
-        const insertionTracksMeta = await getTracks(...insertions.map(x => x.releaseId))
-        insertions.forEach((insertion, i) => {
-            if (insertionTracksMeta[i]) insert(tracks, insertionTracksMeta[i], insertion.index)
+        const insertionTracksMeta = new Map((await getTracks(...insertions.map(x => x.releaseId))).map(t => [String(t.id), t]))
+        insertions.forEach(insertion => {
+            const meta = insertionTracksMeta.get(String(insertion.releaseId).split(':', 1)[0])
+            if (meta) insert(tracks, meta, insertion.index)
         })
     }
     return insertions
@@ -356,9 +354,10 @@ async function addInsertionsToAlbumsList(albums: Album[], artistId: string) {
     if (isSdkLibraryArtist(artistId)) return
     const insertions = sources.getArtistInsertions(artistId)?.albums
     if (insertions) {
-        const insertionTracksMeta = await getAlbums(...insertions.map(x => x.releaseId))
-        insertions.forEach((insertion, i) => {
-            if (insertionTracksMeta[i]) insert(albums, insertionTracksMeta[i], insertion.index)
+        const insertionAlbumsMeta = new Map((await getAlbums(...insertions.map(x => x.releaseId))).map(a => [String(a.id), a]))
+        insertions.forEach(insertion => {
+            const meta = insertionAlbumsMeta.get(String(insertion.releaseId))
+            if (meta) insert(albums, meta, insertion.index)
         })
     }
     return insertions

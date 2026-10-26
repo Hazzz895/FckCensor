@@ -19,6 +19,7 @@ import { Badge, updateBadgesByType } from '@/hooks/ui/badges'
 import { ADDON_FAQ_URI } from '@/hooks/ui/constants'
 import { LITE_MODE_WARNING, shouldShowTutorial, TutorialTooltip } from '@/hooks/ui/tutorial'
 import { settings } from '@/settings'
+import { isCustomEntity } from '../custom-entities/custom-entity-id-counter'
 
 export type SpoofRemoveAction = 'remove' | 'cancel' | 'restore'
 
@@ -195,6 +196,7 @@ export abstract class SpoofAlertBase<T extends SpoofableEntity = SpoofableEntity
     }
 
     getOriginalValue(propertyName: string) {
+        if (isCustomEntity(Number(this.id))) return undefined
         const originalValues = sources.getFckCensorData(this.type, this.id)?.originalValues
         if (originalValues && propertyName in originalValues) return originalValues[propertyName]
         const entityOriginalValues = this.realEntity.__fckCensor?.originalValues
