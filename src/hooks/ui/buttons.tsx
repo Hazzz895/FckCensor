@@ -15,13 +15,15 @@ export function prepeareButtons() {
         )
     }, ':is(.PageHeaderArtist_root__QhL_a, .CommonAlbumPage_header__jS_be) [data-test-id="BASE_PAGE_HEADER_CONTROLS"]')*/
 
+    const Q_CONTAINER_SELECTOR = ':is([data-test-id="TEXT_HEADER"], [data-test-id="TEXT_STICKY_HEADER"]):not(:has([fckcensorbutton])'
+
     listenAddNodes(el => {
         addAddCustomEntityButton(el, 'track', createCustomTrackAlertFor)
-    }, '[data-test-id="ARTIST_TRACKS_PAGE"] [data-test-id="TEXT_HEADER"]:not(:has([fckcensorbutton])')
+    }, '[data-test-id="ARTIST_TRACKS_PAGE"] ' + Q_CONTAINER_SELECTOR)
 
     listenAddNodes(el => {
         addAddCustomEntityButton(el, 'album', createCustomAlbumAlertFor)
-    }, '[data-test-id="ARTIST_ALBUMS_PAGE"] [data-test-id="TEXT_HEADER"]:not(:has([fckcensorbutton])')
+    }, '[data-test-id="ARTIST_ALBUMS_PAGE"] ' + Q_CONTAINER_SELECTOR)
 }
 
 function addAddCustomEntityButton(container: HTMLElement, type: SpoofableType, listener: (artist: Artist, scrim: HTMLElement | undefined) => any) {
