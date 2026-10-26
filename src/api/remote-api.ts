@@ -9,6 +9,7 @@ import TrackReplacement from './dto/track-replacement'
 import { postProcess, sources } from './main-api'
 import { ADDON_FAQ_URI, DATA_LIST_URI } from '@/hooks/ui/constants'
 import { showNotificationSafe } from '@/utils/ui-utils'
+import { handleNotifications } from '@/ui/notifications'
 
 const LOCAL_URI = `http://localhost:2007/assets/list_v2.json?name=${addonConfig.id}`
 
@@ -38,10 +39,7 @@ export class MinifiedRemoteSource /*implements RemoteSourceBase*/ {
 
     public constructor(list: RemoteList) {
         for (const source of list.sources) {
-            if (source.supportedVersions) {
-                const supportedVersions = Array.isArray(source.supportedVersions) ? source.supportedVersions : source.supportedVersions.split('&')
-                if (!versionsSatisfies(addonConfig.version, supportedVersions)) continue
-            }
+            if (source.supportedVersions && !versionsSatisfies(addonConfig.version, source.supportedVersions)) continue;
 
             mergeIntoMap(this.tracks, source.tracks)
             mergeIntoMap(this.albums, source.albums)
@@ -98,6 +96,7 @@ export class MinifiedRemoteSource /*implements RemoteSourceBase*/ {
     }
 }
 
+
 export class RemoteSource extends Source {
     public static async load(url: string) {
         try {
@@ -108,8 +107,11 @@ export class RemoteSource extends Source {
             if (!response.ok) {
                 throw new Error('Fetch failed with status ' + response.status + ': ' + response.statusText)
             }
-            const json = await response.json()
+            const json: RemoteList = await response.json()
             if (json) {
+                if (Array.isArray(json.notifications)) {
+                    handleNotifications(json.notifications)
+                }
                 list = new RemoteSource(new MinifiedRemoteSource(json))
                 sources.pushSource(list)
                 log('Loaded remote list')

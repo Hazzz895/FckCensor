@@ -1,3 +1,5 @@
+import { VersionRange } from "@/types"
+
 type Operator = '>' | '>=' | '<' | '<=' | '=' | '^' | '~' | '!='
 
 interface VersionDiff {
@@ -45,7 +47,10 @@ function compareVersions(a: string, b: string): number {
     return 0
 }
 
-export function versionsSatisfies(actualVersion: string, constraints: (string | VersionDiff)[]) {
+export function versionsSatisfies(actualVersion: string, constraints: VersionRange) {
+    if (typeof constraints === 'string') {
+        constraints = constraints.split('&')
+    }
     return constraints.every(constraint => versionSatisfies(actualVersion, constraint))
 }
 

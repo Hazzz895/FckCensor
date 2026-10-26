@@ -3,6 +3,31 @@ import { PulseSyncTrackAlbum, PulseSyncTrackArtist, PulseSyncTrackMeta } from '@
 //#region FckCensor Types
 export interface RemoteList {
     sources: RemoteSource[]
+    notifications?: Notification[]
+}
+
+export type VersionRange = string | string[]
+
+export interface Notification {
+    id: string
+    once?: boolean
+    type: 'notification' | 'alert' | 'confirm'
+    expires?: string
+    version?: VersionRange
+    message: NotificationMessage
+}
+
+export interface NotificationMessage {
+    content: string
+    title?: string
+    icon?: string
+    buttons?: NotificationButton[]
+    durationMs?: number
+}
+
+export interface NotificationButton {
+    href?: string
+    label: string
 }
 
 export interface RemoteSourceBase {
@@ -14,7 +39,7 @@ export interface RemoteSourceBase {
 }
 
 export interface RemoteSource extends RemoteSourceBase {
-    supportedVersions?: string | string[]
+    supportedVersions?: VersionRange
 }
 
 export interface TrackReplacementStorageBase {
