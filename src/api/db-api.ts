@@ -1,5 +1,5 @@
 import { sourcesChanged } from '@/sdk/lifecycle'
-import { debug, error, log } from '@/utils/logger'
+import { debug, error, log, warn } from '@/utils/logger'
 import ISource, { Source } from './dto/sources/source'
 import { Track, Album, Artist, SpoofableType, SpoofableEntity } from '@/types'
 import TrackReplacement from './dto/track-replacement'
@@ -73,7 +73,10 @@ export function getDb(): Promise<IDBDatabase> {
                 }
             }
 
-            request.onsuccess = () => resolve(request.result)
+            request.onsuccess = () => {
+                request.result.onversionchange = () => request.result.close()
+                resolve(request.result)
+            }
             request.onerror = () => reject(request.error)
         })
     }
@@ -82,14 +85,16 @@ export function getDb(): Promise<IDBDatabase> {
 
 export function deleteDb() {
     return new Promise(async (resolve, reject) => {
-        localStorage.removeItem(TRACKS_AUDIO_SIZE)
         await getDb().then(db => db.close())
 
         const req = indexedDB.deleteDatabase(DATABASE_NAME)
 
-        req.onsuccess = () => resolve(true)
+        req.onsuccess = () => {
+            localStorage.removeItem(TRACKS_AUDIO_SIZE)
+            resolve(true)
+        }
         req.onerror = () => reject(req.error)
-        req.onblocked = () => reject(req.error)
+        req.onblocked = () => warn('Database deletion is waiting for another open connection to close.')
 
         dbPromise = null
     })
