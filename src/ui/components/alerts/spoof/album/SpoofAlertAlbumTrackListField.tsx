@@ -1,7 +1,7 @@
 import { Album, Release, Track } from '@/types'
-import { SpoofAlertReleasesListField } from '../SpoofAlertReleasesListField'
-import { SpoofAlertBase } from '../../SpoofAlertBase'
-import { ReleaseNode } from '../ReleaseNode'
+import { SpoofAlertReleasesListField } from '../base/releases/SpoofAlertReleasesListField'
+import { SpoofAlertBase } from '../base/SpoofAlertBase'
+import { ReleaseNode } from '../base/releases/ReleaseNode'
 import ElementWrap from '@/ui/components/ElementWrap'
 import { IGetValue } from '@/ui/components/IGetValue'
 import { getAlbumTracks, getTracks } from '@/utils/music'
@@ -9,7 +9,7 @@ import { debug, error } from '@/utils/logger'
 import { sources } from '@/api/main-api'
 import { cloneEntity } from '@/utils/common'
 import { ActionButton } from '@/ui/components/alerts/alerts'
-import { AddSpoofAlertFieldButton } from '../../SpoofAlertCustomPropertyField'
+import { AddSpoofAlertFieldButton } from '../base/SpoofAlertCustomPropertyField'
 
 export class SpoofAlertAlbumTrackListField extends SpoofAlertReleasesListField<Track[]> {
     public constructor(alert: SpoofAlertBase) {

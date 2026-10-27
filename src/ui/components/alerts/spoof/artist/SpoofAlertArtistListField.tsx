@@ -1,10 +1,10 @@
 import { Release, Track } from '@/types'
 import { IGetValue } from '@/ui/components/IGetValue'
-import { SpoofAlertBase } from '../../SpoofAlertBase'
-import { SpoofAlertReleasesListField } from '../SpoofAlertReleasesListField'
+import { SpoofAlertBase } from '../base/SpoofAlertBase'
+import { SpoofAlertReleasesListField } from '../base/releases/SpoofAlertReleasesListField'
 import { sources } from '@/api/main-api'
 import ElementWrap from '@/ui/components/ElementWrap'
-import { ReleaseNode } from '../ReleaseNode'
+import { ReleaseNode } from '../base/releases/ReleaseNode'
 import { getAlbums, getTracks } from '@/utils/music'
 import { Insertion } from '@/api/dto/artist-insertion'
 

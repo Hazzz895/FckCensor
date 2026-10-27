@@ -1,10 +1,10 @@
 import { Album, Track } from '@/types'
-import { SpoofEntityWithArtistsAlert } from '../base/artists/SpoofEntityWithArtistsAlert'
+import { SpoofEntityWithArtistsAlert } from '../base/releases/SpoofEntityWithArtistsAlert'
 import { sources } from '@/api/main-api'
 import { localSource } from '@/api/db-api'
 import { debug, error } from '@/utils/logger'
 import { spoofAllNodesFor } from '@/utils/ui-utils'
-import { SpoofAlertAlbumTrackListField } from '../base/releases/album/SpoofAlertAlbumTrackListField'
+import { SpoofAlertAlbumTrackListField } from './SpoofAlertAlbumTrackListField'
 import { SwitchField } from '@/ui/components/SwitchField'
 import { reloadAlbumPage } from '@/ui/albums'
 

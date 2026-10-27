@@ -4,7 +4,7 @@ import { sources } from '@/api/main-api'
 import { localSource } from '@/api/db-api'
 import { spoofAllNodesFor } from '@/utils/ui-utils'
 import { debug } from '@/utils/logger'
-import { SpoofAlertArtistListField } from '../base/releases/artist/SpoofAlertArtistListField'
+import { SpoofAlertArtistListField } from './SpoofAlertArtistListField'
 import { isEmptyObject } from '@/utils/common'
 
 export class SpoofArtistAlert extends SpoofAlertBase<Artist> {
