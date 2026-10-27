@@ -29,7 +29,9 @@ export function searchArtists(text: string): Promise<SearchResponse | null> {
     return search(text, 'artist')
 }
 
-export function getAlbumTracks(albumId: TrackId, ...args: any): Promise<Album | null> {
+export async function getAlbumTracks(albumId: TrackId, ...args: any): Promise<Album | null> {
+    if (isCustomEntity(Number(albumId))) return getCustomAlbum(String(albumId))
+
     return readResource<Album>(
         { resource: 'albums', method: 'getAlbumWithRichTracks' },
         {

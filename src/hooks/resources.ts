@@ -11,6 +11,7 @@ import { showNotificationSafe } from '@/utils/ui-utils'
 import { settings } from '@/settings'
 import {
     CustomIdsStash,
+    customIdOf,
     requestFingerprint,
     splitAlbumIds,
     splitTrackIds,
@@ -27,7 +28,7 @@ class EarlyResponse {
     constructor(public readonly result: unknown) {}
 }
 class FunctionHook {
-    before(_original: Function, _request: any): EarlyResponse | void {}
+    before(_original: Function, _request: any): EarlyResponse | void | Promise<EarlyResponse | void> {}
     after(_result: any, _request?: any): any {}
 }
 type Hook = FunctionHook | ((result: any, request: any) => any)
@@ -190,75 +191,95 @@ function hookTrackResource(tr: any) {
     hookHeavyMethods(tr, new GetFullInfoTrackHook(), 'getFullInfoTrack', 'getFullInfoTrackWithEtag')
 }
 
+async function spoofAlbumWithTracksIds(albums: any) {
+    if (Array.isArray(albums)) {
+        for (const a of albums) {
+            try {
+                sources.spoofAlbum(a)
+            } catch (e) {
+                error(e)
+            }
+        }
+    } else if (albums && !albums.notModified) {
+        try {
+            const value = (albums as any).data ?? albums
+            const volumes = value.volumes
+            sources.spoofAlbum(value)
+            if (isSdkLibraryAlbum(String(value.id))) value.volumes = volumes
+        } catch (e) {
+            error(e)
+        }
+    }
+}
+
+async function spoofAlbumWithRichTracks(albums: any) {
+    async function spoof(a: Album) {
+        const nativeVolumes = a.volumes
+        try {
+            const spoof = sources.spoofAlbum(a)
+            // Never leave ID-only or partially fetched volumes in a rich-track response.
+            a.volumes = nativeVolumes
+            if (isSdkLibraryAlbum(String(a.id))) {
+                nativeVolumes?.flat().forEach(track => sources.spoofTrack(track))
+                return
+            }
+            if (spoof?.volumes) {
+                const tracks = await getTracks(...spoof.volumes.flatMap(v => v.map(t => String(t.id))))
+                const volumes = spoof.volumes.map(volume =>
+                    volume.map(ref => {
+                        const track = tracks.find(t => String(t.id) === String(ref.id))
+                        if (!track) throw Error(`Missing replacement track ${ref.id}`)
+                        return track
+                    }),
+                )
+                a.volumes = volumes
+            }
+        } catch (e) {
+            a.volumes = nativeVolumes
+            error(e)
+        }
+    }
+
+    if (Array.isArray(albums)) {
+        for (const a of albums) {
+            await spoof(a)
+        }
+    } else if (albums) {
+        await spoof(albums)
+    }
+}
+
+class GetAlbumWithTracksHook extends FunctionHook {
+    constructor(
+        private readonly spoofResponse: (response: any) => Promise<void>,
+        private readonly options: { withEtag?: boolean; richTracks?: boolean } = {},
+    ) {
+        super()
+    }
+
+    public async before(_originalMethod: Function, request: { albumId?: TrackId }) {
+        const id = customIdOf(request?.albumId)
+        if (id === null) return
+
+        const album = getCustomAlbum(id)
+        if (!album) return
+        if (this.options.richTracks) album.volumes = []
+
+        const response = this.options.withEtag ? { notModified: false, data: album, etag: `"fck-custom-${id}-${Date.now()}"` } : album
+        await this.spoofResponse(response)
+        return new EarlyResponse(response)
+    }
+
+    public async after(response: any) {
+        await this.spoofResponse(response)
+    }
+}
+
 function hookAlbumResource(ar: any) {
     hookHeavyMethods(ar, new GetAlbumsHook(), 'getAlbums')
-
-    hookHeavyMethods(
-        ar,
-        async (albums: any) => {
-            if (Array.isArray(albums)) {
-                for (const a of albums) {
-                    try {
-                        sources.spoofAlbum(a)
-                    } catch (e) {
-                        error(e)
-                    }
-                }
-            } else if (albums && !albums.notModified) {
-                try {
-                    const value = (albums as any).data ?? albums
-                    const volumes = value.volumes
-                    sources.spoofAlbum(value)
-                    if (isSdkLibraryAlbum(String(value.id))) value.volumes = volumes
-                } catch (e) {
-                    error(e)
-                }
-            }
-        },
-        'getAlbumWithTracksIds',
-        'getAlbumWithTracksIdsWithEtag',
-    )
-
-    hookHeavyMethods(
-        ar,
-        async (albums: any) => {
-            async function spoof(a: Album) {
-                const nativeVolumes = a.volumes
-                try {
-                    const spoof = sources.spoofAlbum(a)
-                    // Never leave ID-only or partially fetched volumes in a rich-track response.
-                    a.volumes = nativeVolumes
-                    if (isSdkLibraryAlbum(String(a.id))) {
-                        nativeVolumes?.flat().forEach(track => sources.spoofTrack(track))
-                        return
-                    }
-                    if (spoof?.volumes) {
-                        const tracks = await getTracks(...spoof.volumes.flatMap(v => v.map(t => String(t.id))))
-                        const volumes = spoof.volumes.map(volume =>
-                            volume.map(ref => {
-                                const track = tracks.find(t => String(t.id) === String(ref.id))
-                                if (!track) throw Error(`Missing replacement track ${ref.id}`)
-                                return track
-                            }),
-                        )
-                        a.volumes = volumes
-                    }
-                } catch (e) {
-                    a.volumes = nativeVolumes
-                    error(e)
-                }
-            }
-
-            if (Array.isArray(albums)) {
-                for (const a of albums) {
-                    await spoof(a)
-                }
-            } else if (albums) {
-                await spoof(albums)
-            }
-        },
-        'getAlbumWithRichTracks',
-    )
+    hookHeavyMethods(ar, new GetAlbumWithTracksHook(spoofAlbumWithTracksIds), 'getAlbumWithTracksIds')
+    hookHeavyMethods(ar, new GetAlbumWithTracksHook(spoofAlbumWithTracksIds, { withEtag: true }), 'getAlbumWithTracksIdsWithEtag')
+    hookHeavyMethods(ar, new GetAlbumWithTracksHook(spoofAlbumWithRichTracks, { richTracks: true }), 'getAlbumWithRichTracks')
 }
 
 function hookArtistResource(ar: any) {

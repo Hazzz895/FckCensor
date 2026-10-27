@@ -13,6 +13,7 @@ import TrackReplacement from './dto/track-replacement'
 import { putToBundle } from '@/dev/dev-utils'
 import { RKN_BLOCKED_DISCLAIMER_ID } from '@/hooks/ui/constants'
 import { FALLBACK_ENTITY } from './dto/fallback'
+import { isCustomEntity } from '@/ui/components/alerts/spoof/custom-entities/custom-entity-id-counter'
 
 type Constructor<T> = new (...args: any[]) => T
 
@@ -376,6 +377,7 @@ export default class MainSource extends Source {
 
     spoofAlbum(album: Album): Album | null {
         const albumSpoof = this.internalSpoof(album, this.getAlbumSpoof.bind(this), String(album.id), true, 'album')
+        if (isCustomEntity(Number(album.id))) album.available = true
 
         if (album.volumes?.length == 1 && album.volumes[0].length == 1) {
             const track = album.volumes[0][0]
