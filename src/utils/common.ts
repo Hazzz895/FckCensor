@@ -107,3 +107,5 @@ export function openExternalLink(link: string) {
     a.click();
     a.remove();
 }
+
+export const unused = (..._: any) => undefined as any;
