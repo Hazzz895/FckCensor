@@ -6,7 +6,7 @@ import { increseCustomEntityId } from "../custom-entity-id-counter";
 
 export class CustomAlbumAlert extends SpoofAlbumAlert {
     public constructor(data: Album, scrim?: HTMLElement) {
-        super(data, scrim, 'Добавить пользовательский альбом')
+        super(data, scrim, 'Создать пользовательский альбом')
     }
 
     protected onApply(spoofData: Album): Promise<void> {

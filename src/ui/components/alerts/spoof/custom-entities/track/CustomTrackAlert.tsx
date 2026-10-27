@@ -5,7 +5,7 @@ import { increseCustomEntityId } from "../custom-entity-id-counter";
 
 export class CustomTrackAlert extends SpoofTrackAlert {
     public constructor(data: Track, scrim?: HTMLElement) {
-        super(data, scrim, 'Добавить пользовательский трек')
+        super(data, scrim, 'Создать пользовательский трек')
     }
 
     protected onApply(spoofData: Track): Promise<void> {
