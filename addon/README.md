@@ -76,6 +76,8 @@
   <img alt="Меню подмены альбома с подменённым трек-листом" src="https://github.com/Hazzz895/FckCensor/blob/main/images/spoof_album_menu.png?raw=true?raw=true" />
 </details>
 
+### [Поддержать аддон](#поддержать-аддон)
+
 ## Благодарности
 [`Diramix`](https://github.com/Diramix) — внёс огромный вклад в пополнение списка автоматических подмен треков. [Поддержать на boosty](https://boosty.to/diramix)
 
