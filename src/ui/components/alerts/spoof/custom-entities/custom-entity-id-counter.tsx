@@ -33,3 +33,7 @@ export function increseCustomEntityId() {
 export function isCustomEntity(id: number) {
     return id >= CUSTOM_ENTITY_ID_MAGIC && id < CUSTOM_ENTITY_ID_MAGIC + CUSTOM_ENTITIES_LIMIT
 }
+
+export function isCustomEntityReal(id: number) {
+    return isCustomEntity(id) && id < CUSTOM_ENTITY_ID_MAGIC + getLastCustomEntityStorageId()
+}
