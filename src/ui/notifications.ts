@@ -3,6 +3,7 @@ import { versionsSatisfies } from "@/utils/version-utils";
 import { modals, notifications as sdkNotifications } from "@pulsesync/addon-sdk";
 import { openExternalLink } from "@/utils/common";
 import addonConfig from "../../addon.config.mjs";
+import { getStorageBoolean, setStorageItem } from "@/utils/storage";
 
 export function handleNotifications(notifications: Notification[]) {
     for (const notification of notifications) {
@@ -50,9 +51,9 @@ export function handleNotifications(notifications: Notification[]) {
 const getStorageHandleKey = (notification: Notification) => `notification-handled:${notification.id}`
 
 function isNotificationHandled(notification: Notification) {
-    return localStorage.getItem(getStorageHandleKey(notification))
+    return getStorageBoolean(getStorageHandleKey(notification))
 }
 
 function saveHandleNotification(notification: Notification) {
-    localStorage.setItem(getStorageHandleKey(notification), "true")
+    setStorageItem(getStorageHandleKey(notification), true);
 }

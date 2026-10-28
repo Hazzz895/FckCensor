@@ -10,6 +10,7 @@ import { getTrackAvaiableSpoof } from '@/utils/spoofs'
 import { ArtistInsertions } from './dto/artist-insertion'
 import { isEmptyObject } from '@/utils/common'
 import { putToBundle } from '@/dev/dev-utils'
+import { clearStorageItem, getStorageNumber, setStorageItem } from '@/utils/storage'
 
 export type LocalSpoofState = 'none' | 'own' | 'exception'
 
@@ -90,7 +91,7 @@ export function deleteDb() {
         const req = indexedDB.deleteDatabase(DATABASE_NAME)
 
         req.onsuccess = () => {
-            localStorage.removeItem(TRACKS_AUDIO_SIZE)
+            clearStorageItem(TRACKS_AUDIO_SIZE)
             resolve(true)
         }
         req.onerror = () => reject(req.error)
@@ -534,18 +535,13 @@ export class LocalSource extends Source {
             result += track.data.size
         }
 
-        localStorage.setItem(TRACKS_AUDIO_SIZE, String(result))
+        setStorageItem(TRACKS_AUDIO_SIZE, result)
 
         return result
     }
 
     public getTracksAudioSize() {
-        const cached = localStorage.getItem(TRACKS_AUDIO_SIZE)
-        if (!cached) {
-            return 0
-        }
-        const result = Number(cached)
-        return isNaN(result) ? 0 : result
+        return getStorageNumber(TRACKS_AUDIO_SIZE);
     }
 
     public async getCustomCover(type: SpoofableType, id: string): Promise<Blob | null> {

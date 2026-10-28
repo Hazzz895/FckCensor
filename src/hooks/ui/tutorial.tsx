@@ -5,6 +5,7 @@ import { Q_DISABLED_TRACK } from './constants'
 import { JSX } from '@/jsx-runtime'
 import addonConfig from '../../../addon.config.mjs'
 import { debug } from '@/utils/logger'
+import { getStorageBoolean, setStorageItem } from '@/utils/storage'
 
 export const DISABLED_TRACK_TUTORIAL = 'DISABLED_TRACK_TUTORIAL'
 export const LITE_MODE_WARNING = 'LITE_MODE_WARNING'
@@ -63,21 +64,12 @@ export function prepareTutorials(): void {
 export function removeTooltips(key: string): void {
     removeTooltip(key)
 }
-
-const shouldShowTutorialCache: Record<string, boolean> = {}
-
 export function shouldShowTutorial(key: string): boolean {
-    if (key in shouldShowTutorialCache) {
-        return shouldShowTutorialCache[key]
-    }
-
-    const storedValue = localStorage.getItem('SHOULD_SHOW_' + key)
-    return (shouldShowTutorialCache[key] = storedValue !== 'false')
+    return getStorageBoolean('SHOULD_SHOW_' + key)
 }
 
 export function setShouldShowTutorial(key: string, value: boolean): void {
-    shouldShowTutorialCache[key] = value
-    localStorage.setItem('SHOULD_SHOW_' + key, String(value))
+    setStorageItem('SHOULD_SHOW_' + key, value)
 }
 
 export function completeTutorial(key: string): void {
