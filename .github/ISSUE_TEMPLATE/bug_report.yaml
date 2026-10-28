@@ -1,0 +1,49 @@
+name: Сообщение о баге
+description: Опишите проблему, которая возникла при работе с аддоном FckCensor
+labels:
+  - bug
+body:
+  - type: checkboxes
+    id: confirms
+    attributes:
+      label: Я подтверждаю, что
+      options:
+        - label: Я прочитал(а) FAQ
+          required: true
+        - label: Баг не был сообщён в Issues ранее
+          required: true
+        - label: У меня установлена последняя версия аддона
+          required: true
+        - label: У меня установлена последняя версия PulseSync
+          required: true
+        - label: Баг был обнаружен на beta версии аддона
+          required: false
+  - type: textarea
+    id: bug_description
+    attributes:
+      label: Суть бага
+      description: Опишите что пошло не так и какое поведение ожидалось
+      placeholder: >-
+        После подмены списка треков у альбома приложение вылетает. Ожидалось,
+        что подмена успешно применится.
+    validations:
+      required: true
+  - type: textarea
+    id: bug_steps
+    attributes:
+      label: Шаги воспроизведения бага
+      description: Минимальные действия, которые необходимы для того, чтобы повторить проблему
+      placeholder: >-
+        1. Открыть окно подмены альбома
+        2. Добавить новый трек в список,
+        3. Применить подмену
+  - type: dropdown
+    id: os
+    attributes:
+      label: Операционная система
+      options:
+        - Windows
+        - Linux
+        - MacOS
+    validations:
+      required: true
