@@ -393,6 +393,8 @@ export default class MainSource extends Source {
             }
         }
 
+        album.artists?.forEach(this.spoofArtist.bind(this))
+
         return albumSpoof
     }
 
@@ -461,10 +463,10 @@ export default class MainSource extends Source {
 
         const insertions = this.getArtistInsertions(a.id)
         if (insertions && !isSdkLibraryArtist(String(a.id))) {
-            if (a.counts?.tracks) {
+            if (a.counts?.tracks !== undefined) {
                 a.counts.tracks += insertions.tracks?.length ?? 0
             }
-            if (a.counts?.directAlbums) {
+            if (a.counts?.directAlbums !== undefined) {
                 a.counts.directAlbums += insertions.albums?.length ?? 0
             }
         }
