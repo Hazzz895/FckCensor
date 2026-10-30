@@ -1,11 +1,11 @@
 import { Album, Artist, Release } from "@/types";
 import { CustomAlbumAlert } from "./album/CustomAlbumAlert";
-import { getLastCustomEntityId } from "./custom-entity-id-counter";
+import { allocateCustomEntityId } from "./custom-entity-id-counter";
 import { CustomTrackAlert } from "./track/CustomTrackAlert";
 
 function createCustomReleaseAlert<T>(artist: Artist, scrim: HTMLElement | undefined, clz: new (data: any, scrim?: HTMLElement) => T) {
     const data = {
-        id: getLastCustomEntityId(),
+        id: allocateCustomEntityId(),
         artists: [artist],
     }
     return new clz(data, scrim)

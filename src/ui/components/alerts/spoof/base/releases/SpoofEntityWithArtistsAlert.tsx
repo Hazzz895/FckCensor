@@ -10,4 +10,9 @@ export abstract class SpoofEntityWithArtistsAlert<T extends SpoofableEntity> ext
     protected getChildren(): JSX.Child {
         return [this.addPropertyField((this.artistsField = new SpoofAlertArtistsField(this)))]
     }
+
+    protected async onApplyInternal() {
+        await this.artistsField.commitNewArtists()
+        await super.onApplyInternal()
+    }
 }

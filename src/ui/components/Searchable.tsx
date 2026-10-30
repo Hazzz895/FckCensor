@@ -46,10 +46,24 @@ export class Searchable<T extends SpoofableEntity> extends ElementWrap {
         const q = this.input?.value
         if (q && q != this.lastQuery) {
             this.lastQuery = q
+            const additionalResults = this.getAdditionalSearchResults(q)
+            if (additionalResults.length) this.renderSearchResults(additionalResults)
             const result = await search(q, this.type)
             if (q != this.input?.value) return
-            this.renderSearchResults(result?.results.map(item => item[this.type] as T).filter(artist => !!artist) ?? [])
+            const additionalIds = new Set(additionalResults.map(entity => String(entity.id)))
+            const serverResults = result?.results
+                .map(item => item[this.type] as T)
+                .filter(entity => !!entity && !additionalIds.has(String(entity.id))) ?? []
+            this.renderSearchResults([...additionalResults, ...serverResults])
         }
+    }
+
+    protected getAdditionalSearchResults(_query: string): T[] {
+        return []
+    }
+
+    protected isAdditionalSearchResult(_entity: T): boolean {
+        return false
     }
 
     private renderSearchResults(results: T[]) {
@@ -66,7 +80,12 @@ export class Searchable<T extends SpoofableEntity> extends ElementWrap {
                     onclick={() => this.selectEntity(res)}
                 >
                     <Cover mini src={res.coverUri ?? res.ogImage} />
-                    <span>{this.type === 'artist' ? (res as Artist).name : (res as Release).title}</span>
+                    <span>
+                        {this.type === 'artist' ? (res as Artist).name : (res as Release).title}
+                        <span hidden={!this.isAdditionalSearchResult(res)} style="margin-left: 6px; opacity: 0.7">
+                            Локальный
+                        </span>
+                    </span>
                 </button>
             ) as HTMLElement
             this.searchResults.appendChild(result)

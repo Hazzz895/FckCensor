@@ -14,6 +14,15 @@ export function getLastCustomEntityId() {
     return CUSTOM_ENTITY_ID_MAGIC + getLastCustomEntityStorageId()
 }
 
+export function allocateCustomEntityId() {
+    const current = getLastCustomEntityStorageId()
+    if (current >= CUSTOM_ENTITIES_LIMIT) {
+        throw new Error('Custom entities limit exceeded')
+    }
+    setStorageItem(STORAGE_COUNTER_ID, current + 1)
+    return CUSTOM_ENTITY_ID_MAGIC + current
+}
+
 export function increseCustomEntityId() {
     const n = getLastCustomEntityStorageId() + 1;
     setStorageItem(STORAGE_COUNTER_ID, n);

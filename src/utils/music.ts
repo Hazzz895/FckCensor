@@ -4,7 +4,7 @@ import { Album, Artist, OuterArtist, SearchResponse, SearchType, Track } from '@
 import { readResource } from '@/sdk/resources'
 import { log } from './logger'
 import { customIdOf } from '@/ui/components/alerts/spoof/custom-entities/custom-entity-requests'
-import { getCustomAlbum, getCustomTrack } from '@/ui/components/alerts/spoof/custom-entities/custom-entity-build'
+import { getCustomAlbum, getCustomArtist, getCustomTrack } from '@/ui/components/alerts/spoof/custom-entities/custom-entity-build'
 import { isCustomEntity } from '@/ui/components/alerts/spoof/custom-entities/custom-entity-id-counter'
 
 export async function reloadPlayer(trackId?: string) {
@@ -80,6 +80,12 @@ export async function getAlbums(...albumIds: TrackId[]): Promise<Album[]> {
 }
 
 export function getOuterArtist(artistId: TrackId): Promise<OuterArtist> {
+    const customId = customIdOf(artistId)
+    if (customId !== null) {
+        const artist = getCustomArtist(customId)
+        if (artist) return Promise.resolve({ artist })
+    }
+
     return readResource<OuterArtist>({ resource: 'artists', method: 'getInfo' }, { artistId })
 }
 

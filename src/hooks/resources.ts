@@ -3,7 +3,7 @@ import type { PulseSyncResourceTarget } from '@pulsesync/addon-sdk'
 import { getSdkApi } from '@/sdk/lifecycle'
 import { rememberResponse, requestSdkSync, isSdkLibraryArtist, isSdkLibraryAlbum } from '@/sdk/bridge'
 import { debug, error } from '@/utils/logger'
-import { Album, OuterArtist, Playlist, SearchResponse, Track } from '@/types'
+import { Album, Artist, OuterArtist, Playlist, SearchResponse, Track } from '@/types'
 import { insert } from '@/utils/common'
 import { getAlbums, getTracks } from '@/utils/music'
 import addonConfig from '../../addon.config.mjs'
@@ -17,7 +17,12 @@ import {
     splitTrackIds,
     takeCustomIds,
 } from '@/ui/components/alerts/spoof/custom-entities/custom-entity-requests'
-import { getCustomAlbum, getCustomTrack } from '@/ui/components/alerts/spoof/custom-entities/custom-entity-build'
+import { getCustomAlbum, getCustomArtist, getCustomTrack } from '@/ui/components/alerts/spoof/custom-entities/custom-entity-build'
+import { ArtistLandingBlockType } from "@/ui/components/alerts/spoof/custom-entities/custom-entity-artists"
+import { createEmptyArtistResponse } from "@/ui/components/alerts/spoof/custom-entities/custom-entity-artists"
+import { createArtistLandingBlock } from "@/ui/components/alerts/spoof/custom-entities/custom-entity-artists"
+import { createArtistPager } from "@/ui/components/alerts/spoof/custom-entities/custom-entity-artists"
+import { createArtistSkeleton } from "@/ui/components/alerts/spoof/custom-entities/custom-entity-artists"
 
 const heavyMethodsUnhooks: (() => void)[] = []
 let hookGeneration = 0
@@ -282,80 +287,213 @@ function hookAlbumResource(ar: any) {
     hookHeavyMethods(ar, new GetAlbumWithTracksHook(spoofAlbumWithRichTracks, { richTracks: true }), 'getAlbumWithRichTracks')
 }
 
-function hookArtistResource(ar: any) {
-    hookHeavyMethods(
-        ar,
-        async (artist: OuterArtist) => {
-            sources.spoofAnyArtist(artist)
-        },
-        'getInfo',
-        'getBriefInfo',
-    )
+type ArtistResourceRequest = {
+    artistId?: TrackId
+    page?: number
+    pageSize?: number
+    per?: number
+    type?: ArtistLandingBlockType
+    source?: { uri?: string }
+}
+type ArtistInfoResponse = OuterArtist & { covers?: unknown[] }
 
-    hookHeavyMethods(
-        ar,
-        async (familiar: any) => {
-            function spoofTab(tab: any) {
-                if (!tab) return
+function getLocalArtistId(artistId: unknown): string | null {
+    const id = customIdOf(artistId)
+    return id !== null && getCustomArtist(id) ? id : null
+}
 
-                if (Array.isArray(tab.tracks)) {
-                    for (const track of tab.tracks) {
-                        sources.spoofTrack(track)
-                    }
-                }
+function getArtistIdFromUri(uri?: string): string | null {
+    return uri?.match(/\/artists\/([^/?#]+)(?:\/|$)/)?.[1] ?? null
+}
 
-                if (Array.isArray(tab.albums)) {
-                    for (const album of tab.albums) {
-                        sources.spoofAlbum(album)
-                    }
-                }
+function paginateItems<T>(items: T[], request: ArtistResourceRequest) {
+    const pager = createArtistPager(request, items.length)
+    const start = pager.page * pager.per
+    return {
+        pager,
+        items: pager.per > 0 ? items.slice(start, start + pager.per) : items,
+    }
+}
+
+class ArtistInfoHook extends FunctionHook {
+    constructor(private readonly brief = false) {
+        super()
+    }
+
+    public async before(_originalMethod: Function, request: ArtistResourceRequest) {
+        const id = getLocalArtistId(request?.artistId)
+        if (id === null) return
+        const artist = getCustomArtist(id)
+        if (!artist) return
+
+        let response: ArtistInfoResponse
+        if (this.brief) {
+            const tracks: Track[] = []
+            const albums: Album[] = []
+            try {
+                await Promise.all([addInsertionsToTracksList(tracks, id), addInsertionsToAlbumsList(albums, id)])
+            } catch (e) {
+                error(`Failed to load insertions for local artist ${id}:`, e)
             }
+            response = { artist, popularTracks: tracks, albums }
+        } else {
+            response = { artist, covers: [], stats: {} }
+        }
 
-            spoofTab(familiar.wave)
-            spoofTab(familiar.collection)
-        },
-        'getFamiliarYou',
-    )
+        await this.after(response)
+        return new EarlyResponse(response)
+    }
 
-    type ArtistId = { artistId: number }
+    public after(response: ArtistInfoResponse) {
+        if (response?.artist) sources.spoofAnyArtist(response)
+        response?.popularTracks?.forEach(spoofTrackSafe)
+        response?.albums?.forEach(spoofAlbumSafe)
+        response?.alsoAlbums?.forEach(spoofAlbumSafe)
+    }
+}
 
-    hookHeavyMethods(
-        ar,
-        async (trackIds: string[], t: ArtistId) => {
-            ;(!isSdkLibraryArtist(String(t.artistId)) ? sources.getArtistInsertions(String(t.artistId)) : null)?.tracks?.forEach(insertion => {
+class ArtistSkeletonHook extends FunctionHook {
+    public before(_originalMethod: Function, request: ArtistResourceRequest) {
+        const id = getLocalArtistId(request?.artistId)
+        if (id === null) return
+        return new EarlyResponse(createArtistSkeleton(id))
+    }
+}
+
+class ArtistTrackIdsHook extends FunctionHook {
+    public before(_originalMethod: Function, request: ArtistResourceRequest) {
+        const id = getLocalArtistId(request?.artistId)
+        if (id === null) return
+        const trackIds: string[] = []
+        sources.getArtistInsertions(id)?.tracks?.forEach(insertion => {
+            insert(trackIds, insertion.releaseId, insertion.index)
+        })
+        return new EarlyResponse(trackIds)
+    }
+
+    public after(trackIds: string[], request: ArtistResourceRequest) {
+        const artistId = String(request?.artistId)
+        if (!isSdkLibraryArtist(artistId)) {
+            const present = new Set(trackIds.map(String))
+            sources.getArtistInsertions(artistId)?.tracks?.forEach(insertion => {
+                if (present.has(String(insertion.releaseId))) return
                 insert(trackIds, insertion.releaseId, insertion.index)
+                present.add(String(insertion.releaseId))
             })
-        },
-        'getArtistTrackIds',
-    )
+        }
+    }
+}
 
-    hookHeavyMethods(
-        ar,
-        async (result: { pager?: any; tracks?: Track[] } | Track[], t: ArtistId) => {
-            const tracks = Array.isArray(result) ? result : result?.tracks
-            if (!tracks) return
-            try {
-                await addInsertionsToTracksList(tracks, String(t.artistId))
-            } catch (e) {
-                error(e)
-            }
-        },
-        'getArtistTracks',
-    )
+class ArtistTracksHook extends FunctionHook {
+    public async before(_originalMethod: Function, request: ArtistResourceRequest) {
+        const id = getLocalArtistId(request?.artistId)
+        if (id === null) return
+        const tracks: Track[] = []
+        try {
+            await addInsertionsToTracksList(tracks, id)
+        } catch (e) {
+            error(`Failed to load tracks for local artist ${id}:`, e)
+        }
+        tracks.forEach(spoofTrackSafe)
+        const { items, pager } = paginateItems(tracks, request)
+        return new EarlyResponse({ pager, tracks: items })
+    }
 
-    hookHeavyMethods(
-        ar,
-        async (result: { pager?: any; albums?: Album[] } | Album[], t: ArtistId) => {
-            const albums = Array.isArray(result) ? result : result?.albums
-            if (!albums) return
-            try {
-                await addInsertionsToAlbumsList(albums, String(t.artistId))
-            } catch (e) {
-                error(e)
+    public async after(result: { pager?: any; tracks?: Track[] } | Track[], request: ArtistResourceRequest) {
+        const tracks = Array.isArray(result) ? result : result?.tracks
+        if (!tracks) return
+        try {
+            const previousCount = tracks.length
+            await addInsertionsToTracksList(tracks, String(request?.artistId))
+            if (!Array.isArray(result) && result.pager?.total !== undefined) {
+                result.pager.total = Number(result.pager.total) + tracks.length - previousCount
             }
-        },
-        'getDirectAlbums',
-    )
+        } catch (e) {
+            error(e)
+        }
+    }
+}
+
+class ArtistAlbumsHook extends FunctionHook {
+    public async before(_originalMethod: Function, request: ArtistResourceRequest) {
+        const id = getLocalArtistId(request?.artistId)
+        if (id === null) return
+        const albums: Album[] = []
+        try {
+            await addInsertionsToAlbumsList(albums, id)
+        } catch (e) {
+            error(`Failed to load albums for local artist ${id}:`, e)
+        }
+        albums.forEach(spoofAlbumSafe)
+        const { items, pager } = paginateItems(albums, request)
+        return new EarlyResponse({ pager, albums: items })
+    }
+
+    public async after(result: { pager?: any; albums?: Album[] } | Album[], request: ArtistResourceRequest) {
+        const albums = Array.isArray(result) ? result : result?.albums
+        if (!albums) return
+        try {
+            const previousCount = albums.length
+            await addInsertionsToAlbumsList(albums, String(request?.artistId))
+            if (!Array.isArray(result) && result.pager?.total !== undefined) {
+                result.pager.total = Number(result.pager.total) + albums.length - previousCount
+            }
+        } catch (e) {
+            error(e)
+        }
+    }
+}
+
+class LocalArtistStubHook extends FunctionHook {
+    constructor(private readonly method: string) {
+        super()
+    }
+
+    public before(_originalMethod: Function, request: ArtistResourceRequest) {
+        const id = getLocalArtistId(request?.artistId)
+        if (id === null) return
+        const response = createEmptyArtistResponse(this.method, request, getCustomArtist(id))
+        return new EarlyResponse(response)
+    }
+
+    public after(familiar: any) {
+        if (this.method !== 'getFamiliarYou') return
+
+        function spoofTab(tab: any) {
+            if (!tab) return
+            if (Array.isArray(tab.tracks)) tab.tracks.forEach(spoofTrackSafe)
+            if (Array.isArray(tab.albums)) tab.albums.forEach(spoofAlbumSafe)
+        }
+
+        spoofTab(familiar?.wave)
+        spoofTab(familiar?.collection)
+    }
+}
+
+function hookArtistResource(ar: any) {
+    hookHeavyMethods(ar, new ArtistInfoHook(), 'getInfo')
+    hookHeavyMethods(ar, new ArtistInfoHook(true), 'getBriefInfo')
+    hookHeavyMethods(ar, new ArtistSkeletonHook(), 'getSkeleton')
+    hookHeavyMethods(ar, new ArtistTrackIdsHook(), 'getArtistTrackIds')
+    hookHeavyMethods(ar, new ArtistTracksHook(), 'getArtistTracks')
+    hookHeavyMethods(ar, new ArtistAlbumsHook(), 'getDirectAlbums', 'getDiscographyAlbums')
+
+    for (const method of [
+        'getFamiliarYou',
+        'getFamiliarYouInfo',
+        'getSimilarArtists',
+        'getAboutArtist',
+        'getConcerts',
+        'getTrailer',
+        'getDisclaimer',
+        'getArtistLinks',
+        'getClips',
+        'getDonation',
+        'getAlsoAlbums',
+        'getSafeDirectAlbums',
+    ]) {
+        hookHeavyMethods(ar, new LocalArtistStubHook(method), method)
+    }
 }
 
 async function addInsertionsToTracksList(tracks: Track[], artistId: string) {
@@ -363,9 +501,13 @@ async function addInsertionsToTracksList(tracks: Track[], artistId: string) {
     const insertions = sources.getArtistInsertions(artistId)?.tracks
     if (insertions) {
         const insertionTracksMeta = new Map((await getTracks(...insertions.map(x => x.releaseId))).map(t => [String(t.id), t]))
+        const present = new Set(tracks.map(track => String(track.id)))
         insertions.forEach(insertion => {
             const meta = insertionTracksMeta.get(String(insertion.releaseId).split(':', 1)[0])
-            if (meta) insert(tracks, meta, insertion.index)
+            if (meta && !present.has(String(meta.id))) {
+                insert(tracks, meta, insertion.index)
+                present.add(String(meta.id))
+            }
         })
     }
     return insertions
@@ -376,86 +518,98 @@ async function addInsertionsToAlbumsList(albums: Album[], artistId: string) {
     const insertions = sources.getArtistInsertions(artistId)?.albums
     if (insertions) {
         const insertionAlbumsMeta = new Map((await getAlbums(...insertions.map(x => x.releaseId))).map(a => [String(a.id), a]))
+        const present = new Set(albums.map(album => String(album.id)))
         insertions.forEach(insertion => {
             const meta = insertionAlbumsMeta.get(String(insertion.releaseId))
-            if (meta) insert(albums, meta, insertion.index)
+            if (meta && !present.has(String(meta.id))) {
+                insert(albums, meta, insertion.index)
+                present.add(String(meta.id))
+            }
         })
     }
     return insertions
 }
 
+async function enrichLandingBlock(block: any, info: ArtistResourceRequest) {
+    if (!block || typeof block !== 'object') return
+    const artistId = getArtistIdFromUri(info.source?.uri)
+
+    if (Array.isArray(block.tracks)) {
+        if (info.type === 'ARTIST_POPULAR_TRACKS' && artistId) {
+            const previousCount = block.tracks.length
+            try {
+                await addInsertionsToTracksList(block.tracks, artistId)
+                if (block.pager?.total !== undefined) {
+                    block.pager.total = Number(block.pager.total) + block.tracks.length - previousCount
+                }
+            } catch (e) {
+                error(`Failed to load track insertions for artist ${artistId}:`, e)
+            }
+        }
+        block.tracks.forEach(spoofTrackSafe)
+    }
+
+    if (block.release) {
+        if (block.release.album) spoofAlbumSafe(block.release.album)
+        if (Array.isArray(block.release.artists)) block.release.artists.forEach((artist: Artist) => sources.spoofAnyArtist(artist))
+    }
+
+    if (Array.isArray(block.items)) {
+        if (info.type === 'ARTIST_ALBUMS' && artistId) {
+            const albums: Album[] = []
+            try {
+                const insertions = await addInsertionsToAlbumsList(albums, artistId)
+                const albumsById = new Map(albums.map(album => [String(album.id), album]))
+                insertions?.forEach(insertion => {
+                    const album = albumsById.get(String(insertion.releaseId))
+                    if (!album) return
+                    const data = {
+                        type: 'album_item',
+                        data: {
+                            album,
+                            artists: album.artists ?? [],
+                            releaseDate: album.releaseDate,
+                        },
+                    }
+                    insert(block.items, data, insertion.index)
+                })
+            } catch (e) {
+                error(`Failed to load album insertions for artist ${artistId}:`, e)
+            }
+        }
+
+        for (const item of block.items) {
+            switch (item.type) {
+                case 'album_item':
+                    if (item.data?.album) spoofAlbumSafe(item.data.album)
+                    for (const artist of item.data?.artists ?? item.data?.album?.artists ?? []) {
+                        sources.spoofAnyArtist(artist)
+                    }
+                    break
+                case 'artist_item':
+                    if (item.data?.artist) sources.spoofAnyArtist(item.data.artist)
+            }
+        }
+    }
+}
+
+class LandingBlockHook extends FunctionHook {
+    public async before(_originalMethod: Function, request: ArtistResourceRequest) {
+        const customId = customIdOf(getArtistIdFromUri(request?.source?.uri))
+        if (customId === null || !getCustomArtist(customId)) return
+
+        const block = createArtistLandingBlock(request.type, request)
+        await enrichLandingBlock(block, request)
+        return new EarlyResponse(block)
+    }
+
+    public async after(block: any, request: ArtistResourceRequest) {
+        await enrichLandingBlock(block, request)
+    }
+}
+
 function hookLandingResource(lr: any) {
-    hookHeavyMethods(
-        lr,
-        async (block: any, info: { type?: 'ARTIST_POPULAR_TRACKS' | 'ARTIST_ALBUMS'; source?: { uri?: string } }) => {
-            let _artistId: string | undefined | null
-            function getArtistId() {
-                if (_artistId !== undefined) return _artistId
-                _artistId = null
-                const re = /\/artists\/(\d*)\/.*/
-                if (info.source?.uri && re.test(info.source?.uri)) {
-                    _artistId = info.source.uri.match(re)![1]
-                }
-                return _artistId
-            }
-
-            if (Array.isArray(block.tracks)) {
-                if (info.type === 'ARTIST_POPULAR_TRACKS' && getArtistId()) {
-                    const insertions = await addInsertionsToTracksList(block.tracks, _artistId!)
-                    if (insertions && block.pager?.total !== undefined) {
-                        block.pager.total += insertions.length
-                    }
-                }
-                if (Array.isArray(block.tracks)) {
-                    for (const track of block.tracks) {
-                        sources.spoofTrack(track)
-                    }
-                }
-            }
-
-            if (block.release) {
-                sources.spoofAlbum(block.release.album)
-                if (Array.isArray(block.release.artists)) {
-                    for (const a of block.release.artists) {
-                        sources.spoofAnyArtist(a)
-                    }
-                }
-            }
-
-            if (Array.isArray(block.items)) {
-                if (info.type === 'ARTIST_ALBUMS' && getArtistId()) {
-                    const albums: Album[] = []
-                    const insertions = await addInsertionsToAlbumsList(albums, _artistId!)
-                    insertions?.forEach((insertion, i) => {
-                        const album = albums[i]
-                        const data = {
-                            type: 'album_item',
-                            data: {
-                                album: album,
-                                artists: album.artists,
-                                releaseDate: album.releaseDate,
-                            },
-                        }
-                        insert(block.items, data, insertion.index)
-                    })
-                }
-
-                for (const item of block.items) {
-                    switch (item.type) {
-                        case 'album_item':
-                            sources.spoofAlbum(item.data.album)
-                            for (const a of item.data.artists) {
-                                sources.spoofAnyArtist(a)
-                            }
-                            break
-                        case 'artist_item':
-                            sources.spoofAnyArtist(item.data.artist)
-                    }
-                }
-            }
-        },
-        'getBlock',
-    )
+    hookHeavyMethods(lr, new LandingBlockHook(), 'getBlock')
 }
 
 function hookSearchResource(sr: any) {

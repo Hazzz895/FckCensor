@@ -1,16 +1,10 @@
 import { Track } from "@/types";
 import { SpoofTrackAlert } from "../../track/SpoofTrackAlert";
 import { JSX } from "@/jsx-runtime";
-import { increseCustomEntityId } from "../custom-entity-id-counter";
 
 export class CustomTrackAlert extends SpoofTrackAlert {
     public constructor(data: Track, scrim?: HTMLElement) {
         super(data, scrim, 'Создать пользовательский трек')
-    }
-
-    protected onApply(spoofData: Track): Promise<void> {
-        increseCustomEntityId();
-        return super.onApply(spoofData)
     }
 
     protected shouldIncludeSpoofField(propertyName: string | undefined, hasDiffs: boolean): boolean {

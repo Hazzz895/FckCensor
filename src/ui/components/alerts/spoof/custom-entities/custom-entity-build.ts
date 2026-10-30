@@ -1,7 +1,7 @@
 import { sources } from '@/api/main-api'
 import { FALLBACK_ENTITY } from '@/api/dto/fallback'
 import { cloneEntity } from '@/utils/common'
-import type { Album, Track } from '@/types'
+import type { Album, Artist, Track } from '@/types'
 
 export function buildCustomTrack(spoof: Partial<Track>, id: string | number): Track {
     const track: Record<string, unknown> = { ...cloneEntity(spoof) }
@@ -46,4 +46,33 @@ export function buildCustomAlbum(spoof: Partial<Album>, id: string | number): Al
 export function getCustomAlbum(id: string): Album | null {
     const spoof = sources.getAlbumSpoof(id)
     return spoof ? buildCustomAlbum(spoof, id) : null
+}
+
+export function buildCustomArtist(spoof: Partial<Artist>, id: string | number): Artist {
+    const artist: Record<string, unknown> = { ...cloneEntity(spoof) }
+    const defaults: Record<string, unknown> = {
+        name: FALLBACK_ENTITY.title,
+        various: false,
+        composer: false,
+        available: true,
+        genres: [],
+        counts: { tracks: 0, directAlbums: 0, alsoAlbums: 0, alsoTracks: 0 },
+    }
+    for (const [key, value] of Object.entries(defaults)) {
+        if (artist[key] === undefined) artist[key] = value
+    }
+
+    const coverUri = artist.coverUri as string | undefined
+    if (coverUri) {
+        if (!artist.ogImage) artist.ogImage = coverUri
+        if (!artist.cover) artist.cover = { uri: coverUri }
+    }
+
+    artist.id = String(id)
+    return artist as unknown as Artist
+}
+
+export function getCustomArtist(id: string): Artist | null {
+    const spoof = sources.getArtistSpoof(id)
+    return spoof ? buildCustomArtist(spoof, id) : null
 }

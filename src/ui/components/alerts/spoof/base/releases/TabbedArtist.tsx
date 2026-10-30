@@ -8,6 +8,8 @@ import styles from '@/styles.module.scss'
 import { eventHandlerForTooltip, removeTooltip } from '@/ui/tooltips'
 import { Searchable } from '@/ui/components/Searchable'
 import { SpoofAlertArtistsField } from './SpoofAlertArtistsField'
+import { allocateCustomEntityId } from '../../custom-entities/custom-entity-id-counter'
+import { getLocalArtists, isCustomArtistId, isStoredLocalArtist, normalizeArtistName } from '../../custom-entities/custom-entity-artists'
 
 export interface TabbedArtistProps extends JSX.HTMLAttributes {
     artist?: Artist
@@ -15,6 +17,9 @@ export interface TabbedArtistProps extends JSX.HTMLAttributes {
 
 export class TabbedArtist extends Searchable<Artist> {
     private readonly onChanged?: (removed: boolean) => void
+
+    private textEntity?: Artist
+    private ownId?: string
 
     constructor(
         private readonly field: SpoofAlertArtistsField,
@@ -26,8 +31,33 @@ export class TabbedArtist extends Searchable<Artist> {
         this.onChanged = onChanged
     }
 
-    getArtist() {
-        return this.entity || (this.input?.value ? ({ name: this.input.value } as Artist) : null)
+    getArtist(): Artist | null {
+        if (this.entity) return this.entity
+        const name = this.input?.value.trim()
+        return name ? this.resolveFromText(name) : null
+    }
+
+    getNewLocalArtist(): Artist | null {
+        const artist = this.entity
+        return artist && artist === this.textEntity && isCustomArtistId(artist.id) && !isStoredLocalArtist(artist.id) ? artist : null
+    }
+
+    protected getAdditionalSearchResults(query: string): Artist[] {
+        const normalizedQuery = normalizeArtistName(query)
+        return getLocalArtists().filter(artist => normalizeArtistName(artist.name).includes(normalizedQuery))
+    }
+
+    protected isAdditionalSearchResult(artist: Artist): boolean {
+        return isStoredLocalArtist(artist.id)
+    }
+
+    private resolveFromText(name: string): Artist {
+        const existing = this.field.findLocalArtistByName(name, this)
+        const artist: Artist = existing
+            ? { id: String(existing.id), name: existing.name }
+            : { id: (this.ownId ??= String(allocateCustomEntityId())), name }
+        this.entity = this.textEntity = artist
+        return artist
     }
 
     createElement(): HTMLElement {
@@ -42,7 +72,7 @@ export class TabbedArtist extends Searchable<Artist> {
                 this.entity.name,
             ]
         } else {
-            children = super.createElement() // FIXME невозможно удалить кастомного исполнителя
+            children = super.createElement()
         }
 
         return (
@@ -58,11 +88,15 @@ export class TabbedArtist extends Searchable<Artist> {
 
     protected onFocusLost(ev: FocusEvent) {
         super.onFocusLost(ev)
-        if (!this.input?.value) {
+        const name = this.input?.value.trim()
+        if (!name) {
             this.element.remove()
             this.onChanged?.(true)
-        } else if (!this.entity && this.input) {
-            this.entity = { name: this.input.value } as Artist
+        } else if (!this.entity) {
+            this.resolveFromText(name)
+            this.onChanged?.(false)
+        } else if (this.input && this.entity === this.textEntity && normalizeArtistName(name) !== normalizeArtistName(this.entity.name)) {
+            this.resolveFromText(name)
             this.onChanged?.(false)
         }
     }

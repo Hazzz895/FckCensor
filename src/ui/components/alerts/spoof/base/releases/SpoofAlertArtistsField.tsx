@@ -7,6 +7,7 @@ import { SpoofAlertEntityPropertyField } from '../SpoofAlertEntityPropertyField'
 import { TabbedArtist } from './TabbedArtist'
 import { JSX } from '@/jsx-runtime'
 import { removeTooltip } from '@/ui/tooltips'
+import { findLocalArtistByName, isCustomArtistId, normalizeArtistName, storeNewLocalArtist } from '../../custom-entities/custom-entity-artists'
 
 export function AddButton({ ...props }: JSX.HTMLAttributes) {
     const addButton = <CloseButton {...props} />
@@ -31,7 +32,33 @@ export class SpoofAlertArtistsField extends SpoofAlertEntityPropertyField<Artist
     private artists
 
     getValue() {
-        return this.artistNodes.map(x => x.getArtist()).filter(x => !!x)
+        const seenCustomIds = new Set<string>()
+        return this.artistNodes
+            .map(x => x.getArtist())
+            .filter(x => !!x)
+            .filter(artist => {
+                if (!isCustomArtistId(artist.id)) return true
+                const id = String(artist.id)
+                if (seenCustomIds.has(id)) return false
+                seenCustomIds.add(id)
+                return true
+            })
+    }
+
+    findLocalArtistByName(name: string, except?: TabbedArtist): Artist | null {
+        const key = normalizeArtistName(name)
+        for (const node of this.artistNodes) {
+            const artist = node === except ? undefined : node.entity
+            if (artist && isCustomArtistId(artist.id) && normalizeArtistName(artist.name) === key) return artist
+        }
+        return findLocalArtistByName(name)
+    }
+
+    async commitNewArtists() {
+        for (const node of this.artistNodes) {
+            const artist = node.getNewLocalArtist()
+            if (artist) await storeNewLocalArtist(artist)
+        }
     }
 
     createElement(): HTMLElement {
