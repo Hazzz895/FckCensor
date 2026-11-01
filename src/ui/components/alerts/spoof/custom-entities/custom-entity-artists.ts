@@ -63,41 +63,6 @@ export function createArtistLandingBlock(type: unknown, request: { page?: unknow
     }
     return {};
 }
-export function createEmptyArtistResponse(
-    method: string,
-    request?: { page?: unknown; pageSize?: unknown; per?: unknown; },
-    artist?: unknown
-) {
-    switch (method) {
-        case 'getFamiliarYou':
-            return {
-                wave: { tracks: [] },
-                collection: { tracks: [], albums: [] },
-            };
-        case 'getFamiliarYouInfo':
-            return {};
-        case 'getSimilarArtists':
-            return { similarArtists: [] };
-        case 'getConcerts':
-            return { concerts: [], artistTitle: null };
-        case 'getDisclaimer':
-            return { disclaimers: [] };
-        case 'getArtistLinks':
-            return { links: [] };
-        case 'getClips':
-            return { items: [], pager: createArtistPager(request, 0) };
-        case 'getAlsoAlbums':
-        case 'getSafeDirectAlbums':
-            return { pager: createArtistPager(request, 0), albums: [] };
-        case 'getAboutArtist':
-            return { artist, description: '', artistType: 'ARTIST', covers: [], links: [], stats: {} };
-        case 'getTrailer':
-            return { artist, trailer: { tracks: [] } };
-        case 'getDonation':
-            return { donations: [] };
-        default:
-            throw new Error(`Unsupported local artist resource method: ${method}`);
-    }
-}
+
 export type ArtistLandingBlockType = 'ARTIST_POPULAR_TRACKS' | 'ARTIST_ALBUMS';
 

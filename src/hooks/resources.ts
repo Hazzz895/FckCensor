@@ -19,7 +19,6 @@ import {
 } from '@/ui/components/alerts/spoof/custom-entities/custom-entity-requests'
 import { getCustomAlbum, getCustomArtist, getCustomTrack } from '@/ui/components/alerts/spoof/custom-entities/custom-entity-build'
 import { ArtistLandingBlockType } from "@/ui/components/alerts/spoof/custom-entities/custom-entity-artists"
-import { createEmptyArtistResponse } from "@/ui/components/alerts/spoof/custom-entities/custom-entity-artists"
 import { createArtistLandingBlock } from "@/ui/components/alerts/spoof/custom-entities/custom-entity-artists"
 import { createArtistPager } from "@/ui/components/alerts/spoof/custom-entities/custom-entity-artists"
 import { createArtistSkeleton } from "@/ui/components/alerts/spoof/custom-entities/custom-entity-artists"
@@ -76,6 +75,7 @@ function hookHeavyMethods(resource: PulseSyncResourceTarget['resource'], hook: H
         )
     }
 }
+
 export function stopResourceHooks() {
     hookGeneration++
     for (const cleanup of heavyMethodsUnhooks.splice(0)) cleanup()
@@ -450,10 +450,11 @@ class LocalArtistStubHook extends FunctionHook {
     }
 
     public before(_originalMethod: Function, request: ArtistResourceRequest) {
-        const id = getLocalArtistId(request?.artistId)
-        if (id === null) return
-        const response = createEmptyArtistResponse(this.method, request, getCustomArtist(id))
-        return new EarlyResponse(response)
+        if (getLocalArtistId(request?.artistId) === null) return
+        return new EarlyResponse({
+                wave: { tracks: [] },
+                collection: { tracks: [], albums: [] },
+            })
     }
 
     public after(familiar: any) {
@@ -476,24 +477,8 @@ function hookArtistResource(ar: any) {
     hookHeavyMethods(ar, new ArtistSkeletonHook(), 'getSkeleton')
     hookHeavyMethods(ar, new ArtistTrackIdsHook(), 'getArtistTrackIds')
     hookHeavyMethods(ar, new ArtistTracksHook(), 'getArtistTracks')
-    hookHeavyMethods(ar, new ArtistAlbumsHook(), 'getDirectAlbums', 'getDiscographyAlbums')
-
-    for (const method of [
-        'getFamiliarYou',
-        'getFamiliarYouInfo',
-        'getSimilarArtists',
-        'getAboutArtist',
-        'getConcerts',
-        'getTrailer',
-        'getDisclaimer',
-        'getArtistLinks',
-        'getClips',
-        'getDonation',
-        'getAlsoAlbums',
-        'getSafeDirectAlbums',
-    ]) {
-        hookHeavyMethods(ar, new LocalArtistStubHook(method), method)
-    }
+    hookHeavyMethods(ar, new ArtistAlbumsHook(), 'getDirectAlbums')
+    hookHeavyMethods(ar, new LocalArtistStubHook('getFamiliarYou'), 'getFamiliarYou')
 }
 
 async function addInsertionsToTracksList(tracks: Track[], artistId: string) {
