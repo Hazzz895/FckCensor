@@ -4,6 +4,9 @@ import { getEntityIdFromNode, removeChild } from "@/utils/ui-utils";
 import { HeaderActionButton, prepareButtons, unhookButtons } from "./buttons";
 import { localizeSpoofableTypeObjectiveCase } from "@/utils/common";
 import { isCustomEntityReal } from "@/ui/components/alerts/spoof/custom-entities/custom-entity-id-counter";
+import { createSpoofAlertFor } from "@/ui/components/alerts/spoof/spoof-alert";
+import { customIdOf } from "@/ui/components/alerts/spoof/custom-entities/custom-entity-requests";
+import { getAlbums, getArtist } from "@/utils/music";
 
 const unhooks: ((el: HTMLElement) => void)[] = []
 
@@ -24,7 +27,14 @@ export function prepareCustomEntitiesPages() {
             removeByTestId('TRAILER_BUTTON')
             removeChild(el, '[data-test-id$="CONTEXT_MENU_BUTTON"]')
 
-            el.appendChild(<HeaderActionButton icon="edit_xxs">Подменить {localizeSpoofableTypeObjectiveCase(type)}</HeaderActionButton>)
+            async function onButtonClick(e: Event) {
+                const el = e.currentTarget as HTMLElement
+                const id = getEntityIdFromNode(el, type);
+                const entity = await (type === 'artist' ? getArtist : getAlbums)(String(id))
+                createSpoofAlertFor(type, el, Array.isArray(entity) ? entity[0] : entity)
+            }
+
+            el.appendChild(<HeaderActionButton icon="edit_xxs" onclick={onButtonClick}>Подменить {localizeSpoofableTypeObjectiveCase(type)}</HeaderActionButton>)
         }
 
         unhooks.push(listenAddControls(listener, type))
