@@ -23,6 +23,7 @@ import { createArtistLandingBlock } from "@/ui/components/alerts/spoof/custom-en
 import { createArtistPager } from "@/ui/components/alerts/spoof/custom-entities/custom-entity-artists"
 import { createArtistSkeleton } from "@/ui/components/alerts/spoof/custom-entities/custom-entity-artists"
 import { prepareButtons, unhookButtons } from './ui/buttons'
+import { prepareCustomEntitiesPages, unhookCustomEntitiesPages } from './ui/custom-entities'
 
 const heavyMethodsUnhooks: (() => void)[] = []
 let hookGeneration = 0
@@ -80,7 +81,7 @@ function hookHeavyMethods(resource: PulseSyncResourceTarget['resource'], hook: H
 export function stopResourceHooks() {
     hookGeneration++
     for (const cleanup of heavyMethodsUnhooks.splice(0)) cleanup()
-    unhookButtons();
+    unhookCustomEntitiesPages();
 }
 
 function spoofTrackSafe(track: Track) {
@@ -672,7 +673,7 @@ export function hookResources(): Promise<void> {
     hookSearchResource('search')
     hookChartResource('landing3')
     hookRotorResource('rotor')
-    prepareButtons();
+    prepareCustomEntitiesPages();
     const generation = hookGeneration
     const promise = Promise.all(hooksStarting)
         .then(() => {})
