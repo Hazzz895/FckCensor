@@ -101,5 +101,5 @@ export async function showNotificationWithCover(
 
 export function removeChild(parent: HTMLElement, selector: string) {
     const child = parent.querySelector<HTMLElement>(selector)
-    if (child) parent.removeChild(child)
+    if (child) (child.parentElement ?? parent).removeChild(child)
 }
