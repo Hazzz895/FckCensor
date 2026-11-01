@@ -80,6 +80,7 @@ function hookHeavyMethods(resource: PulseSyncResourceTarget['resource'], hook: H
 export function stopResourceHooks() {
     hookGeneration++
     for (const cleanup of heavyMethodsUnhooks.splice(0)) cleanup()
+    unhookButtons();
 }
 
 function spoofTrackSafe(track: Track) {
@@ -475,7 +476,7 @@ class LocalArtistStubHook extends FunctionHook {
 function hookArtistResource(ar: any) {
     hookHeavyMethods(ar, new ArtistInfoHook(), 'getInfo')
     hookHeavyMethods(ar, new ArtistInfoHook(true), 'getBriefInfo')
-    hookHeavyMethods(ar, new ArtistSkeletonHook(), 'getSkeleton')
+    //hookHeavyMethods(ar, new ArtistSkeletonHook(), 'getSkeleton') # TEMP
     hookHeavyMethods(ar, new ArtistTrackIdsHook(), 'getArtistTrackIds')
     hookHeavyMethods(ar, new ArtistTracksHook(), 'getArtistTracks')
     hookHeavyMethods(ar, new ArtistAlbumsHook(), 'getDirectAlbums')
@@ -671,6 +672,7 @@ export function hookResources(): Promise<void> {
     hookSearchResource('search')
     hookChartResource('landing3')
     hookRotorResource('rotor')
+    prepareButtons();
     const generation = hookGeneration
     const promise = Promise.all(hooksStarting)
         .then(() => {})
@@ -685,7 +687,7 @@ export function hookResources(): Promise<void> {
     return promise
 }
 export async function toggleLiteMode(enabled: boolean) {
-    if (enabled) { stopResourceHooks(); unhookButtons(); }
-    else { await hookResources(); prepareButtons(); }
+    if (enabled) stopResourceHooks();
+    else await hookResources();
     requestSdkSync()
 }
