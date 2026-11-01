@@ -98,3 +98,8 @@ export async function showNotificationWithCover(
 
     await showNotificationSafe(message, kind, { ...data, coverUrl: coverUri })
 }
+
+export function removeChild(parent: HTMLElement, selector: string) {
+    const child = parent.querySelector<HTMLElement>(selector)
+    if (child) parent.removeChild(child)
+}
