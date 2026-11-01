@@ -2,7 +2,7 @@ import { SpoofableType } from "@/types";
 import { listenAddNodes, unlistenAddNodes } from "./observer";
 import { getEntityIdFromNode, removeChild } from "@/utils/ui-utils";
 import { HeaderActionButton, prepareButtons, unhookButtons } from "./buttons";
-import { localizeSpoofableType } from "@/utils/common";
+import { localizeSpoofableTypeObjectiveCase } from "@/utils/common";
 import { isCustomEntityReal } from "@/ui/components/alerts/spoof/custom-entities/custom-entity-id-counter";
 
 const unhooks: ((el: HTMLElement) => void)[] = []
@@ -24,7 +24,7 @@ export function prepareCustomEntitiesPages() {
             removeByTestId('TRAILER_BUTTON')
             removeChild(el, '[data-test-id$="CONTEXT_MENU_BUTTON"]')
 
-            el.appendChild(<HeaderActionButton icon="edit_xxs">Подменить {localizeSpoofableType(type)}</HeaderActionButton>)
+            el.appendChild(<HeaderActionButton icon="edit_xxs">Подменить {localizeSpoofableTypeObjectiveCase(type)}</HeaderActionButton>)
         }
 
         unhooks.push(listenAddControls(listener, type))
