@@ -48,6 +48,16 @@ export function localizeSpoofableType(type: SpoofableType) {
     }
 }
 
+export function localizeSpoofableTypeObjectiveCase(type: SpoofableType) {
+    switch (type) {
+        case 'artist':
+            return 'исполнителя'
+        case 'album':
+        case 'track':
+            return localizeSpoofableType(type) as 'альбом' | 'трек'
+    }
+}
+
 export function isNumeric(str: string) {
     return !Number.isNaN(Number(str))
 }
