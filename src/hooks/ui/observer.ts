@@ -99,7 +99,7 @@ export function invokeAddNodesListeners() {
 export function destroyObserver() {
     observer.disconnect()
     removeTooltip()
-    document.querySelectorAll('[fckcensoroption], [fckcensorsettings]').forEach(node => node.remove())
+    document.querySelectorAll('[fckcensoroption], [fckcensorsettings], [fckcensorbutton]').forEach(node => node.remove())
     document.querySelectorAll('[data-fckcensor-badge]').forEach(node => node.remove())
     mutationCallbacks = []
     addedNodeCallbacks = []
