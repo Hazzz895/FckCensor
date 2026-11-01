@@ -50,21 +50,20 @@ function addAddCustomEntityButton(container: HTMLElement, type: SpoofableType, l
         )
     }
     
-    const button = <AddTrackButton
+    const button = <HeaderActionButton
         style="margin-left: auto"
         onclick={onClick}>
             Добавить {localizeSpoofableType(type)}
-    </AddTrackButton>;
+    </HeaderActionButton>;
 
     container.appendChild(button)
     return button;
 }
 
-function AddTrackButton({ children, ...props }: JSX.HTMLAttributes) {
+export function HeaderActionButton({ children, ...props }: JSX.HTMLAttributes) {
     return (
         <button
             class="kc5CjvU5hT9KEj0iTt3C cpeagBA1_PblpJn8Xgtv iJVAJMgccD4vj4E4o068 zIMibMuH7wcqUoW7KH1B IlG7b1K0AD7E7AMx6F5p nHWc2sto1C6Gm0Dpw_l0 WtFdWDF44egSVM_YiMUX qU2apWBO1yyEK0lZ3lPO PageHeaderPlaylistUgcUploadButton_button__mWtCr"
-            aria-label="Загрузить трек"
             fckcensorbutton
             {...props}
         >
