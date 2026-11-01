@@ -1,6 +1,6 @@
 import { getTracks } from '@/utils/music'
 import { JSX } from '@/jsx-runtime'
-import { TrackMST, Artist, Album, Track, SpoofableType } from '@/types'
+import { TrackMST, Artist, Album, Track, SpoofableType, SpoofableEntity } from '@/types'
 import { getTrackIdFromNode } from '@/utils/ui-utils'
 import { debug } from '@/utils/logger'
 import { SpoofTrackAlert } from './track/SpoofTrackAlert'
@@ -60,6 +60,17 @@ export function createAlbumSpoofAlertFor(scrim?: HTMLElement, albumData?: Album 
     }
 
     showNoDataError('album')
+}
+
+export function createSpoofAlertFor(type: SpoofableType, scrim?: HTMLElement, data?: SpoofableEntity | null) {
+    switch (type) {
+        case 'track':
+            return createTrackSpoofAlertFor(scrim, undefined, data as Track | null)
+        case 'artist':
+            return createArtistSpoofAlertFor(scrim, data as Artist | null)
+        case 'album':
+            return createAlbumSpoofAlertFor(scrim, data as Album | null)
+    }
 }
 
 function showNoDataError(type: SpoofableType) {
