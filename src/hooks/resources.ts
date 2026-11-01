@@ -22,6 +22,7 @@ import { ArtistLandingBlockType } from "@/ui/components/alerts/spoof/custom-enti
 import { createArtistLandingBlock } from "@/ui/components/alerts/spoof/custom-entities/custom-entity-artists"
 import { createArtistPager } from "@/ui/components/alerts/spoof/custom-entities/custom-entity-artists"
 import { createArtistSkeleton } from "@/ui/components/alerts/spoof/custom-entities/custom-entity-artists"
+import { prepareButtons, unhookButtons } from './ui/buttons'
 
 const heavyMethodsUnhooks: (() => void)[] = []
 let hookGeneration = 0
@@ -684,7 +685,7 @@ export function hookResources(): Promise<void> {
     return promise
 }
 export async function toggleLiteMode(enabled: boolean) {
-    if (enabled) stopResourceHooks()
-    else await hookResources()
+    if (enabled) { stopResourceHooks(); unhookButtons(); }
+    else { await hookResources(); prepareButtons(); }
     requestSdkSync()
 }
