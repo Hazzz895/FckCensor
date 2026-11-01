@@ -22,19 +22,23 @@ export function prepareCustomEntitiesPages() {
         const listener = (el: HTMLElement) => {
             const removeByTestId = (testId: string) => removeChild(el, `[data-test-id="${testId}"]`);
 
+            const buttonParent = el.querySelector('[data-test-id="PLAY_BUTTON"]')?.parentElement ?? el;
+
             removeByTestId('LIKE_BUTTON')
             removeByTestId('PIN_BUTTON')
             removeByTestId('TRAILER_BUTTON')
             removeChild(el, '[data-test-id$="CONTEXT_MENU_BUTTON"]')
 
-            async function onButtonClick(e: Event) {
-                const el = e.currentTarget as HTMLElement
-                const id = getEntityIdFromNode(el, type);
-                const entity = await (type === 'artist' ? getArtist : getAlbums)(String(id))
-                createSpoofAlertFor(type, el, Array.isArray(entity) ? entity[0] : entity)
-            }
+            if (!buttonParent.querySelector('[fckcensorbutton]')) {
+                async function onButtonClick(e: Event) {
+                    const el = e.currentTarget as HTMLElement
+                    const id = getEntityIdFromNode(el, type);
+                    const entity = await (type === 'artist' ? getArtist : getAlbums)(String(id))
+                    createSpoofAlertFor(type, el, Array.isArray(entity) ? entity[0] : entity)
+                }
 
-            el.appendChild(<HeaderActionButton icon="edit_xxs" onclick={onButtonClick}>Подменить {localizeSpoofableTypeObjectiveCase(type)}</HeaderActionButton>)
+                buttonParent.appendChild(<HeaderActionButton icon="edit_xxs" style="order: 1; grid-area: like" onclick={onButtonClick}>Подменить {localizeSpoofableTypeObjectiveCase(type)}</HeaderActionButton>)
+            }
         }
 
         unhooks.push(listenAddControls(listener, type))
@@ -45,7 +49,7 @@ export function prepareCustomEntitiesPages() {
 
 function listenAddControls(listener: (el: HTMLElement) => any, entityType: SpoofableType) {
     const PAGE_DATATEST_ID = `${entityType.toUpperCase()}_PAGE`;
-    const selector = `[data-test-id="${PAGE_DATATEST_ID}"] [data-test-id="BASE_PAGE_HEADER_CONTROLS"] div`;
+    const selector = `[data-test-id="${PAGE_DATATEST_ID}"] [data-test-id="BASE_PAGE_HEADER_CONTROLS"]`;
     return listenAddNodes((el) => {
         const id = Number(getEntityIdFromNode(el, entityType));
         if (isCustomEntityReal(id)) {
