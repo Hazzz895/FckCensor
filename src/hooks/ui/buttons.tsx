@@ -57,7 +57,7 @@ function addAddCustomEntityButton(container: HTMLElement, type: SpoofableType, l
         style="margin-left: auto"
         icon="add_xxxs"
         onclick={onClick}>
-            {`Добавить ${localizeSpoofableType(type)}`}
+            {`Создать ${localizeSpoofableType(type)}`}
     </HeaderActionButton>;
 
     container.appendChild(button)
