@@ -385,4 +385,31 @@ export type DiResource =
     | 'MocksInitializer'
     | 'NetworkMonitorFactory'
     | 'SkeletonSdk'
+
+
+export interface Skeleton {
+    id?: string;
+    title?: string;
+    type?:  string;
+    data?: Skeleton | { blocks: Skeleton[] };
+    blocks?: Skeleton[];
+    showPolicy?:    string;
+    viewAllAction?: ViewAllAction;
+    source?: SkeletonSource;
+    tabs?: Skeleton[];
+    selectedTabIndex?: number;
+}
+
+export interface SkeletonSource {
+    uri:      string;
+    countWeb: number;
+    count:    number;
+}
+
+export interface ViewAllAction {
+    deeplink: string;
+    weblink:  string;
+}
+
+
 //#endregion
