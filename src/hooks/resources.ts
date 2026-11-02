@@ -2,7 +2,7 @@ import { sources } from '@/api/main-api'
 import type { PulseSyncResourceTarget } from '@pulsesync/addon-sdk'
 import { getSdkApi } from '@/sdk/lifecycle'
 import { rememberResponse, requestSdkSync, isSdkLibraryArtist, isSdkLibraryAlbum } from '@/sdk/bridge'
-import { debug, error } from '@/utils/logger'
+import { debug, error, warn } from '@/utils/logger'
 import { Album, Artist, OuterArtist, Playlist, SearchResponse, Track } from '@/types'
 import { insert } from '@/utils/common'
 import { getAlbums, getTracks } from '@/utils/music'
@@ -24,6 +24,7 @@ import { createArtistPager } from "@/ui/components/alerts/spoof/custom-entities/
 import { createArtistSkeleton } from "@/ui/components/alerts/spoof/custom-entities/custom-entity-artists"
 import { prepareButtons, unhookButtons } from './ui/buttons'
 import { prepareCustomEntitiesPages, unhookCustomEntitiesPages } from './ui/custom-entities'
+import { PULSESYNC_RESOURCE_METHODS } from '@pulsesync/yamusic-types'
 
 const heavyMethodsUnhooks: (() => void)[] = []
 let hookGeneration = 0
@@ -44,37 +45,46 @@ function hookHeavyMethods(resource: PulseSyncResourceTarget['resource'], hook: H
     if (!api) throw Error('SDK lifecycle is not active')
     const generation = hookGeneration
     for (const method of methodNames) {
-        hooksStarting.push(
-            api.resources
-                .registerHook({ resource, method } as PulseSyncResourceTarget, {
-                    timeoutMs: 5000,
-                    before:
-                        hook instanceof FunctionHook
-                            ? async ({ request }) => {
-                                  const mutable = structuredClone(request)
-                                  const early = await hook.before(() => {}, mutable)
-                                  if (early instanceof EarlyResponse) {
-                                      rememberResponse(early.result)
-                                      requestSdkSync(false)
-                                      return { kind: 'respond' as const, result: JSON.parse(JSON.stringify(early.result)) }
-                                  }
-                                  return { kind: 'continue' as const, request: mutable }
-                              }
-                            : undefined,
-                    after: async ({ result, request }) => {
-                        rememberResponse(result)
-                        if (hook instanceof FunctionHook) await hook.after(result, request)
-                        else await hook(result, request)
-                        requestSdkSync(false)
-                        // Sources contain optional undefined fields; the SDK hook boundary accepts JSON only.
-                        return { kind: 'replace', result: JSON.parse(JSON.stringify(result)) }
-                    },
-                })
-                .then(cleanup => {
-                    if (generation !== hookGeneration || api.signal.aborted || settings.store.liteMode) cleanup()
-                    else heavyMethodsUnhooks.push(cleanup)
-                }),
-        )
+        if (!(PULSESYNC_RESOURCE_METHODS[resource] as readonly string[]).includes(method)) {
+            warn(`Method ${method} of ${resource} resource is not allowed.`)
+            continue;
+        }
+
+        try {
+            hooksStarting.push(
+                api.resources
+                    .registerHook({ resource, method } as PulseSyncResourceTarget, {
+                        timeoutMs: 5000,
+                        before:
+                            hook instanceof FunctionHook
+                                ? async ({ request }) => {
+                                    const mutable = structuredClone(request)
+                                    const early = await hook.before(() => { }, mutable)
+                                    if (early instanceof EarlyResponse) {
+                                        rememberResponse(early.result)
+                                        requestSdkSync(false)
+                                        return { kind: 'respond' as const, result: JSON.parse(JSON.stringify(early.result)) }
+                                    }
+                                    return { kind: 'continue' as const, request: mutable }
+                                }
+                                : undefined,
+                        after: async ({ result, request }) => {
+                            rememberResponse(result)
+                            if (hook instanceof FunctionHook) await hook.after(result, request)
+                            else await hook(result, request)
+                            requestSdkSync(false)
+                            // Sources contain optional undefined fields; the SDK hook boundary accepts JSON only.
+                            return { kind: 'replace', result: JSON.parse(JSON.stringify(result)) }
+                        },
+                    })
+                    .then(cleanup => {
+                        if (generation !== hookGeneration || api.signal.aborted || settings.store.liteMode) cleanup()
+                        else heavyMethodsUnhooks.push(cleanup)
+                    }),
+            )
+        } catch (e) {
+            error(`Error hooking method ${method} of ${resource}: ${e}`)
+        }
     }
 }
 
