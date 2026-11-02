@@ -548,8 +548,13 @@ async function enrichLandingBlock(block: any, info: ArtistResourceRequest) {
             try {
                 const insertions = await addInsertionsToAlbumsList(albums, artistId)
                 const albumsById = new Map(albums.map(album => [String(album.id), album]))
+                const present = new Set<string>(
+                    block.items.filter((item: any) => item?.type === 'album_item').map((item: any) => String(item.data?.album?.id)),
+                )
                 insertions?.forEach(insertion => {
-                    const album = albumsById.get(String(insertion.releaseId))
+                    const id = String(insertion.releaseId)
+                    if (present.has(id)) return
+                    const album = albumsById.get(id)
                     if (!album) return
                     const data = {
                         type: 'album_item',
@@ -560,6 +565,7 @@ async function enrichLandingBlock(block: any, info: ArtistResourceRequest) {
                         },
                     }
                     insert(block.items, data, insertion.index)
+                    present.add(id)
                 })
             } catch (e) {
                 error(`Failed to load album insertions for artist ${artistId}:`, e)
