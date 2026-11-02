@@ -4,7 +4,7 @@ import { Artist, OuterArtist, SpoofableEntity, SpoofableType } from '@/types'
 import { createCustomAlbumAlertFor, createCustomTrackAlertFor } from '@/ui/components/alerts/spoof/custom-entities/custom-entities-alert'
 import { getSdkApi } from '@/sdk/lifecycle'
 import { localizeSpoofableType } from '@/utils/common'
-import { createNativeBadge, YandexMusicIconName } from '@pulsesync/addon-sdk'
+import { USE_CUSTOM_TRACKS } from '@/../build-info'
 
 const unhooks: ((el: HTMLElement) => void)[] = []
 
@@ -29,9 +29,11 @@ export function prepareButtons() {
 
     const Q_CONTAINER_SELECTOR = ':is([data-test-id="TEXT_HEADER"], [data-test-id="TEXT_STICKY_HEADER"]):not(:has([fckcensorbutton])'
 
-    unhooks.push(listenAddNodes(el => {
-        addAddCustomEntityButton(el, 'track', createCustomTrackAlertFor)
-    }, '[data-test-id="ARTIST_TRACKS_PAGE"] ' + Q_CONTAINER_SELECTOR))
+    if (USE_CUSTOM_TRACKS) {
+        unhooks.push(listenAddNodes(el => {
+            addAddCustomEntityButton(el, 'track', createCustomTrackAlertFor)
+        }, '[data-test-id="ARTIST_TRACKS_PAGE"] ' + Q_CONTAINER_SELECTOR))
+    }
 
     unhooks.push(listenAddNodes(el => {
         addAddCustomEntityButton(el, 'album', createCustomAlbumAlertFor)
