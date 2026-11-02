@@ -5,7 +5,7 @@ const addonConfig = {
     directoryName: '78d083c5-0510-4c41-b3de-41aab30a9fc5',
     name: 'FckCensor',
     description: 'Автоматически убирает цензуру и позволяет делать это вручную.',
-    version: '2.1.0',
+    version: '2.1.1',
     author: [
         'Hazzz895',
         'forea.adoxid'
