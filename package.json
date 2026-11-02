@@ -17,8 +17,8 @@
     "node": "^20.19.0 || >=22.12.0"
   },
   "dependencies": {
-    "@pulsesync/addon-sdk": "^0.16.0",
-    "@pulsesync/yamusic-types": "^0.7.0",
+    "@pulsesync/addon-sdk": "^0.18.0",
+    "@pulsesync/yamusic-types": "^0.8.0",
     "groq-sdk": "^1.6.0"
   },
   "devDependencies": {
