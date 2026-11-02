@@ -477,7 +477,7 @@ class LocalArtistStubHook extends FunctionHook {
 function hookArtistResource(ar: any) {
     hookHeavyMethods(ar, new ArtistInfoHook(), 'getInfo')
     hookHeavyMethods(ar, new ArtistInfoHook(true), 'getBriefInfo')
-    //hookHeavyMethods(ar, new ArtistSkeletonHook(), 'getSkeleton') # TEMP
+    hookHeavyMethods(ar, new ArtistSkeletonHook(), 'getSkeleton')
     hookHeavyMethods(ar, new ArtistTrackIdsHook(), 'getArtistTrackIds')
     hookHeavyMethods(ar, new ArtistTracksHook(), 'getArtistTracks')
     hookHeavyMethods(ar, new ArtistAlbumsHook(), 'getDirectAlbums')
