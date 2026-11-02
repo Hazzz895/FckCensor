@@ -22,7 +22,7 @@ export function prepareCustomEntitiesPages() {
         const listener = (el: HTMLElement) => {
             const removeByTestId = (testId: string) => removeChild(el, `[data-test-id="${testId}"]`);
 
-            const buttonParent = el.querySelector('[data-test-id="PLAY_BUTTON"]')?.parentElement ?? el;
+            const buttonParent = el.querySelector('button')?.parentElement ?? el;
 
             removeByTestId('LIKE_BUTTON')
             removeByTestId('PIN_BUTTON')
