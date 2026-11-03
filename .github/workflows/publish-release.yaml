@@ -1,0 +1,129 @@
+name: Publish Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Enable Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@1.22.22 --activate
+
+      - name: Check version and changelog
+        id: release-info
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process'
+          import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
+          import { tmpdir } from 'node:os'
+          import { join } from 'node:path'
+
+          const output = process.env.GITHUB_OUTPUT
+          const before = process.env.BEFORE
+          const currentConfig = readFileSync('addon.config.mjs', 'utf8')
+          const readField = (source, field) => {
+            const match = source.match(new RegExp(`\\b${field}\\s*:\\s*(['"])([^'"]+)\\1`))
+            if (!match) throw new Error(`Could not read ${field} from addon.config.mjs`)
+            return match[2]
+          }
+          const currentVersion = readField(currentConfig, 'version')
+          const directoryName = readField(currentConfig, 'directoryName')
+
+          if (!/^\d+\.\d+\.\d+$/.test(currentVersion)) {
+            throw new Error(`Expected addon version in X.Y.Z format, received: ${currentVersion}`)
+          }
+          if (!/^[\w.-]+$/.test(directoryName)) {
+            throw new Error(`Invalid addon directoryName: ${directoryName}`)
+          }
+
+          if (!before || /^0+$/.test(before)) {
+            appendFileSync(output, 'release=false\n')
+            console.log('No previous commit is available; skipping release.')
+            process.exit(0)
+          }
+
+          let previousConfig
+          try {
+            previousConfig = execFileSync('git', ['show', `${before}:addon.config.mjs`], { encoding: 'utf8' })
+          } catch (error) {
+            throw new Error(`Could not read addon.config.mjs from previous commit ${before}`, { cause: error })
+          }
+          const previousVersion = readField(previousConfig, 'version')
+          if (currentVersion === previousVersion) {
+            appendFileSync(output, 'release=false\n')
+            console.log(`Addon version is unchanged (${currentVersion}); skipping build and release.`)
+            process.exit(0)
+          }
+
+          const changelog = readFileSync('CHANGELOG.md', 'utf8')
+          const lines = changelog.split(/\r?\n/)
+          const headingIndex = lines.findIndex(line => /^#\s/.test(line))
+          if (headingIndex < 0) throw new Error('CHANGELOG.md has no version heading')
+          const heading = lines[headingIndex]
+          const changelogVersion = heading.match(/\bv(\d+\.\d+\.\d+)\b/)?.[1]
+          if (changelogVersion !== currentVersion) {
+            throw new Error(`Latest CHANGELOG.md entry is v${changelogVersion ?? 'unknown'}, expected v${currentVersion}`)
+          }
+
+          const nextHeadingIndex = lines.findIndex((line, index) => index > headingIndex && /^#\s/.test(line))
+          const notes = lines.slice(headingIndex + 1, nextHeadingIndex < 0 ? undefined : nextHeadingIndex).join('\n').trim()
+          if (!notes) throw new Error(`CHANGELOG.md entry for v${currentVersion} is empty`)
+
+          const notesPath = join(tmpdir(), `release-notes-${process.env.GITHUB_RUN_ID}.md`)
+          writeFileSync(notesPath, `${notes}\n`)
+          appendFileSync(output, [
+            'release=true',
+            `version=${currentVersion}`,
+            `directory_name=${directoryName}`,
+            `notes_path=${notesPath}`,
+          ].join('\n') + '\n')
+          console.log(`Preparing release v${currentVersion}.`)
+          NODE
+
+      - name: Install dependencies
+        if: steps.release-info.outputs.release == 'true'
+        run: yarn install --frozen-lockfile
+
+      - name: Build addon
+        if: steps.release-info.outputs.release == 'true'
+        run: yarn build
+
+      - name: Package addon
+        if: steps.release-info.outputs.release == 'true'
+        env:
+          DIRECTORY_NAME: ${{ steps.release-info.outputs.directory_name }}
+        run: |
+          zip -r "${RUNNER_TEMP}/FckCensor.zip" "dist/${DIRECTORY_NAME}"
+          cp "${RUNNER_TEMP}/FckCensor.zip" "${RUNNER_TEMP}/FckCensor.pext"
+
+      - name: Create GitHub release
+        if: steps.release-info.outputs.release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.release-info.outputs.version }}
+          name: v${{ steps.release-info.outputs.version }}
+          body_path: ${{ steps.release-info.outputs.notes_path }}
+          files: |
+            ${{ runner.temp }}/FckCensor.zip
+            ${{ runner.temp }}/FckCensor.pext
