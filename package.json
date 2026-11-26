@@ -1,6 +1,6 @@
 {
   "name": "fck-censor",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "private": true,
   "type": "module",
   "description": "Addon for PulseSync to remove censor from Yandex Music",
